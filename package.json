@@ -24,6 +24,7 @@
   "homepage": "https://github.com/codetheweb/tuya-device#readme",
   "dependencies": {
     "net-retry-connect": "^0.1.1",
-    "node-forge": "^0.7.1"
+    "node-forge": "^0.7.1",
+    "str-encode": "^1.0.5"
   }
 }
