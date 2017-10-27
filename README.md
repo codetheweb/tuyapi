@@ -1,11 +1,4 @@
-# tuya-device
-[![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
-An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)
-
-**Note**: currently hitting rate limits if we make and break connections too quickly.  Is it posible to reuse the `client` object between requests?
-
-
-TuyAPI
+TuyAPI [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 =========
 
 A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if port 6668 is open on your device chances are this library will work with it.
@@ -17,7 +10,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
 ## Usage
 
-    const TuyaDevice = require('./index.js');
+    const TuyaDevice = require('tuyapi');
 
     var tuya = new TuyaDevice({
       type: 'outlet',
@@ -49,5 +42,13 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 ## Tests
 
   `npm test`
+  (runs the [xo](https://www.npmjs.com/package/xo) style linter)
+  
+## TODO
+ 1. Either reuse a TCP connection between requests, keeping it alive by sending a packet every few seconds, or add a delay between subsequent commands.
+ 2. Figure out what the hex-encoded 'padding' is.
+ 3. Autodiscovery of devices?
 
 ## Contributors
+- [codetheweb](https://github.com/codetheweb)
+- [blackrozes](https://github.com/blackrozes)
