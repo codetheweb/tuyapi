@@ -59,8 +59,12 @@ TuyaDevice.prototype.setStatus = function(on, callback) {
   // encode binary data to Base64
   var data = forge.util.encode64(this.cipher.output.data);
 
+  // create md5
+  var preMd5String = "data="+data+"||lpv="+this.version+"||"+this.key;
+  var md5hash = forge.md.md5.create().update(preMd5String).digest("hex");
+  var md5 = md5hash.toString().toLowerCase().substr(8, 16);
+  
   // create byte buffer from hex data
-  var md5 = '749d6a6644fe1f88'; // ISSUE: can't figure out what MD5 hash is computed from
   var buffer = Buffer.from(thisRequest.prefix + strEncode(this.version + md5 + data, 'hex') + thisRequest.suffix, 'hex');
   console.log(buffer.toString());
   this._send(buffer, function(error, result) {
