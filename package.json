@@ -4,7 +4,8 @@
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
-    "test": "xo --space"
+    "test": "xo --space",
+    "document": "documentation readme index.js --section=Docs"
   },
   "repository": {
     "type": "git",
@@ -25,7 +26,10 @@
   "dependencies": {
     "net-retry-connect": "^0.1.1",
     "node-forge": "^0.7.1",
-    "str-encode": "^1.0.5",
+    "str-encode": "^1.0.5"
+  },
+  "devDependencies": {
+    "documentation": "^5.3.3",
     "xo": "^0.18.2"
   }
 }
