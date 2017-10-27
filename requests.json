@@ -8,12 +8,14 @@
     "on": {
       "prefix": "450000d3ca6d40004006ed7fc0a8007bc0a8006cc4bc1a0c1082022500001e2a5018ffff9cb00000000055aa0000004e000000070000009b",
       "command": {"devId": "", "dps": {"1": true}, "uid": "", "t": ""},
-      "suffix": "b6673b0000aa55"
+      "suffix": "5c806ffc0000aa55",
+      "returns": "000055efbfbd0000004e000000070000000c000000003fefbfbdefbfbd0000efbfbd55"
     },
     "off": {
       "prefix": "450000eb4c60400040066b75c0a8007bc0a8006cc4bc1a0c1082016200001d735018ffff9f850000000055aa0000004d00000007000000b3",
       "command": {"devId": "", "dps": {"1": false}, "uid": "", "t": ""},
-      "suffix": "8b3e795a0000aa55"
+      "suffix": "8b3e795a0000aa55",
+      "returns": "000055efbfbd0000004d000000070000000c00000000efbfbd32efbfbd440000efbfbd55"
     }
   }
 }
