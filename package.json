@@ -1,11 +1,12 @@
 {
   "name": "tuyapi",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
     "test": "xo --space",
-    "document": "documentation readme index.js --section=Docs"
+    "document": "documentation readme index.js --section=Docs",
+    "pushtags": "git push origin master --tags"
   },
   "repository": {
     "type": "git",

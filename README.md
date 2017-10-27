@@ -35,7 +35,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
   This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
 
-  The `id`, `uid`, and `key` must be found by sniffing the app that came with your device.
+  The `id`, `uid`, and `key` must be found by sniffing the app that came with your device. Your tool must be able to sniff HTTPS traffic for this to work. For macOS, [Charles](https://www.charlesproxy.com/) is probably the best option.
 
 ## Docs
 
@@ -80,7 +80,7 @@ Sets the device's status.
 
 ## TODO
 
-1.  Either reuse a TCP connection between requests, keeping it alive by sending a packet every few seconds, or add a delay between subsequent commands.
+1.  Reuse a TCP connection between subsequent commands, instead of creating a new one every time.
 2.  Figure out what the hex-encoded 'padding' is.
 3.  Autodiscovery of devices?
 
@@ -88,3 +88,7 @@ Sets the device's status.
 
 -   [codetheweb](https://github.com/codetheweb)
 -   [blackrozes](https://github.com/blackrozes)
+
+## Related
+
+[homebridge-tuya](https://github.com/codetheweb/homebridge-tuya): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices

@@ -122,7 +122,7 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
 */
 TuyaDevice.prototype._send = function (buffer, callback) {
   // The local services of devices seem to be a bit flakey, so we'll retry the connection a couple times
-  retryConnect.to({port: 6668, host: this.ip}, (error, client) => {
+  retryConnect.to({port: 6668, host: this.ip, retryOptions: {retries: 5}}, (error, client) => {
     if (error) {
       return callback(error, null);
     }
