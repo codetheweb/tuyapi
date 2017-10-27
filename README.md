@@ -1,4 +1,4 @@
-# TuyAPI [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
+# TuyAPI 🌧 🔌 [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 
 A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if port 6668 is open on your device chances are this library will work with it.
 Currently only supports smart plugs, but it should be fairly trivial to add other types of devices.
@@ -62,7 +62,7 @@ Gets the device's current status.
 
 **Parameters**
 
--   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** 
+-   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)**
 
 #### setStatus
 
