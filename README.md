@@ -91,4 +91,4 @@ Sets the device's status.
 
 ## Related
 
-[homebridge-tuya](https://github.com/codetheweb/homebridge-tuya): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+[homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices

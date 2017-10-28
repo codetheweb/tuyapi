@@ -1,7 +1,6 @@
 # test file for quickly importing the module and playing around with it
 test.js
 
-
 # Logs
 logs
 *.log
@@ -60,4 +59,3 @@ typings/
 
 # dotenv environment variables file
 .env
-
