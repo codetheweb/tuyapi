@@ -94,6 +94,7 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
   // Encode binary data to Base64
   const data = forge.util.encode64(this.cipher.output.data);
 
+  // Create MD5 signature
   const preMd5String = 'data=' + data + '||lpv=' + this.version + '||' + this.key;
   const md5hash = forge.md.md5.create().update(preMd5String).digest().toHex();
   const md5 = md5hash.toString().toLowerCase().substr(8, 16);
