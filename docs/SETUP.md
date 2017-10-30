@@ -8,6 +8,5 @@ Setup
 
 ![proxy toggle](proxy_toggle.png)
 
-3.  asdf
+3. Setup Charles' [SSL certificate](https://www.charlesproxy.com/documentation/using-charles/ssl-certificates/) for your phone.
 
-[asdf](https://www.charlesproxy.com/documentation/using-charles/ssl-certificates/)
