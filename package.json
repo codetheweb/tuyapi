@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "xo --space",
-    "document": "documentation readme index.js --section=Docs",
+    "document": "documentation build index.js -f md | (echo 'Docs \n=========' && cat) > docs/API.md",
     "pushtags": "git push origin master --tags"
   },
   "repository": {

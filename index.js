@@ -104,13 +104,12 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
   const buffer = Buffer.from(thisRequest.prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
 
   // Send request to change status
-  const that = this;
   this._send(buffer, (error, result) => {
     if (error) {
       return callback(error, null);
     }
 
-    return callback(null, true);
+    return callback(null, result);
   });
 };
 
