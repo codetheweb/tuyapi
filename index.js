@@ -3,7 +3,6 @@
 // Import packages
 const forge = require('node-forge');
 const retryConnect = require('net-retry-connect');
-const strEncode = require('str-encode');
 
 // Import requests for devices
 const requests = require('./requests.json');
@@ -48,7 +47,8 @@ TuyaDevice.prototype.getStatus = function (callback) {
   }
 
   // Create byte buffer from hex data
-  const buffer = Buffer.from(requests[this.type].status.prefix + strEncode(JSON.stringify(requests[this.type].status.command), 'hex') + requests[this.type].status.suffix, 'hex');
+  const thisData = Buffer.from(JSON.stringify(requests[this.type].status.command));
+  const buffer = Buffer.from(requests[this.type].status.prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
 
   this._send(buffer, (error, result) => {
     if (error) {
@@ -100,15 +100,14 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
   const md5 = md5hash.toString().toLowerCase().substr(8, 16);
 
   // Create byte buffer from hex data
-  const buffer = Buffer.from(thisRequest.prefix + strEncode(this.version + md5 + data, 'hex') + thisRequest.suffix, 'hex');
+  const thisData = Buffer.from(this.version + md5 + data);
+  const buffer = Buffer.from(thisRequest.prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
 
   // Send request to change status
   const that = this;
   this._send(buffer, (error, result) => {
     if (error) {
       return callback(error, null);
-    } else if (strEncode(result, 'hex') !== requests[that.type][on ? 'on' : 'off'].returns) {
-      return callback(new Error('returned value does not match expected value'), null);
     }
 
     return callback(null, true);
