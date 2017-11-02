@@ -14,9 +14,9 @@ const requests = require('./requests.json');
 * @param {string} [options.type='outlet'] - type of device
 * @param {string} options.ip - IP of device
 * @param {number} [options.port=6668] - port of device
-* @param {string} options.id - ID of device (called `devId` or `gwId`)
+* @param {string} options.id - ID of device
 * @param {string} options.uid - UID of device
-* @param {string} options.key - encryption key of device (called `localKey`)
+* @param {string} options.key - encryption key of device
 * @param {number} [options.version=3.1] - protocol version
 */
 function TuyaDevice(options) {
@@ -56,10 +56,14 @@ TuyaDevice.prototype.getStatus = function (callback) {
     }
 
     // Extract returned JSON
-    result = result.toString();
-    result = result.slice(result.indexOf('{'), result.lastIndexOf('}') + 1);
-    result = JSON.parse(result);
-    return callback(null, result.dps['1']);
+    try {
+      result = result.toString();
+      result = result.slice(result.indexOf('{'), result.lastIndexOf('}') + 1);
+      result = JSON.parse(result);
+      return callback(null, result.dps['1']);
+    } catch (err) {
+      return callback(err, null);
+    }
   });
 };
 
@@ -104,12 +108,12 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
   const buffer = Buffer.from(thisRequest.prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
 
   // Send request to change status
-  this._send(buffer, (error, result) => {
+  this._send(buffer, error => {
     if (error) {
       return callback(error, null);
     }
 
-    return callback(null, result);
+    return callback(null, true);
   });
 };
 
