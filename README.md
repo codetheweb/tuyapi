@@ -35,7 +35,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
 
-See [setup instructions](docs/SETUP.md) for instructions on finding the needed parameters.
+See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
 ## Docs
 
