@@ -28,9 +28,10 @@ Setup
 ![device data](images/device-data.png)
 
 10. Find the parameters needed for constructing a TuyAPI instance from the contents of the response:
-
-    {
-      id: uuid,
-      uid: productId,
-      key: localKey
-    }
+```
+{
+  id: uuid,
+  uid: productId,
+  key: localKey
+}
+```
