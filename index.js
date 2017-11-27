@@ -2,7 +2,8 @@
 
 // Import packages
 const forge = require('node-forge');
-const retryConnect = require('net-retry-connect');
+const recon = require('@codetheweb/recon');
+const waitUntil = require('wait-until');
 
 // Import requests for devices
 const requests = require('./requests.json');
@@ -31,6 +32,10 @@ function TuyaDevice(options) {
 
   // Create cipher object
   this.cipher = forge.cipher.createCipher('AES-ECB', this.key);
+
+  // Create connection
+  // this.client = new connect({host: this.ip, port: this.port});
+  this.client = recon(this.ip, this.port, {retryErrors: ['ECONNREFUSED', 'ECONNRESET']});
 }
 
 /**
@@ -50,17 +55,13 @@ TuyaDevice.prototype.getStatus = function (callback) {
   const thisData = Buffer.from(JSON.stringify(requests[this.type].status.command));
   const buffer = Buffer.from(requests[this.type].status.prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
 
-  this._send(buffer, (error, result) => {
-    if (error) {
-      return callback(error, null);
-    }
-
+  this._send(buffer).then(data => {
     // Extract returned JSON
     try {
-      result = result.toString();
-      result = result.slice(result.indexOf('{'), result.lastIndexOf('}') + 1);
-      result = JSON.parse(result);
-      return callback(null, result.dps['1']);
+      data = data.toString();
+      data = data.slice(data.indexOf('{'), data.lastIndexOf('}') + 1);
+      data = JSON.parse(data);
+      return callback(null, data.dps['1']);
     } catch (err) {
       return callback(err, null);
     }
@@ -108,12 +109,10 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
   const buffer = Buffer.from(thisRequest.prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
 
   // Send request to change status
-  this._send(buffer, error => {
-    if (error) {
-      return callback(error, null);
-    }
-
+  this._send(buffer).then(data => {
     return callback(null, true);
+  }).catch(err => {
+    return callback(err, null);
   });
 };
 
@@ -121,24 +120,30 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
 * Sends a query to the device.
 * @private
 * @param {Buffer} buffer - buffer of data
-* @param {function(error, result)} callback
+* @returns {Promise<string>} - returned data
 */
-TuyaDevice.prototype._send = function (buffer, callback) {
-  // The local services of devices seem to be a bit flakey, so we'll retry the connection a couple times
-  retryConnect.to({port: 6668, host: this.ip, retryOptions: {retries: 5}}, (error, client) => {
-    if (error) {
-      return callback(error, null);
-    }
-
-    client.write(buffer);
-
-    client.on('data', data => {
-      client.destroy();
-      return callback(null, data);
-    }).on('error', error => {
-      return callback(error, null);
+TuyaDevice.prototype._send = function (buffer) {
+  const me = this;
+  return new Promise((resolve, reject) => {
+    // Wait for device to become available
+    waitUntil(500, 40, () => {
+      return me.client.writable;
+    }, result => {
+      if (result === false) {
+        return reject(new Error('timeout'));
+      }
+      me.client.write(buffer);
+      me.client.on('data', data => {
+        return resolve(data);
+      });
     });
   });
+};
+
+TuyaDevice.prototype._destroy = function () {
+  this.client.end();
+  this.client.destroy();
+  return true;
 };
 
 module.exports = TuyaDevice;

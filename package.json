@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,10 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
+    "@codetheweb/recon": "^1.0.0",
     "net-retry-connect": "^0.1.1",
-    "node-forge": "^0.7.1"
+    "node-forge": "^0.7.1",
+    "wait-until": "0.0.2"
   },
   "devDependencies": {
     "documentation": "^5.3.3",
