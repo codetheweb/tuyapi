@@ -26,7 +26,6 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "@codetheweb/recon": "^1.0.0",
-    "net-retry-connect": "^0.1.1",
     "node-forge": "^0.7.1",
     "wait-until": "0.0.2"
   },
