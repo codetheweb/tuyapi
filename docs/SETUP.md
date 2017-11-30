@@ -35,3 +35,18 @@ Setup
   key: localKey
 }
 ```
+
+
+## Android
+
+Only requires an Android device. Root not required, this captures the stream from the Android application to the Jinvoo/Tuya web servers. It does NOT capture between Android device and remote control device.
+
+1) Remove registration for existing device if present
+
+2) Install "Packet Capture" https://play.google.com/store/apps/details?id=app.greyshirts.sslcapture (follow instructions, install cert, then start capturing, its possibly to use the green triangle/play button with a "1" on it to only capture from the Jinvoo app).
+
+3) Run Jinvoo Smart App to (re-)add device.
+
+4) Hit stop button back in "Packet Capture" app.
+
+5) review captured packets (first or last large one, 9Kb of 16Kb) use macOS step 11 for guide.
