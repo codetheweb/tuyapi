@@ -5,7 +5,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
 ## Installation
 
-  `npm install @codetheweb/tuyapi`
+  `npm install codetheweb/tuyapi`
 
 ## Basic Usage
 
