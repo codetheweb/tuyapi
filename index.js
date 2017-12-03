@@ -53,6 +53,7 @@ TuyaDevice.prototype.getStatus = function (callback) {
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(JSON.stringify(requests[this.type].status.command));
+  const prefixSum = thisData.toString('hex').length + requests[this.type].status.suffix.length;
   const buffer = Buffer.from(requests[this.type].status.prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
 
   this._send(buffer).then(data => {
