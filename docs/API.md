@@ -7,6 +7,7 @@ Docs
 -   [TuyaDevice](#tuyadevice)
     -   [getStatus](#getstatus)
     -   [setStatus](#setstatus)
+    -   [getSchema](#getschema)
     -   [destroy](#destroy)
 
 ## TuyaDevice
@@ -40,6 +41,12 @@ Sets the device's status.
 
 -   `on` **[boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** `true` for on, `false` for off
 -   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** returns `true` if the command succeeded
+
+### getSchema
+
+Gets control schema from device.
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** schema - object of parsed JSON
 
 ### destroy
 

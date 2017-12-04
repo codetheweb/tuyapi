@@ -157,6 +157,33 @@ TuyaDevice.prototype._constructBuffer = function (data, command) {
 };
 
 /**
+* Gets control schema from device.
+* @returns {Promise<Object>} schema - object of parsed JSON
+*/
+TuyaDevice.prototype.getSchema = function () {
+  // Create byte buffer from hex data
+  const thisData = Buffer.from(JSON.stringify({
+    gwId: this.id,
+    devId: this.id
+  }));
+  const buffer = this._constructBuffer(thisData, 'status');
+
+  return new Promise((resolve, reject) => {
+    this._send(buffer).then(data => {
+      // Extract returned JSON
+      try {
+        data = data.toString();
+        data = data.slice(data.indexOf('{'), data.lastIndexOf('}') + 1);
+        data = JSON.parse(data);
+        return resolve(data.dps);
+      } catch (err) {
+        return reject(err);
+      }
+    });
+  });
+};
+
+/**
 * Breaks connection to device and destroys socket.
 * @returns {True}
 */
