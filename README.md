@@ -5,7 +5,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
 ## Installation
 
-  `npm install @codetheweb/tuyapi`
+  `npm install codetheweb/tuyapi`
 
 ## Basic Usage
 
@@ -40,10 +40,11 @@ See the [setup instructions](docs/SETUP.md) for how to find the needed parameter
 ## Docs
 
 See the [docs](docs/API.md).
+**IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
-1.  Reuse a TCP connection between subsequent commands, instead of creating a new one every time.
+1.  ~~Reuse a TCP connection between subsequent commands, instead of creating a new one every time.~~
 2.  Figure out what the hex-encoded 'padding' is.
 3.  Autodiscovery of devices?
 

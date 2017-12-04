@@ -152,8 +152,11 @@ TuyaDevice.prototype._send = function (buffer) {
   });
 };
 
-
-TuyaDevice.prototype._destroy = function () {
+/**
+* Breaks connection to device and destroys socket.
+* @returns {True}
+*/
+TuyaDevice.prototype.destroy = function () {
   this.client.end();
   this.client.destroy();
   return true;
