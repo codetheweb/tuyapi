@@ -49,13 +49,18 @@ TuyaDevice.prototype.getStatus = function (callback) {
   }
   if ('devId' in requests[this.type].status.command) {
     requests[this.type].status.command.devId = this.id;
-  }
+  } 
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(JSON.stringify(requests[this.type].status.command));
-  const buffer = Buffer.from(requests[this.type].status.prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
+  // Create data prefix
+  const prefixSum = (thisData.toString('hex').length + requests[this.type].status.suffix.length) / 2;
+  const commandType = '0a';
+  const prefix = '000055aa0000006c000000' + commandType + '000000' + prefixSum.toString(16);
+  const buffer = Buffer.from(prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
 
-  this._send(buffer).then(data => {
+
+this._send(buffer).then(data => {
     // Extract returned JSON
     try {
       data = data.toString();
@@ -67,6 +72,8 @@ TuyaDevice.prototype.getStatus = function (callback) {
     }
   });
 };
+
+
 
 /**
 * Sets the device's status.
@@ -106,7 +113,12 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(this.version + md5 + data);
-  const buffer = Buffer.from(thisRequest.prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
+  // Create data prefix
+  const prefixSum = (thisData.toString('hex').length + requests[this.type].status.suffix.length) / 2;
+  const commandType = '07'; 
+  const prefix = '000055aa0000006c000000' + commandType + '000000' + prefixSum.toString(16);
+  const buffer = Buffer.from(prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
+
 
   // Send request to change status
   this._send(buffer).then(data => {
