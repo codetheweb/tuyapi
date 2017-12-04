@@ -7,6 +7,7 @@ Docs
 -   [TuyaDevice](#tuyadevice)
     -   [getStatus](#getstatus)
     -   [setStatus](#setstatus)
+    -   [destroy](#destroy)
 
 ## TuyaDevice
 
@@ -19,7 +20,7 @@ Represents a Tuya device.
     -   `options.ip` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** IP of device
     -   `options.port` **[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** port of device (optional, default `6668`)
     -   `options.id` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** ID of device
-    -   `options.uid` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** UID of device
+    -   `options.uid` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** UID of device (optional, default `''`)
     -   `options.key` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** encryption key of device
     -   `options.version` **[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** protocol version (optional, default `3.1`)
 
@@ -39,3 +40,9 @@ Sets the device's status.
 
 -   `on` **[boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** `true` for on, `false` for off
 -   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** returns `true` if the command succeeded
+
+### destroy
+
+Breaks connection to device and destroys socket.
+
+Returns **True** 

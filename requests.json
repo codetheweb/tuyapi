@@ -1,19 +1,18 @@
 {
   "outlet": {
     "status": {
-      "prefix": "000055aa000000000000000a00000046",
-      "command": {"gwId": "", "devId": ""},
-      "suffix": "000000000000aa55"
+      "hexByte": "0a",
+      "command": {"gwId": "", "devId": ""}
     },
     "on": {
-      "prefix": "000055aa00000000000000070000009b",
-      "command": {"devId": "", "dps": {"1": true}, "uid": "", "t": ""},
-      "suffix": "000000000000aa55"
+      "hexByte": "07",
+      "command": {"devId": "", "dps": {"1": true}, "uid": "", "t": ""}
     },
     "off": {
-      "prefix": "000055aa0000000000000007000000b3",
-      "command": {"devId": "", "dps": {"1": false}, "uid": "", "t": ""},
-      "suffix": "000000000000aa55"
-    }
+      "hexByte": "07",
+      "command": {"devId": "", "dps": {"1": false}, "uid": "", "t": ""}
+    },
+    "prefix": "000055aa00000000000000",
+    "suffix": "000000000000aa55"
   }
 }

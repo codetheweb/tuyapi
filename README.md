@@ -15,7 +15,6 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
       type: 'outlet',
       ip: 'xxx.yyy.0.zzz',
       id: 'xxxxxxxxxxxxxxxxxxxx',
-      uid: 'xxxxxxxxxxxxxxxxxxxx',
       key: 'xxxxxxxxxxxxxxxx'});
 
     tuya.getStatus(function(error, status) {
@@ -45,14 +44,19 @@ See the [docs](docs/API.md).
 ## TODO
 
 1.  ~~Reuse a TCP connection between subsequent commands, instead of creating a new one every time.~~
-2.  Figure out what the hex-encoded 'padding' is.
-3.  Autodiscovery of devices?
+2.  ~~Figure out what the hex-encoded 'padding' is.~~
+3.  Better documentation.
+4.  Support arbitrary control schemes for devices as self-reported.
+5.  Use Promises for all functions?
+6.  Autodiscovery of devices?
 
 ## Contributors
 
 -   [codetheweb](https://github.com/codetheweb)
 -   [blackrozes](https://github.com/blackrozes)
+-   [clach04](https://github.com/clach04)
+-   [jepsonrob](https://github.com/jepsonrob)
 
 ## Related
 
-[homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+-   [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices

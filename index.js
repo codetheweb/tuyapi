@@ -16,7 +16,7 @@ const requests = require('./requests.json');
 * @param {string} options.ip - IP of device
 * @param {number} [options.port=6668] - port of device
 * @param {string} options.id - ID of device
-* @param {string} options.uid - UID of device
+* @param {string} [options.uid=''] - UID of device
 * @param {string} options.key - encryption key of device
 * @param {number} [options.version=3.1] - protocol version
 */
@@ -26,7 +26,7 @@ function TuyaDevice(options) {
   this.ip = options.ip;
   this.port = options.port || 6668;
   this.id = options.id;
-  this.uid = options.uid;
+  this.uid = options.uid || '';
   this.key = options.key;
   this.version = options.version || 3.1;
 
@@ -49,18 +49,13 @@ TuyaDevice.prototype.getStatus = function (callback) {
   }
   if ('devId' in requests[this.type].status.command) {
     requests[this.type].status.command.devId = this.id;
-  } 
+  }
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(JSON.stringify(requests[this.type].status.command));
-  // Create data prefix
-  const prefixSum = (thisData.toString('hex').length + requests[this.type].status.suffix.length) / 2;
-  const commandType = '0a';
-  const prefix = '000055aa0000006c000000' + commandType + '000000' + prefixSum.toString(16);
-  const buffer = Buffer.from(prefix + thisData.toString('hex') + requests[this.type].status.suffix, 'hex');
+  const buffer = this._constructBuffer(thisData, 'status');
 
-
-this._send(buffer).then(data => {
+  this._send(buffer).then(data => {
     // Extract returned JSON
     try {
       data = data.toString();
@@ -72,8 +67,6 @@ this._send(buffer).then(data => {
     }
   });
 };
-
-
 
 /**
 * Sets the device's status.
@@ -113,12 +106,7 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(this.version + md5 + data);
-  // Create data prefix
-  const prefixSum = (thisData.toString('hex').length + requests[this.type].status.suffix.length) / 2;
-  const commandType = '07'; 
-  const prefix = '000055aa0000006c000000' + commandType + '000000' + prefixSum.toString(16);
-  const buffer = Buffer.from(prefix + thisData.toString('hex') + thisRequest.suffix, 'hex');
-
+  const buffer = this._constructBuffer(thisData, [on ? 'on' : 'off']);
 
   // Send request to change status
   this._send(buffer).then(data => {
@@ -150,6 +138,22 @@ TuyaDevice.prototype._send = function (buffer) {
       });
     });
   });
+};
+
+/**
+* Constructs a protocol-complient buffer given data and command.
+* @private
+* @param {String} data - data to put in buffer
+* @param {String} command - command (status, on, off, etc.)
+* @returns {Buffer} buffer - buffer of data
+*/
+TuyaDevice.prototype._constructBuffer = function (data, command) {
+  // Construct prefix of packet according to protocol
+  const prefixLength = (data.toString('hex').length + requests[this.type].suffix.length) / 2;
+  const prefix = requests[this.type].prefix + requests[this.type][command].hexByte + '000000' + prefixLength.toString(16);
+
+  // Create final buffer: prefix + data + suffix
+  return Buffer.from(prefix + data.toString('hex') + requests[this.type].suffix, 'hex');
 };
 
 /**
