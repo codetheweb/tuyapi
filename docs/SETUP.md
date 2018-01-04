@@ -39,6 +39,9 @@ Setup
 
 ## Android
 
+
+### Capture https traffic
+
 Only requires an Android device. Root not required, this captures the stream from the Android application to the Jinvoo/Tuya web servers. It does NOT capture between Android device and remote control device.
 
 1) Remove registration for existing device if present
@@ -50,3 +53,12 @@ Only requires an Android device. Root not required, this captures the stream fro
 4) Hit stop button back in "Packet Capture" app.
 
 5) review captured packets (first or last large one, 9Kb of 16Kb) use macOS step 11 for guide.
+
+### Extract details from android config file
+
+From https://github.com/codetheweb/tuyapi/issues/5#issuecomment-352932467
+
+If you have a rooted Android phone, you can retrieve the settings from the app (Smart Life) data storage. The keys/configured devices are located at /data/data/com.tuya.smartlife/shared_prefs/dev_data_storage.xml
+
+There's a string in there (the only data) called "tuya_data". You need to html entity decode the string and it contains a JSON string (yes, this is slightly ridiculous). Inside the JSON string are the keys.
+
