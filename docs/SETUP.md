@@ -48,7 +48,7 @@ Only requires an Android device. Root not required, this captures the stream fro
 
 2) Install "Packet Capture" https://play.google.com/store/apps/details?id=app.greyshirts.sslcapture (follow instructions, install cert, then start capturing, its possibly to use the green triangle/play button with a "1" on it to only capture from the Jinvoo app).
 
-3) Run Jinvoo Smart App to (re-)add device.
+3) Run Jinvoo Smart App (https://play.google.com/store/apps/details?id=com.xenon.jinvoo version 1.0.3 known to work) to (re-)add device.
 
 4) Hit stop button back in "Packet Capture" app.
 
@@ -56,9 +56,64 @@ Only requires an Android device. Root not required, this captures the stream fro
 
 ### Extract details from android config file
 
+
+#### Smart Life App
 From https://github.com/codetheweb/tuyapi/issues/5#issuecomment-352932467
 
 If you have a rooted Android phone, you can retrieve the settings from the app (Smart Life) data storage. The keys/configured devices are located at /data/data/com.tuya.smartlife/shared_prefs/dev_data_storage.xml
 
 There's a string in there (the only data) called "tuya_data". You need to html entity decode the string and it contains a JSON string (yes, this is slightly ridiculous). Inside the JSON string are the keys.
 
+#### Jinvoo Smart App
+
+The Jinvoo SMart app is similar to the Smart Life app but has a slightly different location. `/data/data/com.xenon.jinvoo/shared_prefs/gw_storage.xml`. Python script to dump out the information along with useful schema information:
+
+    #!/usr/bin/env python
+    # -*- coding: us-ascii -*-
+    # vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
+    #
+
+    import codecs
+    import os
+    import json
+    import xml.etree.ElementTree as ET
+
+    try:
+        # Python 2.6-2.7 
+        from HTMLParser import HTMLParser
+    except ImportError:
+        # Python 3
+        from html.parser import HTMLParser  ## FIXME use html.unescape()?
+
+
+    xml_in_filename = 'com.xenon.jinvoo/shared_prefs/gw_storage.xml'
+    h = open(xml_in_filename, 'r')
+    xml = h.read()
+    h.close()
+
+    builder = ET.XMLTreeBuilder()
+    builder.feed(xml)
+    tree = builder.close()
+
+
+    h = HTMLParser()
+    for entry in tree.findall('string'):
+        if entry.get('name') == 'gw_dev':
+            # found it, need content
+            config = entry.text
+            s = h.unescape(config)
+            config_dict = json.loads(s)
+            #print(config_dict)
+            print(len(config_dict))
+            for device in config_dict:
+                #print(device)
+                for key in ['name', 'localKey', 'uuid', 'gwType', 'verSw', 'iconUrl']:  # and/or 'gwId', 'devId'
+                    print('%s = %r' % (key, device[key]))
+                # there is a bunch of interesting meta data about the device
+                print('schema =\\')
+                schema = device['devices'][0]['schema']  # NOTE I've only seen single entries
+                schema = h.unescape(schema)
+                schema_dict = json.loads(schema)
+                print(json.dumps(schema_dict, indent=4))
+                print('')
+            print(json.dumps(config_dict, indent=4))
