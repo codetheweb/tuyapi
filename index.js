@@ -1,9 +1,9 @@
 'use strict';
 
 // Import packages
+const dgram = require('dgram');
 const forge = require('node-forge');
-const recon = require('@codetheweb/recon');
-const waitUntil = require('wait-until');
+const retryConnect = require('net-retry-connect');
 
 // Import requests for devices
 const requests = require('./requests.json');
@@ -21,21 +21,40 @@ const requests = require('./requests.json');
 * @param {number} [options.version=3.1] - protocol version
 */
 function TuyaDevice(options) {
-  // Init properties
-  this.type = options.type || 'outlet';
-  this.ip = options.ip;
-  this.port = options.port || 6668;
-  this.id = options.id;
-  this.uid = options.uid || '';
-  this.key = options.key;
-  this.version = options.version || 3.1;
+  this.devices = [];
+  const needIP = [];
 
-  // Create cipher object
-  this.cipher = forge.cipher.createCipher('AES-ECB', this.key);
+  // If argument is [{id: '', key: ''}]
+  if (options.constructor === Array) {
+    options.forEach(function (device) {
+      if (device.ip === undefined) {
+        needIP.push(device.id);
+      } else {
+        this.devices.push(device);
+      }
+    });
 
-  // Create connection
-  // this.client = new connect({host: this.ip, port: this.port});
-  this.client = recon(this.ip, this.port, {retryErrors: ['ECONNREFUSED', 'ECONNRESET']});
+    this.discoverDevices(needIP).then(devices => {
+      this.devices.push(devices);
+    });
+  }
+  // If argument is {id: '', key: ''}
+  else if (options.constructor === Object) {
+    if (options.ip === undefined) {
+      this.discoverDevices(options.id).then(device => {
+        this.devices.push(device);
+      });
+    } else {
+      this.devices.push({
+        type: options.type || 'outlet',
+        ip: options.ip,
+        port: options.port || 6668,
+        key: options.key,
+        cipher: forge.cipher.createCipher('AES-ECB', options.key),
+        version: options.version || 3.1
+      });
+    }
+  }
 }
 
 /**
@@ -123,18 +142,19 @@ TuyaDevice.prototype.setStatus = function (on, callback) {
 * @returns {Promise<string>} - returned data
 */
 TuyaDevice.prototype._send = function (buffer) {
-  const me = this;
   return new Promise((resolve, reject) => {
-    // Wait for device to become available
-    waitUntil(500, 40, () => {
-      return me.client.writable;
-    }, result => {
-      if (result === false) {
-        return reject(new Error('timeout'));
+    retryConnect.to({port: 6668, host: this.ip, retryOptions: {retries: 5}}, (error, client) => {
+      if (error) {
+        reject(error);
       }
-      me.client.write(buffer);
-      me.client.on('data', data => {
-        return resolve(data);
+      client.write(buffer);
+
+      client.on('data', data => {
+        client.destroy();
+        resolve(data);
+      });
+      client.on('error', error => {
+        reject(error);
       });
     });
   });
@@ -184,13 +204,47 @@ TuyaDevice.prototype.getSchema = function () {
 };
 
 /**
-* Breaks connection to device and destroys socket.
-* @returns {True}
+* Attempts to autodiscover devices (i.e. translate device ID to IP).
+* @param {Array} IDs - can be a single ID or an array of IDs
+* @returns {Promise<object>} devices - discovered devices
 */
-TuyaDevice.prototype.destroy = function () {
-  this.client.end();
-  this.client.destroy();
-  return true;
+TuyaDevice.prototype.discoverDevices = function (ids, callback) {
+  // Create new listener if it hasn't already been created
+  if (this.listener == undefined) {
+    this.listener = dgram.createSocket('udp4');
+    this.listener.bind(6666);
+  }
+
+  const discoveredDevices = [];
+
+  // If input is '...' change it to ['...'] for ease of use
+  if (typeof (ids) === 'string') {
+    ids = [ids];
+  }
+
+  return new Promise((resolve, reject) => {
+    this.listener.on('message', (message, info) => {
+      if (discoveredDevices.length < ids.length) {
+        if (ids.includes(this._extractJSON(message).gwId)) {
+          discoveredDevices.push(this._extractJSON(message));
+        }
+      } else { // All IDs have been resolved
+        resolve(discoveredDevices);
+      }
+    });
+  });
+};
+
+/**
+* Extracts JSON from a raw buffer and returns it as an object.
+* @param {Buffer} buffer of data
+* @returns {Object} extracted object
+*/
+TuyaDevice.prototype._extractJSON = function (data) {
+  data = data.toString();
+  data = data.slice(data.indexOf('{'), data.lastIndexOf('"}') + 2);
+  data = JSON.parse(data);
+  return data;
 };
 
 module.exports = TuyaDevice;

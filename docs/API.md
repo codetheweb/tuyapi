@@ -8,7 +8,8 @@ Docs
     -   [getStatus](#getstatus)
     -   [setStatus](#setstatus)
     -   [getSchema](#getschema)
-    -   [destroy](#destroy)
+    -   [discoverDevices](#discoverdevices)
+    -   [\_extractJSON](#_extractjson)
 
 ## TuyaDevice
 
@@ -48,8 +49,25 @@ Gets control schema from device.
 
 Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** schema - object of parsed JSON
 
-### destroy
+### discoverDevices
 
-Breaks connection to device and destroys socket.
+Attempts to autodiscover devices (i.e. translate device ID to IP).
 
-Returns **True** 
+**Parameters**
+
+-   `ids`  
+-   `callback`  
+-   `IDs` **[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)** can be a single ID or an array of IDs
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** devices - discovered devices
+
+### \_extractJSON
+
+Extracts JSON from a raw buffer and returns it as an object.
+
+**Parameters**
+
+-   `data`  
+-   `buffer` **[Buffer](https://nodejs.org/api/buffer.html)** of data
+
+Returns **[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)** extracted object
