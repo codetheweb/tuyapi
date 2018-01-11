@@ -26,7 +26,8 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "net-retry-connect": "^0.1.1",
-    "node-forge": "^0.7.1"
+    "node-forge": "^0.7.1",
+    "string-occurrence": "^1.2.0"
   },
   "devDependencies": {
     "documentation": "^5.3.3",

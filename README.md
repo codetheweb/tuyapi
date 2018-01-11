@@ -49,6 +49,7 @@ See the [docs](docs/API.md).
 4.  Support arbitrary control schemes for devices as self-reported.
 5.  Use Promises for all functions?
 6.  Autodiscovery of devices?
+7.  Make the JSON parser more reliable.
 
 ## Contributors
 
