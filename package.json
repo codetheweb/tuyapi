@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
