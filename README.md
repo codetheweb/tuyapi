@@ -43,13 +43,11 @@ See the [docs](docs/API.md).
 
 ## TODO
 
-1.  ~~Reuse a TCP connection between subsequent commands, instead of creating a new one every time.~~
-2.  ~~Figure out what the hex-encoded 'padding' is.~~
 3.  Better documentation.
 4.  Support arbitrary control schemes for devices as self-reported.
 5.  Use Promises for all functions?
-6.  Autodiscovery of devices?
-7.  Make the JSON parser more reliable.
+7.  Add automated tests
+8.  Document details of protocol
 
 ## Contributors
 

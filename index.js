@@ -24,23 +24,28 @@ const requests = require('./requests.json');
 function TuyaDevice(options) {
   this.devices = [];
 
-  // If argument is [{id: '', key: ''}]
-  if (options.constructor === Array) {
+  if (options.constructor === Array) { // If argument is [{id: '', key: ''}]
     this.devices = options;
-  }
-
-  // If argument is {id: '', key: ''}
-  else if (options.constructor === Object) {
+  } else if (options.constructor === Object) { // If argument is {id: '', key: ''}
     this.devices = [options];
   }
 
-  // standardize devices array
-  for (var i = 0; i < this.devices.length; i++) {
-    if (this.devices[i].type    === undefined) { this.devices[i].type    = 'outlet'; }
-    if (this.devices[i].port    === undefined) { this.devices[i].port    = 6668; }
-    if (this.devices[i].version === undefined) { this.devices[i].version = 3.1; }
+  // Standardize devices array
+  for (let i = 0; i < this.devices.length; i++) {
+    if (this.devices[i].type === undefined) {
+      this.devices[i].type = 'outlet';
+    }
+    if (this.devices[i].uid === undefined) {
+      this.devices[i].uid = '';
+    }
+    if (this.devices[i].port === undefined) {
+      this.devices[i].port = 6668;
+    }
+    if (this.devices[i].version === undefined) {
+      this.devices[i].version = 3.1;
+    }
 
-    // create cipher from key
+    // Create cipher from key
     this.devices[i].cipher = forge.cipher.createCipher('AES-ECB', this.devices[i].key);
   }
 }
@@ -49,43 +54,44 @@ function TuyaDevice(options) {
 * Resolves IDs stored in class to IPs.
 * @returns {Promise<Boolean>} - true if IPs were found and devices are ready to be used
 */
-TuyaDevice.prototype.resolveIds = function() {
-  // Create new listener if it hasn't already been created
-  if (this.listener == undefined) {
-    this.listener = dgram.createSocket('udp4');
-    this.listener.bind(6666);
-  }
+TuyaDevice.prototype.resolveIds = function () {
+  // Create new listener
+  this.listener = dgram.createSocket('udp4');
+  this.listener.bind(6666);
 
-  // find devices that need an IP
-  var needIP = [];
-  for (var i = 0; i < this.devices.length; i++) {
-    if (this.devices[i].ip == undefined) {
+  // Find devices that need an IP
+  const needIP = [];
+  for (let i = 0; i < this.devices.length; i++) {
+    if (this.devices[i].ip === undefined) {
       needIP.push(this.devices[i].id);
     }
   }
 
-  // todo: add timeout for when IP cannot be found, then reject(with error)
+  // Todo: add timeout for when IP cannot be found, then reject(with error)
   // add IPs to devices in array and return true
-  return new Promise((resolve, reject) => {
-    this.listener.on('message', (message, info) => {
-      let thisId = this._extractJSON(message).gwId;
+  return new Promise(resolve => {
+    this.listener.on('message', message => {
+      const thisId = this._extractJSON(message).gwId;
 
       if (needIP.length > 0) {
         if (needIP.includes(thisId)) {
-          var deviceIndex = this.devices.findIndex(device => {
-            if (device.id === thisId) { return true; }
+          const deviceIndex = this.devices.findIndex(device => {
+            if (device.id === thisId) {
+              return true;
+            }
+            return false;
           });
 
           this.devices[deviceIndex].ip = this._extractJSON(message).ip;
 
           needIP.splice(needIP.indexOf(thisId), 1);
         }
-      }
-      else { // all devices have been resolved
+      } else { // All devices have been resolved
+        this.listener.close();
         this.listener.removeAllListeners();
         resolve(true);
       }
-    })
+    });
   });
 };
 
@@ -95,18 +101,20 @@ TuyaDevice.prototype.resolveIds = function() {
 * @param {function(error, result)} callback
 */
 TuyaDevice.prototype.get = function (options) {
-  var currentDevice;
+  let currentDevice;
 
   // If no ID is provided
   if (options === undefined || options.id === undefined) {
-    currentDevice = this.devices[0]; // use first device in array
-  }
-  else { // otherwise
+    currentDevice = this.devices[0]; // Use first device in array
+  } else { // Otherwise
     // find the device by id in this.devices
-    let index = this.devices.findIndex(device => {
-      if (device.id === options.id) { return true; }
+    const index = this.devices.findIndex(device => {
+      if (device.id === options.id) {
+        return true;
+      }
+      return false;
     });
-    currentDevice = this.devices[index]
+    currentDevice = this.devices[index];
   }
 
   // Add data to command
@@ -121,16 +129,15 @@ TuyaDevice.prototype.get = function (options) {
   const thisData = Buffer.from(JSON.stringify(requests[currentDevice.type].status.command));
   const buffer = this._constructBuffer(currentDevice.type, thisData, 'status');
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     this._send(currentDevice.ip, buffer).then(data => {
       // Extract returned JSON
       data = this._extractJSON(data);
 
-      if (options != undefined && options.schema == true) {
+      if (options !== undefined && options.schema === true) {
         resolve(data);
-      }
-      else {
-        resolve(data.dps['1'])
+      } else {
+        resolve(data.dps['1']);
       }
     });
   });
@@ -139,48 +146,73 @@ TuyaDevice.prototype.get = function (options) {
 /**
 * Sets the device's status.
 * @param {boolean} on - `true` for on, `false` for off
+* {id, set: true|false, dps:1}
 * @param {function(error, result)} callback - returns `true` if the command succeeded
 */
-TuyaDevice.prototype.setStatus = function (on, callback) {
-  const thisRequest = requests[this.type][on ? 'on' : 'off'];
+TuyaDevice.prototype.set = function (options) {
+  let currentDevice;
+
+  // If no ID is provided
+  if (options === undefined || options.id === undefined) {
+    currentDevice = this.devices[0]; // Use first device in array
+  } else { // Otherwise
+    // find the device by id in this.devices
+    const index = this.devices.findIndex(device => {
+      if (device.id === options.id) {
+        return true;
+      }
+      return false;
+    });
+    currentDevice = this.devices[index];
+  }
+
+  const thisRequest = requests[currentDevice.type].set.command;
 
   // Add data to command
   const now = new Date();
-  if ('gwId' in thisRequest.command) {
-    thisRequest.command.gwId = this.id;
+  if ('gwId' in thisRequest) {
+    thisRequest.gwId = currentDevice.id;
   }
-  if ('devId' in thisRequest.command) {
-    thisRequest.command.devId = this.id;
+  if ('devId' in thisRequest) {
+    thisRequest.devId = currentDevice.id;
   }
-  if ('uid' in thisRequest.command) {
-    thisRequest.command.uid = this.uid;
+  if ('uid' in thisRequest) {
+    thisRequest.uid = currentDevice.uid;
   }
-  if ('t' in thisRequest.command) {
-    thisRequest.command.t = (parseInt(now.getTime() / 1000, 10)).toString();
+  if ('t' in thisRequest) {
+    thisRequest.t = (parseInt(now.getTime() / 1000, 10)).toString();
+  }
+
+  if (options.dps === undefined) {
+    thisRequest.dps = {1: options.set};
+  } else {
+    thisRequest.dps[options.dps.toString] = options.set;
   }
 
   // Encrypt data
-  this.cipher.start({iv: ''});
-  this.cipher.update(forge.util.createBuffer(JSON.stringify(thisRequest.command), 'utf8'));
-  this.cipher.finish();
+  currentDevice.cipher.start({iv: ''});
+  currentDevice.cipher.update(forge.util.createBuffer(JSON.stringify(thisRequest), 'utf8'));
+  currentDevice.cipher.finish();
 
   // Encode binary data to Base64
-  const data = forge.util.encode64(this.cipher.output.data);
+  const data = forge.util.encode64(currentDevice.cipher.output.data);
 
   // Create MD5 signature
-  const preMd5String = 'data=' + data + '||lpv=' + this.version + '||' + this.key;
+  const preMd5String = 'data=' + data + '||lpv=' + currentDevice.version + '||' + currentDevice.key;
   const md5hash = forge.md.md5.create().update(preMd5String).digest().toHex();
   const md5 = md5hash.toString().toLowerCase().substr(8, 16);
 
   // Create byte buffer from hex data
-  const thisData = Buffer.from(this.version + md5 + data);
-  const buffer = this._constructBuffer(thisData, [on ? 'on' : 'off']);
+  const thisData = Buffer.from(currentDevice.version + md5 + data);
+  const buffer = this._constructBuffer(currentDevice.type, thisData, 'set');
 
   // Send request to change status
-  this._send(buffer).then(data => {
-    return callback(null, true);
-  }).catch(err => {
-    return callback(err, null);
+  return new Promise((resolve, reject) => {
+    this._send(currentDevice.ip, buffer).then(() => {
+      resolve(true);
+    }).catch(err => {
+      reject(err);
+    });
   });
 };
 
@@ -228,33 +260,6 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 };
 
 /**
-* Gets control schema from device.
-* @returns {Promise<Object>} schema - object of parsed JSON
-*/
-TuyaDevice.prototype.getSchema = function () {
-  // Create byte buffer from hex data
-  const thisData = Buffer.from(JSON.stringify({
-    gwId: this.id,
-    devId: this.id
-  }));
-  const buffer = this._constructBuffer(thisData, 'status');
-
-  return new Promise((resolve, reject) => {
-    this._send(buffer).then(data => {
-      // Extract returned JSON
-      try {
-        data = data.toString();
-        data = data.slice(data.indexOf('{'), data.lastIndexOf('}') + 1);
-        data = JSON.parse(data);
-        return resolve(data.dps);
-      } catch (err) {
-        return reject(err);
-      }
-    });
-  });
-};
-
-/**
 * Extracts JSON from a raw buffer and returns it as an object.
 * @param {Buffer} buffer of data
 * @returns {Object} extracted object
@@ -263,20 +268,19 @@ TuyaDevice.prototype._extractJSON = function (data) {
   data = data.toString();
 
   // Find the # of occurrences of '{' and make that # match with the # of occurrences of '}'
-  var leftBrackets = stringOccurrence(data, '{');
+  const leftBrackets = stringOccurrence(data, '{');
   let occurrences = 0;
   let currentIndex = 0;
 
   while (occurrences < leftBrackets) {
-    let index = data.indexOf('}', currentIndex + 1);
-    if (index != -1) {
+    const index = data.indexOf('}', currentIndex + 1);
+    if (index !== -1) {
       currentIndex = index;
-      occurrences ++;
+      occurrences++;
     }
   }
 
   data = data.slice(data.indexOf('{'), currentIndex + 1);
-  console.log(data)
   data = JSON.parse(data);
   return data;
 };

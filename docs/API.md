@@ -5,10 +5,9 @@ Docs
 ### Table of Contents
 
 -   [TuyaDevice](#tuyadevice)
-    -   [getStatus](#getstatus)
-    -   [setStatus](#setstatus)
-    -   [getSchema](#getschema)
-    -   [discoverDevices](#discoverdevices)
+    -   [resolveIds](#resolveids)
+    -   [get](#get)
+    -   [set](#set)
     -   [\_extractJSON](#_extractjson)
 
 ## TuyaDevice
@@ -26,40 +25,32 @@ Represents a Tuya device.
     -   `options.key` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** encryption key of device
     -   `options.version` **[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** protocol version (optional, default `3.1`)
 
-### getStatus
+### resolveIds
 
-Gets the device's current status.
+Resolves IDs stored in class to IPs.
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** true if IPs were found and devices are ready to be used
+
+### get
+
+Gets the device's current status. Defaults to returning only the first 'dps', but by setting {schema: true} you can get everything.
 
 **Parameters**
 
+-   `options`  
+-   `ID` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** optional, ID of device. Defaults to first device.
 -   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** 
 
-### setStatus
+### set
 
 Sets the device's status.
 
 **Parameters**
 
+-   `options`  
 -   `on` **[boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** `true` for on, `false` for off
+    {id, set: true|false, dps:1}
 -   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** returns `true` if the command succeeded
-
-### getSchema
-
-Gets control schema from device.
-
-Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** schema - object of parsed JSON
-
-### discoverDevices
-
-Attempts to autodiscover devices (i.e. translate device ID to IP).
-
-**Parameters**
-
--   `ids`  
--   `callback`  
--   `IDs` **[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)** can be a single ID or an array of IDs
-
-Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** devices - discovered devices
 
 ### \_extractJSON
 
