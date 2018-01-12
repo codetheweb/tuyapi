@@ -11,15 +11,21 @@ const requests = require('./requests.json');
 
 /**
 * Represents a Tuya device.
-* @constructor
+* @class
 * @param {Object} options - options for constructing a TuyaDevice
-* @param {string} [options.type='outlet'] - type of device
-* @param {string} options.ip - IP of device
-* @param {number} [options.port=6668] - port of device
-* @param {string} options.id - ID of device
-* @param {string} [options.uid=''] - UID of device
-* @param {string} options.key - encryption key of device
-* @param {number} [options.version=3.1] - protocol version
+* @param {String} [options.type='outlet'] - type of device
+* @param {String} [options.ip] - IP of device
+* @param {Number} [options.port=6668] - port of device
+* @param {String} options.id - ID of device
+* @param {String} [options.uid=''] - UID of device
+* @param {String} options.key - encryption key of device
+* @param {Number} [options.version=3.1] - protocol version
+* @example
+* const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
+* @example
+* const tuya = new TuyaDevice([
+* {id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'},
+* {id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'}])
 */
 function TuyaDevice(options) {
   this.devices = [];
@@ -51,7 +57,8 @@ function TuyaDevice(options) {
 }
 
 /**
-* Resolves IDs stored in class to IPs.
+* Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
+* you must call this before doing anything else.
 * @returns {Promise<Boolean>} - true if IPs were found and devices are ready to be used
 */
 TuyaDevice.prototype.resolveIds = function () {
@@ -96,9 +103,21 @@ TuyaDevice.prototype.resolveIds = function () {
 };
 
 /**
-* Gets the device's current status. Defaults to returning only the first 'dps', but by setting {schema: true} you can get everything.
-* @param {string} ID - optional, ID of device. Defaults to first device.
-* @param {function(error, result)} callback
+* Gets the device's current status. Defaults to returning only the value of the first result,
+* but by setting {schema: true} you can get everything.
+* @param {Object} [options] - optional options for getting data
+* @param {String} [options.id] - ID of device
+* @param {Boolean} [options.schema] - true to return entire schema, not just the first result
+* @example
+* // get status for device with one property
+* tuya.get().then(status => console.log(status))
+* @example
+* // get status for specific device with one property
+* tuya.get({id: 'xxxxxxxxxxxxxxxxxxxx'}).then(status => console.log(status))
+* @example
+* // get all available data from device
+* tuya.get({schema: true}).then(data => console.log(data))
+* @returns {Promise<Object>} - returns boolean if no options are provided, otherwise returns object of results
 */
 TuyaDevice.prototype.get = function (options) {
   let currentDevice;
@@ -145,9 +164,17 @@ TuyaDevice.prototype.get = function (options) {
 
 /**
 * Sets the device's status.
-* @param {boolean} on - `true` for on, `false` for off
-* {id, set: true|false, dps:1}
-* @param {function(error, result)} callback - returns `true` if the command succeeded
+* @param {Object} options - options for setting properties
+* @param {String} [options.id] - ID of device
+* @param {Boolean} options.set - `true` for on, `false` for off
+* @param {Number} [options.dps] - dps index to change
+* @example
+* // set default property on default device
+* tuya.set({set: true}).then(() => console.log('device was changed'))
+* @example
+* // set custom property on non-default device
+* tuya.set({id: 'xxxxxxxxxxxxxxxxxxxx', 'dps': 2, set: true}).then(() => console.log('device was changed'))
+* @returns {Promise<Boolean>} - returns `true` if the command succeeded
 */
 TuyaDevice.prototype.set = function (options) {
   let currentDevice;
@@ -261,6 +288,7 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 
 /**
 * Extracts JSON from a raw buffer and returns it as an object.
+* @private
 * @param {Buffer} buffer of data
 * @returns {Object} extracted object
 */

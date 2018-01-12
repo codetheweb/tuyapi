@@ -36,18 +36,18 @@ This should report the current status, set the device to the opposite of what it
 
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
-## Docs
+## 📓 Docs
 
 See the [docs](docs/API.md).
+
 **IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
 3.  Better documentation.
-4.  Support arbitrary control schemes for devices as self-reported.
-5.  Use Promises for all functions?
 7.  Add automated tests
 8.  Document details of protocol
+9.  Add error message for no IP
 
 ## Contributors
 
