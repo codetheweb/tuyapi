@@ -9,26 +9,26 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
 ## Basic Usage
 ```javascript
-    const TuyaDevice = require('tuyapi');
+const TuyaDevice = require('tuyapi');
 
-    let tuya = new TuyaDevice({
-      id: 'xxxxxxxxxxxxxxxxxxxx',
-      key: 'xxxxxxxxxxxxxxxx'});
+let tuya = new TuyaDevice({
+  id: 'xxxxxxxxxxxxxxxxxxxx',
+  key: 'xxxxxxxxxxxxxxxx'});
 
-    tuya.resolveIds().then(() => {  
+tuya.resolveIds().then(() => {  
+  tuya.get().then(status => {
+    console.log('Status: ' + status);
+
+    tuya.set({set: !status}).then(result => {
+      console.log('Result of setting status to ' + !status + ': ' + result);
+
       tuya.get().then(status => {
-        console.log('Status: ' + status);
-
-        tuya.set({set: !status}).then(result => {
-          console.log('Result of setting status to ' + !status + ': ' + result);
-
-          tuya.get().then(status => {
-            console.log('New status: ' + status);
-            return;
-          });
-        });
+        console.log('New status: ' + status);
+        return;
       });
     });
+  });
+});
 ```
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
