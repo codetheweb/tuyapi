@@ -8,7 +8,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
   `npm install codetheweb/tuyapi`
 
 ## Basic Usage
-
+```javascript
     const TuyaDevice = require('tuyapi');
 
     let tuya = new TuyaDevice({
@@ -29,7 +29,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
         });
       });
     });
-
+```
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
 
