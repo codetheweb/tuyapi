@@ -57,3 +57,5 @@ See the [docs](docs/API.md).
 ## Related
 
 -   [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+-	[python-tuya](https://github.com/clach04/python-tuya) a Python port by [clach04](https://github.com/clach04)
+-	[m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
