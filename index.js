@@ -38,6 +38,12 @@ function TuyaDevice(options) {
 
   // Standardize devices array
   for (let i = 0; i < this.devices.length; i++) {
+    if (this.devices[i].id === undefined) {
+      throw new Error('ID is missing from device.');
+    }
+    if (this.devices[i].key === undefined) {
+      throw new Error('Encryption key is missing from device with ID ' + this.devices[i].id + '.');
+    }
     if (this.devices[i].type === undefined) {
       this.devices[i].type = 'outlet';
     }
@@ -103,7 +109,7 @@ TuyaDevice.prototype.resolveIds = function () {
 };
 
 /**
-* Gets the device's current status. Defaults to returning only the value of the first result,
+* Gets a device's current status. Defaults to returning only the value of the first result,
 * but by setting {schema: true} you can get everything.
 * @param {Object} [options] - optional options for getting data
 * @param {String} [options.id] - ID of device
@@ -148,7 +154,7 @@ TuyaDevice.prototype.get = function (options) {
   const thisData = Buffer.from(JSON.stringify(requests[currentDevice.type].status.command));
   const buffer = this._constructBuffer(currentDevice.type, thisData, 'status');
 
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     this._send(currentDevice.ip, buffer).then(data => {
       // Extract returned JSON
       data = this._extractJSON(data);
@@ -158,12 +164,14 @@ TuyaDevice.prototype.get = function (options) {
       } else {
         resolve(data.dps['1']);
       }
+    }).catch(error => {
+      reject(error);
     });
   });
 };
 
 /**
-* Sets the device's status.
+* Sets a property on a device.
 * @param {Object} options - options for setting properties
 * @param {String} [options.id] - ID of device
 * @param {Boolean} options.set - `true` for on, `false` for off
@@ -244,7 +252,7 @@ TuyaDevice.prototype.set = function (options) {
 };
 
 /**
-* Sends a query to the device.
+* Sends a query to a device.
 * @private
 * @param {String} ip - IP of device
 * @param {Buffer} buffer - buffer of data
@@ -263,6 +271,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
         resolve(data);
       });
       client.on('error', error => {
+        error.message = "Error communicating with device. Make sure nothing else is trying to control it or connected to it."
         reject(error);
       });
     });
@@ -274,7 +283,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 * @private
 * @param {String} type - type of device
 * @param {String} data - data to put in buffer
-* @param {String} command - command (status, on, off, etc.)
+* @param {String} command - command (status || set)
 * @returns {Buffer} buffer - buffer of data
 */
 TuyaDevice.prototype._constructBuffer = function (type, data, command) {
@@ -289,7 +298,7 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 /**
 * Extracts JSON from a raw buffer and returns it as an object.
 * @private
-* @param {Buffer} buffer of data
+* @param {Buffer} data - buffer of data
 * @returns {Object} extracted object
 */
 TuyaDevice.prototype._extractJSON = function (data) {

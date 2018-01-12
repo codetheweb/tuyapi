@@ -38,13 +38,14 @@ const tuya = new TuyaDevice([
 
 ### resolveIds
 
-Resolves IDs stored in class to IPs.
+Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
+you must call this before doing anything else.
 
 Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** true if IPs were found and devices are ready to be used
 
 ### get
 
-Gets the device's current status. Defaults to returning only the value of the first result,
+Gets a device's current status. Defaults to returning only the value of the first result,
 but by setting {schema: true} you can get everything.
 
 **Parameters**
@@ -74,7 +75,7 @@ Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Refe
 
 ### set
 
-Sets the device's status.
+Sets a property on a device.
 
 **Parameters**
 

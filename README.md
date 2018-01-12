@@ -11,26 +11,23 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
 
     const TuyaDevice = require('tuyapi');
 
-    var tuya = new TuyaDevice({
-      type: 'outlet',
-      ip: 'xxx.yyy.0.zzz',
+    let tuya = new TuyaDevice({
       id: 'xxxxxxxxxxxxxxxxxxxx',
       key: 'xxxxxxxxxxxxxxxx'});
 
-    tuya.getStatus(function(error, status) {
-      if (error) { return console.log(error); }
-      console.log('Status: ' + status);
+      tuya.get().then(status => {
+        console.log('Status: ' + status);
 
-      tuya.setStatus(!status, function(error, result) {
-        if (error) { return console.log(error); }
-        console.log('Result of setting status to ' + !status + ': ' + result);
+        tuya.set({set: !status}).then(result => {
+          console.log('Result of setting status to ' + !status + ': ' + result);
 
-        tuya.getStatus(function(error, status) {
-          if (error) { return console.log(error); }
-          console.log('New status: ' + status);
+          tuya.get().then(status => {
+            console.log('New status: ' + status);
+            return;
+          });
         });
       });
-    });
+
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
 
@@ -44,10 +41,9 @@ See the [docs](docs/API.md).
 
 ## TODO
 
-3.  Better documentation.
-7.  Add automated tests
-8.  Document details of protocol
-9.  Add error message for no IP
+1.  Add automated tests
+2.  Document details of protocol
+3.  Retry when ECONNRESET is thrown
 
 ## Contributors
 
