@@ -15,6 +15,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
       id: 'xxxxxxxxxxxxxxxxxxxx',
       key: 'xxxxxxxxxxxxxxxx'});
 
+    tuya.resolveIds().then(() => {  
       tuya.get().then(status => {
         console.log('Status: ' + status);
 
@@ -27,6 +28,7 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
           });
         });
       });
+    });
 
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.

@@ -164,8 +164,8 @@ TuyaDevice.prototype.get = function (options) {
       } else {
         resolve(data.dps['1']);
       }
-    }).catch(error => {
-      reject(error);
+    }).catch(err => {
+      reject(err);
     });
   });
 };
@@ -271,7 +271,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
         resolve(data);
       });
       client.on('error', error => {
-        error.message = "Error communicating with device. Make sure nothing else is trying to control it or connected to it."
+        error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
         reject(error);
       });
     });
