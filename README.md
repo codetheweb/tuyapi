@@ -8,47 +8,44 @@ Currently only supports smart plugs, but it should be fairly trivial to add othe
   `npm install codetheweb/tuyapi`
 
 ## Basic Usage
+```javascript
+const TuyaDevice = require('tuyapi');
 
-    const TuyaDevice = require('tuyapi');
+let tuya = new TuyaDevice({
+  id: 'xxxxxxxxxxxxxxxxxxxx',
+  key: 'xxxxxxxxxxxxxxxx'});
 
-    var tuya = new TuyaDevice({
-      type: 'outlet',
-      ip: 'xxx.yyy.0.zzz',
-      id: 'xxxxxxxxxxxxxxxxxxxx',
-      key: 'xxxxxxxxxxxxxxxx'});
+tuya.resolveIds().then(() => {  
+  tuya.get().then(status => {
+    console.log('Status: ' + status);
 
-    tuya.getStatus(function(error, status) {
-      if (error) { return console.log(error); }
-      console.log('Status: ' + status);
+    tuya.set({set: !status}).then(result => {
+      console.log('Result of setting status to ' + !status + ': ' + result);
 
-      tuya.setStatus(!status, function(error, result) {
-        if (error) { return console.log(error); }
-        console.log('Result of setting status to ' + !status + ': ' + result);
-
-        tuya.getStatus(function(error, status) {
-          if (error) { return console.log(error); }
-          console.log('New status: ' + status);
-        });
+      tuya.get().then(status => {
+        console.log('New status: ' + status);
+        return;
       });
     });
+  });
+});
+```
 
 This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
 
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
-## Docs
+## 📓 Docs
 
 See the [docs](docs/API.md).
+
 **IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
-1.  ~~Reuse a TCP connection between subsequent commands, instead of creating a new one every time.~~
-2.  ~~Figure out what the hex-encoded 'padding' is.~~
-3.  Better documentation.
-4.  Support arbitrary control schemes for devices as self-reported.
-5.  Use Promises for all functions?
-6.  Autodiscovery of devices?
+1.  Add automated tests
+2.  Document details of protocol
+3.  Retry when ECONNRESET is thrown
 
 ## Contributors
 
@@ -60,3 +57,5 @@ See the [docs](docs/API.md).
 ## Related
 
 -   [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+-	[python-tuya](https://github.com/clach04/python-tuya) a Python port by [clach04](https://github.com/clach04)
+-	[m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)

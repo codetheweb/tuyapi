@@ -5,10 +5,9 @@ Docs
 ### Table of Contents
 
 -   [TuyaDevice](#tuyadevice)
-    -   [getStatus](#getstatus)
-    -   [setStatus](#setstatus)
-    -   [getSchema](#getschema)
-    -   [destroy](#destroy)
+    -   [resolveIds](#resolveids)
+    -   [get](#get)
+    -   [set](#set)
 
 ## TuyaDevice
 
@@ -17,39 +16,84 @@ Represents a Tuya device.
 **Parameters**
 
 -   `options` **[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)** options for constructing a TuyaDevice
-    -   `options.type` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** type of device (optional, default `'outlet'`)
-    -   `options.ip` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** IP of device
-    -   `options.port` **[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** port of device (optional, default `6668`)
-    -   `options.id` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** ID of device
-    -   `options.uid` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** UID of device (optional, default `''`)
-    -   `options.key` **[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** encryption key of device
-    -   `options.version` **[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** protocol version (optional, default `3.1`)
+    -   `options.type` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** type of device (optional, default `'outlet'`)
+    -   `options.ip` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** IP of device
+    -   `options.port` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** port of device (optional, default `6668`)
+    -   `options.id` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** ID of device
+    -   `options.uid` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** UID of device (optional, default `''`)
+    -   `options.key` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)** encryption key of device
+    -   `options.version` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** protocol version (optional, default `3.1`)
 
-### getStatus
+**Examples**
 
-Gets the device's current status.
+```javascript
+const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
+```
+
+```javascript
+const tuya = new TuyaDevice([
+{id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'},
+{id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'}])
+```
+
+### resolveIds
+
+Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
+you must call this before doing anything else.
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** true if IPs were found and devices are ready to be used
+
+### get
+
+Gets a device's current status. Defaults to returning only the value of the first result,
+but by setting {schema: true} you can get everything.
 
 **Parameters**
 
--   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** 
+-   `options` **[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)?** optional options for getting data
+    -   `options.id` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** ID of device
+    -   `options.schema` **[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** true to return entire schema, not just the first result
 
-### setStatus
+**Examples**
 
-Sets the device's status.
+```javascript
+// get status for device with one property
+tuya.get().then(status => console.log(status))
+```
+
+```javascript
+// get status for specific device with one property
+tuya.get({id: 'xxxxxxxxxxxxxxxxxxxx'}).then(status => console.log(status))
+```
+
+```javascript
+// get all available data from device
+tuya.get({schema: true}).then(data => console.log(data))
+```
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** returns boolean if no options are provided, otherwise returns object of results
+
+### set
+
+Sets a property on a device.
 
 **Parameters**
 
--   `on` **[boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** `true` for on, `false` for off
--   `callback` **function ([error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error), result)** returns `true` if the command succeeded
+-   `options` **[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)** options for setting properties
+    -   `options.id` **[String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)?** ID of device
+    -   `options.set` **[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** `true` for on, `false` for off
+    -   `options.dps` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)?** dps index to change
 
-### getSchema
+**Examples**
 
-Gets control schema from device.
+```javascript
+// set default property on default device
+tuya.set({set: true}).then(() => console.log('device was changed'))
+```
 
-Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)>** schema - object of parsed JSON
+```javascript
+// set custom property on non-default device
+tuya.set({id: 'xxxxxxxxxxxxxxxxxxxx', 'dps': 2, set: true}).then(() => console.log('device was changed'))
+```
 
-### destroy
-
-Breaks connection to device and destroys socket.
-
-Returns **True** 
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** returns `true` if the command succeeded
