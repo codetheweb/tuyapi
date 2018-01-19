@@ -1,6 +1,7 @@
 'use strict';
 
 // Import packages
+const debug = require('debug')('TuyAPI');
 const dgram = require('dgram');
 const forge = require('node-forge');
 const retryConnect = require('net-retry-connect');
@@ -60,6 +61,9 @@ function TuyaDevice(options) {
     // Create cipher from key
     this.devices[i].cipher = forge.cipher.createCipher('AES-ECB', this.devices[i].key);
   }
+
+  debug('Device(s): ');
+  debug(this.devices);
 }
 
 /**
@@ -84,6 +88,8 @@ TuyaDevice.prototype.resolveIds = function () {
   // add IPs to devices in array and return true
   return new Promise(resolve => {
     this.listener.on('message', message => {
+      debug('Received UDP message.');
+
       const thisId = this._extractJSON(message).gwId;
 
       if (needIP.length > 0) {
@@ -149,6 +155,9 @@ TuyaDevice.prototype.get = function (options) {
   if ('devId' in requests[currentDevice.type].status.command) {
     requests[currentDevice.type].status.command.devId = currentDevice.id;
   }
+
+  debug('Payload: ');
+  debug(requests[currentDevice.type].status.command);
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(JSON.stringify(requests[currentDevice.type].status.command));
@@ -224,6 +233,9 @@ TuyaDevice.prototype.set = function (options) {
     thisRequest.dps[options.dps.toString] = options.set;
   }
 
+  debug('Payload: ');
+  debug(thisRequest);
+
   // Encrypt data
   currentDevice.cipher.start({iv: ''});
   currentDevice.cipher.update(forge.util.createBuffer(JSON.stringify(thisRequest), 'utf8'));
@@ -259,15 +271,21 @@ TuyaDevice.prototype.set = function (options) {
 * @returns {Promise<string>} - returned data
 */
 TuyaDevice.prototype._send = function (ip, buffer) {
+  debug('Sending this data: ', buffer.toString('hex'));
+
   return new Promise((resolve, reject) => {
     retryConnect.to({port: 6668, host: ip, retryOptions: {retries: 5}}, (error, client) => {
       if (error) {
         reject(error);
       }
+
       client.write(buffer);
 
       client.on('data', data => {
         client.destroy();
+
+        debug('Received data back.');
+
         resolve(data);
       });
       client.on('error', error => {
@@ -302,6 +320,8 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 * @returns {Object} extracted object
 */
 TuyaDevice.prototype._extractJSON = function (data) {
+  debug('Parsing this data to JSON: ', data.toString('hex'));
+
   data = data.toString();
 
   // Find the # of occurrences of '{' and make that # match with the # of occurrences of '}'
