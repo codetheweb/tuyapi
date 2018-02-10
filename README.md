@@ -25,8 +25,17 @@ tuya.resolveIds().then(() => {
       tuya.get().then(status => {
         console.log('New status: ' + status);
         return;
+      }, reason => {
+          console.log(reason.toString());
+          return;
       });
+    }, reason => {
+        console.log(reason.toString());
+        return;
     });
+  }, reason => {
+      console.log(reason.toString());
+      return;
   });
 });
 ```
