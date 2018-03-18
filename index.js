@@ -230,7 +230,7 @@ TuyaDevice.prototype.set = function (options) {
   if (options.dps === undefined) {
     thisRequest.dps = {1: options.set};
   } else {
-    thisRequest.dps[options.dps.toString] = options.set;
+    thisRequest.dps[options.dps.toString()] = options.set;
   }
 
   debug('Payload: ');
