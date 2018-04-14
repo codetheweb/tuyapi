@@ -1,11 +1,13 @@
 'use strict';
 
 // Import packages
-const debug = require('debug')('TuyAPI');
 const dgram = require('dgram');
-const forge = require('node-forge');
-const retryConnect = require('net-retry-connect');
+const net = require('net');
 const stringOccurrence = require('string-occurrence');
+const timeout = require('p-timeout');
+const forge = require('node-forge');
+const retry = require('retry');
+const debug = require('debug')('TuyAPI');
 
 // Import requests for devices
 const requests = require('./requests.json');
@@ -84,9 +86,10 @@ TuyaDevice.prototype.resolveIds = function () {
     }
   }
 
-  // Todo: add timeout for when IP cannot be found, then reject(with error)
-  // add IPs to devices in array and return true
-  return new Promise(resolve => {
+  debug('Finding IP for devices ' + needIP);
+
+  // Add IPs to devices in array
+  return timeout(new Promise(resolve => { // Timeout
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
@@ -111,6 +114,11 @@ TuyaDevice.prototype.resolveIds = function () {
         resolve(true);
       }
     });
+  }), 10000, () => {
+    // Have to do this so we exit cleanly
+    this.listener.close();
+    this.listener.removeAllListeners();
+    throw new Error('resolveIds() timed out. Is the device ID correct and is the device powered on?');
   });
 };
 
@@ -230,7 +238,7 @@ TuyaDevice.prototype.set = function (options) {
   if (options.dps === undefined) {
     thisRequest.dps = {1: options.set};
   } else {
-    thisRequest.dps[options.dps.toString] = options.set;
+    thisRequest.dps[options.dps.toString()] = options.set;
   }
 
   debug('Payload: ');
@@ -274,23 +282,34 @@ TuyaDevice.prototype._send = function (ip, buffer) {
   debug('Sending this data: ', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
-    retryConnect.to({port: 6668, host: ip, retryOptions: {retries: 5}}, (error, client) => {
-      if (error) {
+    const client = new net.Socket();
+    const connectOperation = retry.operation();
+
+    client.on('error', error => {
+      if (!connectOperation.retry(error)) {
         reject(error);
       }
+    });
 
-      client.write(buffer);
+    connectOperation.attempt(() => {
+      client.connect(6668, ip, () => {
+        const writeOperation = retry.operation();
+        writeOperation.attempt(() => {
+          client.write(buffer);
 
-      client.on('data', data => {
-        client.destroy();
-
-        debug('Received data back.');
-
-        resolve(data);
-      });
-      client.on('error', error => {
-        error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-        reject(error);
+          client.on('data', data => {
+            client.destroy();
+            debug('Received data back.');
+            resolve(data);
+          });
+          client.on('error', error => {
+            error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+            console.log('here');
+            if (!writeOperation.retry(error)) {
+              reject(error);
+            }
+          });
+        });
       });
     });
   });

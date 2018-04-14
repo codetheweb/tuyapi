@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,8 @@
     "debug": "^3.1.0",
     "net-retry-connect": "^0.1.1",
     "node-forge": "^0.7.1",
+    "p-timeout": "^2.0.1",
+    "retry": "^0.10.1",
     "string-occurrence": "^1.2.0"
   },
   "devDependencies": {
