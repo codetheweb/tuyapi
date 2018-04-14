@@ -12,7 +12,10 @@ Setup
 
 ![record toggle](images/record-toggle.png)
 
-4. Setup Charles' [SSL certificate](https://www.charlesproxy.com/documentation/using-charles/ssl-certificates/) for your phone.
+4. Setup Charles' [SSL certificate](https://www.charlesproxy.com/documentation/using-charles/ssl-certificates/) for your phone. If the app throws network errors, you may have to take an additional step to fully trust the Charles SSL certificate: 
+
+    `Settings > General > About > Certificate Trust Testings`
+
 5. Proxy your phone's traffic through Charles (IP is the IP of your computer):
 
 ![proxy config](images/proxy-config.png)
