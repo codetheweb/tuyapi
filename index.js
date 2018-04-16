@@ -291,24 +291,23 @@ TuyaDevice.prototype._send = function (ip, buffer) {
       }
     });
 
-    connectOperation.attempt(() => {
-      client.connect(6668, ip, () => {
-        const writeOperation = retry.operation();
-        writeOperation.attempt(() => {
-          client.write(buffer);
+    connectOperation.attempt((connectAttempts) => {
+      debug('connect attempt', connectAttempts);
 
-          client.on('data', data => {
-            client.destroy();
-            debug('Received data back.');
-            resolve(data);
-          });
-          client.on('error', error => {
-            error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-            console.log('here');
-            if (!writeOperation.retry(error)) {
-              reject(error);
-            }
-          });
+      client.connect(6668, ip, () => {
+        debug('write attempt', buffer);
+
+        client.write(buffer);
+
+        client.on('data', data => {
+          client.destroy();
+          debug('Received data back.');
+          resolve(data);
+        });
+        client.on('error', error => {
+          debug('failed to communicate', error);
+          error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+          reject(error);
         });
       });
     });
