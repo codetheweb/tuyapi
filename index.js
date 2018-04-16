@@ -64,6 +64,9 @@ function TuyaDevice(options) {
     this.devices[i].cipher = forge.cipher.createCipher('AES-ECB', this.devices[i].key);
   }
 
+  this._connectTotalTimeout = undefined;
+  this._connectRetryAttempts = undefined;
+
   debug('Device(s): ');
   debug(this.devices);
 }
@@ -283,7 +286,11 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 
   return new Promise((resolve, reject) => {
     const client = new net.Socket();
-    const connectOperation = retry.operation();
+
+    const connectOperation = retry.operation({
+      retries: this._connectRetryAttempts,
+      maxRetryTime: this._connectTotalTimeout,
+    });
 
     client.on('error', error => {
       if (!connectOperation.retry(error)) {
