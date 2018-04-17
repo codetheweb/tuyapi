@@ -3,7 +3,7 @@
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
-const stringOccurrence = require('string-occurrence');
+const occurrence = require('substr-occurrence');
 const timeout = require('p-timeout');
 const forge = require('node-forge');
 const retry = require('retry');
@@ -350,7 +350,7 @@ TuyaDevice.prototype._extractJSON = function (data) {
   data = data.toString();
 
   // Find the # of occurrences of '{' and make that # match with the # of occurrences of '}'
-  const leftBrackets = stringOccurrence(data, '{');
+  const leftBrackets = occurrence('{', data);
   let occurrences = 0;
   let currentIndex = 0;
 

@@ -29,7 +29,7 @@
     "node-forge": "^0.7.1",
     "p-timeout": "^2.0.1",
     "retry": "^0.10.1",
-    "string-occurrence": "^1.2.0"
+    "substr-occurrence": "^1.1.0"
   },
   "devDependencies": {
     "documentation": "^5.3.3",
