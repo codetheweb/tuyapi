@@ -53,6 +53,7 @@ See the [docs](docs/API.md).
 -   [blackrozes](https://github.com/blackrozes)
 -   [clach04](https://github.com/clach04)
 -   [jepsonrob](https://github.com/jepsonrob)
+-   [tjfontaine](https://github.com/tjfontaine)
 
 ## Related
 
