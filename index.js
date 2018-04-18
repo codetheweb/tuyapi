@@ -66,6 +66,8 @@ function TuyaDevice(options) {
   this._connectTotalTimeout = undefined;
   this._connectRetryAttempts = undefined;
 
+  this._responseTimeout = 10 * 1000;
+
   debug('Device(s): ');
   debug(this.devices);
 }
@@ -174,7 +176,7 @@ TuyaDevice.prototype.get = function (options) {
   const buffer = this._constructBuffer(currentDevice.type, thisData, 'status');
 
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer).then(data => {
+    this._send(currentDevice.ip, buffer, this._responseTimeout).then(data => {
       // Extract returned JSON
       data = this._extractJSON(data);
 
@@ -265,7 +267,7 @@ TuyaDevice.prototype.set = function (options) {
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer).then(() => {
+    this._send(currentDevice.ip, buffer, this._responseTimeout).then(() => {
       resolve(true);
     }).catch(err => {
       reject(err);
@@ -278,9 +280,10 @@ TuyaDevice.prototype.set = function (options) {
 * @private
 * @param {String} ip - IP of device
 * @param {Buffer} buffer - buffer of data
+* @param {Number} responseTimeout - time to wait for a response in millis
 * @returns {Promise<string>} - returned data
 */
-TuyaDevice.prototype._send = function (ip, buffer) {
+TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
   debug('Sending this data: ', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
@@ -305,6 +308,11 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 
         client.write(buffer);
 
+        let timeout = setTimeout(() => {
+          error(new Error("Timeout waiting for response"));
+          timeout = null;
+        }, responseTimeout);
+
         let buff = new Buffer(0);
 
         function parse() {
@@ -319,7 +327,15 @@ TuyaDevice.prototype._send = function (ip, buffer) {
           }
         }
 
+        function error(e) {
+          debug('failed to communicate', e);
+          e.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+          reject(e);
+          done();
+        }
+
         function done() {
+          clearTimeout(timeout);
           client.destroy();
         }
 
@@ -329,10 +345,8 @@ TuyaDevice.prototype._send = function (ip, buffer) {
           parse();
         });
 
-        client.on('error', error => {
-          debug('failed to communicate', error);
-          error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          reject(error);
+        client.on('error', err => {
+          error(e);
         });
       });
     });
