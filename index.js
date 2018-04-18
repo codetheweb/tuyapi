@@ -305,11 +305,30 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 
         client.write(buffer);
 
-        client.on('data', data => {
+        let buff = new Buffer(0);
+
+        function parse() {
+          if (buff.length > 8) {
+            let prefix = buff.readUInt32BE(0);
+            let suffix = buff.readUInt32BE(buff.length - 4);
+            if (prefix === 0x000055aa &&
+                suffix === 0x0000aa55) {
+              resolve(buff);
+              done();
+            }
+          }
+        }
+
+        function done() {
           client.destroy();
+        }
+
+        client.on('data', data => {
           debug('Received data back.');
-          resolve(data);
+          buff = Buffer.concat([buff, data]);
+          parse();
         });
+
         client.on('error', error => {
           debug('failed to communicate', error);
           error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
