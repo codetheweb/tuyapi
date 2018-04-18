@@ -3,7 +3,6 @@
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
-const occurrence = require('substr-occurrence');
 const timeout = require('p-timeout');
 const forge = require('node-forge');
 const retry = require('retry');
@@ -347,24 +346,16 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 TuyaDevice.prototype._extractJSON = function (data) {
   debug('Parsing this data to JSON: ', data.toString('hex'));
 
-  data = data.toString();
-
-  // Find the # of occurrences of '{' and make that # match with the # of occurrences of '}'
-  const leftBrackets = occurrence('{', data);
-  let occurrences = 0;
-  let currentIndex = 0;
-
-  while (occurrences < leftBrackets) {
-    const index = data.indexOf('}', currentIndex + 1);
-    if (index !== -1) {
-      currentIndex = index;
-      occurrences++;
-    }
+  // every packet is wrapped by 20 bytes including the prefix
+  // and 8 bytes including the suffix, and there should be at least
+  // 2 more bytes for { and } -- 30 = 20 + 8 + 2
+  if (data.length < 30) {
+    throw new Error("malformed data packet");
   }
 
-  data = data.slice(data.indexOf('{'), currentIndex + 1);
-  data = JSON.parse(data);
-  return data;
+  // valid JSON should be in the inner payload
+  data = data.slice(20, data.length - 8);
+  return JSON.parse(data.toString());
 };
 
 module.exports = TuyaDevice;
