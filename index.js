@@ -11,6 +11,8 @@ const debug = require('debug')('TuyAPI');
 // Import requests for devices
 const requests = require('./requests.json');
 
+const parser = require('./message_parser');
+
 /**
 * Represents a Tuya device.
 * @class
@@ -97,7 +99,18 @@ TuyaDevice.prototype.resolveIds = function () {
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
-      const thisId = this._extractJSON(message).gwId;
+      let p = new parser();
+      p.append(message);
+
+      if (!p.parse()) {
+        reject(new Error("Failed to parse message"));
+      }
+
+      let data = p.decode();
+
+      debug('UDP data', data);
+
+      const thisId = data.gwId;
 
       if (needIP.length > 0) {
         if (needIP.includes(thisId)) {
@@ -108,7 +121,7 @@ TuyaDevice.prototype.resolveIds = function () {
             return false;
           });
 
-          this.devices[deviceIndex].ip = this._extractJSON(message).ip;
+          this.devices[deviceIndex].ip = data.ip;
 
           needIP.splice(needIP.indexOf(thisId), 1);
         }
@@ -177,9 +190,6 @@ TuyaDevice.prototype.get = function (options) {
 
   return new Promise((resolve, reject) => {
     this._send(currentDevice.ip, buffer, this._responseTimeout).then(data => {
-      // Extract returned JSON
-      data = this._extractJSON(data);
-
       if (options !== undefined && options.schema === true) {
         resolve(data);
       } else {
@@ -313,20 +323,6 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
           timeout = null;
         }, responseTimeout);
 
-        let buff = new Buffer(0);
-
-        function parse() {
-          if (buff.length > 8) {
-            let prefix = buff.readUInt32BE(0);
-            let suffix = buff.readUInt32BE(buff.length - 4);
-            if (prefix === 0x000055aa &&
-                suffix === 0x0000aa55) {
-              resolve(buff);
-              done();
-            }
-          }
-        }
-
         function error(e) {
           debug('failed to communicate', e);
           e.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
@@ -339,10 +335,16 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
           client.destroy();
         }
 
+        let p = new parser();
+
         client.on('data', data => {
           debug('Received data back.');
-          buff = Buffer.concat([buff, data]);
-          parse();
+          p.append(data);
+          if (p.parse()) {
+            // TODO check for another message on the stream?
+            done();
+            resolve(p.decode());
+          }
         });
 
         client.on('error', err => {
@@ -368,27 +370,6 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 
   // Create final buffer: prefix + data + suffix
   return Buffer.from(prefix + data.toString('hex') + requests[type].suffix, 'hex');
-};
-
-/**
-* Extracts JSON from a raw buffer and returns it as an object.
-* @private
-* @param {Buffer} data - buffer of data
-* @returns {Object} extracted object
-*/
-TuyaDevice.prototype._extractJSON = function (data) {
-  debug('Parsing this data to JSON: ', data.toString('hex'));
-
-  // every packet is wrapped by 20 bytes including the prefix
-  // and 8 bytes including the suffix, and there should be at least
-  // 2 more bytes for { and } -- 30 = 20 + 8 + 2
-  if (data.length < 30) {
-    throw new Error("malformed data packet");
-  }
-
-  // valid JSON should be in the inner payload
-  data = data.slice(20, data.length - 8);
-  return JSON.parse(data.toString());
 };
 
 module.exports = TuyaDevice;
