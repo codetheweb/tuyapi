@@ -80,7 +80,12 @@ MessageParser.prototype.parse = function parse() {
 }
 
 MessageParser.prototype.decode = function decode() {
-  return JSON.parse(this._data);
+  debug(this._data.length, this._data.toString('hex'))
+
+  if (!this._data.length)
+    return undefined;
+  else
+    return JSON.parse(this._data);
 }
 
 MessageParser.prototype.leftOver = function leftOver() {

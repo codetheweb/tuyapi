@@ -10,6 +10,8 @@ let arr = [
   b.slice(20)
 ]
 
+arr = [Buffer.from('000055aa00000000000000070000000c00000000789370910000aa55', 'hex')]
+
 let mp = new parser();
 
 while(!mp.parse() && arr.length) {
