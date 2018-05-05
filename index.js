@@ -77,10 +77,6 @@ function TuyaDevice(options) {
 * @returns {Promise<Boolean>} - true if IPs were found and devices are ready to be used
 */
 TuyaDevice.prototype.resolveIds = function () {
-  // Create new listener
-  this.listener = dgram.createSocket('udp4');
-  this.listener.bind(6666);
-
   // Find devices that need an IP
   const needIP = [];
   for (let i = 0; i < this.devices.length; i++) {
@@ -88,6 +84,15 @@ TuyaDevice.prototype.resolveIds = function () {
       needIP.push(this.devices[i].id);
     }
   }
+
+  if (needIP.length === 0) {
+    debug('No IPs to search for');
+    return Promise.resolve(true);
+  }
+
+    // Create new listener
+  this.listener = dgram.createSocket('udp4');
+  this.listener.bind(6666);
 
   debug('Finding IP for devices ' + needIP);
 
