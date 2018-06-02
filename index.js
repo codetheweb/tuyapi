@@ -3,7 +3,6 @@
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
-const occurrence = require('substr-occurrence');
 const timeout = require('p-timeout');
 const forge = require('node-forge');
 const retry = require('retry');
@@ -11,6 +10,8 @@ const debug = require('debug')('TuyAPI');
 
 // Import requests for devices
 const requests = require('./requests.json');
+
+const parser = require('./message_parser');
 
 /**
 * Represents a Tuya device.
@@ -67,6 +68,8 @@ function TuyaDevice(options) {
   this._connectTotalTimeout = undefined;
   this._connectRetryAttempts = undefined;
 
+  this._responseTimeout = 10 * 1000;
+
   debug('Device(s): ');
   debug(this.devices);
 }
@@ -101,7 +104,18 @@ TuyaDevice.prototype.resolveIds = function () {
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
-      const thisId = this._extractJSON(message).gwId;
+      let p = new parser();
+      p.append(message);
+
+      if (!p.parse()) {
+        reject(new Error("Failed to parse message"));
+      }
+
+      let data = p.decode();
+
+      debug('UDP data', data);
+
+      const thisId = data.gwId;
 
       if (needIP.length > 0) {
         if (needIP.includes(thisId)) {
@@ -112,7 +126,7 @@ TuyaDevice.prototype.resolveIds = function () {
             return false;
           });
 
-          this.devices[deviceIndex].ip = this._extractJSON(message).ip;
+          this.devices[deviceIndex].ip = data.ip;
 
           needIP.splice(needIP.indexOf(thisId), 1);
         }
@@ -180,10 +194,7 @@ TuyaDevice.prototype.get = function (options) {
   const buffer = this._constructBuffer(currentDevice.type, thisData, 'status');
 
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer).then(data => {
-      // Extract returned JSON
-      data = this._extractJSON(data);
-
+    this._send(currentDevice.ip, buffer, this._responseTimeout).then(data => {
       if (options !== undefined && options.schema === true) {
         resolve(data);
       } else {
@@ -271,7 +282,7 @@ TuyaDevice.prototype.set = function (options) {
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer).then(() => {
+    this._send(currentDevice.ip, buffer, this._responseTimeout).then(() => {
       resolve(true);
     }).catch(err => {
       reject(err);
@@ -284,9 +295,10 @@ TuyaDevice.prototype.set = function (options) {
 * @private
 * @param {String} ip - IP of device
 * @param {Buffer} buffer - buffer of data
+* @param {Number} responseTimeout - time to wait for a response in millis
 * @returns {Promise<string>} - returned data
 */
-TuyaDevice.prototype._send = function (ip, buffer) {
+TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
   debug('Sending this data: ', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
@@ -311,15 +323,37 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 
         client.write(buffer);
 
-        client.on('data', data => {
+        let timeout = setTimeout(() => {
+          error(new Error("Timeout waiting for response"));
+          timeout = null;
+        }, responseTimeout);
+
+        function error(e) {
+          debug('failed to communicate', e);
+          e.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+          reject(e);
+          done();
+        }
+
+        function done() {
+          clearTimeout(timeout);
           client.destroy();
+        }
+
+        let p = new parser();
+
+        client.on('data', data => {
           debug('Received data back.');
-          resolve(data);
+          p.append(data);
+          if (p.parse()) {
+            // TODO check for another message on the stream?
+            done();
+            resolve(p.decode());
+          }
         });
-        client.on('error', error => {
-          debug('failed to communicate', error);
-          error.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          reject(error);
+
+        client.on('error', err => {
+          error(e);
         });
       });
     });
@@ -341,35 +375,6 @@ TuyaDevice.prototype._constructBuffer = function (type, data, command) {
 
   // Create final buffer: prefix + data + suffix
   return Buffer.from(prefix + data.toString('hex') + requests[type].suffix, 'hex');
-};
-
-/**
-* Extracts JSON from a raw buffer and returns it as an object.
-* @private
-* @param {Buffer} data - buffer of data
-* @returns {Object} extracted object
-*/
-TuyaDevice.prototype._extractJSON = function (data) {
-  debug('Parsing this data to JSON: ', data.toString('hex'));
-
-  data = data.toString();
-
-  // Find the # of occurrences of '{' and make that # match with the # of occurrences of '}'
-  const leftBrackets = occurrence('{', data);
-  let occurrences = 0;
-  let currentIndex = 0;
-
-  while (occurrences < leftBrackets) {
-    const index = data.indexOf('}', currentIndex + 1);
-    if (index !== -1) {
-      currentIndex = index;
-      occurrences++;
-    }
-  }
-
-  data = data.slice(data.indexOf('{'), currentIndex + 1);
-  data = JSON.parse(data);
-  return data;
 };
 
 module.exports = TuyaDevice;

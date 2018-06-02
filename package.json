@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
+    "crc": "^3.5.0",
     "debug": "^3.1.0",
     "node-forge": "^0.7.1",
     "p-timeout": "^2.0.1",
-    "retry": "^0.10.1",
-    "substr-occurrence": "^1.1.0"
+    "retry": "^0.10.1"
   },
   "devDependencies": {
     "documentation": "^5.3.3",
