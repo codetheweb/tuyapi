@@ -8,135 +8,125 @@ const forge = require('node-forge');
 const retry = require('retry');
 const debug = require('debug')('TuyAPI');
 
-// Import requests for devices
-const requests = require('./requests.json');
+// Helpers
+const cipher = require('./lib/cipher');
+const parser = require('./lib/message-parser');
 
-const parser = require('./message_parser');
+// TODO:
+/*
+* Check arguments for all functions, throw error if invalid
+* Check open issues on Github
+* Run style linter / tests
+* Parallel resolveIds()?
+* Use develop branch
+* Update docs on setup
+* Update docs for DPS
+*/
 
 /**
 * Represents a Tuya device.
 * @class
 * @param {Object} options - options for constructing a TuyaDevice
-* @param {String} [options.type='outlet'] - type of device
 * @param {String} [options.ip] - IP of device
 * @param {Number} [options.port=6668] - port of device
 * @param {String} options.id - ID of device
-* @param {String} [options.uid=''] - UID of device
 * @param {String} options.key - encryption key of device
 * @param {Number} [options.version=3.1] - protocol version
 * @example
 * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
 * @example
-* const tuya = new TuyaDevice([
-* {id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'},
-* {id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'}])
+* const tuya = new TuyaDevice({
+* id: 'xxxxxxxxxxxxxxxxxxxx',
+* key: 'xxxxxxxxxxxxxxxx',
+* ip: 'xxx.xxx.xxx.xxx')
 */
 function TuyaDevice(options) {
-  this.devices = [];
+  this.device = options;
 
-  if (options.constructor === Array) { // If argument is [{id: '', key: ''}]
-    this.devices = options;
-  } else if (options.constructor === Object) { // If argument is {id: '', key: ''}
-    this.devices = [options];
+  // Defaults
+  if (this.device.id === undefined) {
+    throw new Error('ID is missing from device.');
+  }
+  if (this.device.key === undefined) {
+    throw new Error('Encryption key is missing from device with ID ' + this.device.id + '.');
+  }
+  if (this.device.type === undefined) {
+    this.device.type = 'outlet';
+  }
+  if (this.device.port === undefined) {
+    this.device.port = 6668;
+  }
+  if (this.device.version === undefined) {
+    this.device.version = 3.1;
   }
 
-  // Standardize devices array
-  for (let i = 0; i < this.devices.length; i++) {
-    if (this.devices[i].id === undefined) {
-      throw new Error('ID is missing from device.');
-    }
-    if (this.devices[i].key === undefined) {
-      throw new Error('Encryption key is missing from device with ID ' + this.devices[i].id + '.');
-    }
-    if (this.devices[i].type === undefined) {
-      this.devices[i].type = 'outlet';
-    }
-    if (this.devices[i].uid === undefined) {
-      this.devices[i].uid = '';
-    }
-    if (this.devices[i].port === undefined) {
-      this.devices[i].port = 6668;
-    }
-    if (this.devices[i].version === undefined) {
-      this.devices[i].version = 3.1;
-    }
-
-    // Create cipher from key
-    this.devices[i].cipher = forge.cipher.createCipher('AES-ECB', this.devices[i].key);
-  }
+  // Create cipher from key
+  this.device.cipher = new cipher({key: this.device.key});
 
   this._connectTotalTimeout = undefined;
   this._connectRetryAttempts = undefined;
 
   this._responseTimeout = 10 * 1000;
 
-  debug('Device(s): ');
-  debug(this.devices);
+  debug('Device: ');
+  debug(this.device);
 }
 
 /**
 * Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
 * you must call this before doing anything else.
+* @param {Object} [options] - options
+* @param {Number} [options.timeout=10] - how long, in seconds, to wait for device
+* to be resolved before timeout error is thrown
 * @returns {Promise<Boolean>} - true if IPs were found and devices are ready to be used
 */
-TuyaDevice.prototype.resolveIds = function () {
-  // Find devices that need an IP
-  const needIP = [];
-  for (let i = 0; i < this.devices.length; i++) {
-    if (this.devices[i].ip === undefined) {
-      needIP.push(this.devices[i].id);
-    }
+TuyaDevice.prototype.resolveIds = function (options) {
+  // Set default options
+  options = options ? options : {};
+
+  if (options.timeout === undefined) {
+    options.timeout = 10;
   }
 
-  if (needIP.length === 0) {
+  if (this.device.ip !== undefined) {
     debug('No IPs to search for');
     return Promise.resolve(true);
   }
 
-    // Create new listener
+  // Create new listener
   this.listener = dgram.createSocket('udp4');
   this.listener.bind(6666);
 
-  debug('Finding IP for devices ' + needIP);
+  debug('Finding IP for device ' + this.device.id);
 
-  // Add IPs to devices in array
+  // Find IP for device
   return timeout(new Promise(resolve => { // Timeout
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
-      let p = new parser();
+      const p = new parser();
       p.append(message);
 
       if (!p.parse()) {
-        reject(new Error("Failed to parse message"));
+        reject(new Error('Failed to parse message'));
       }
 
-      let data = p.decode();
+      const data = p.decode();
 
       debug('UDP data', data);
 
       const thisId = data.gwId;
 
-      if (needIP.length > 0) {
-        if (needIP.includes(thisId)) {
-          const deviceIndex = this.devices.findIndex(device => {
-            if (device.id === thisId) {
-              return true;
-            }
-            return false;
-          });
-
-          this.devices[deviceIndex].ip = data.ip;
-
-          needIP.splice(needIP.indexOf(thisId), 1);
-        }
-      } else { // All devices have been resolved
+      if (this.device.id === thisId) {
+        // Add IP
+        this.device.ip = data.ip;
+        // Cleanup
         this.listener.close();
         this.listener.removeAllListeners();
         resolve(true);
       }
     });
-  }), 10000, () => {
+  }), options.timeout * 1000, () => {
     // Have to do this so we exit cleanly
     this.listener.close();
     this.listener.removeAllListeners();
@@ -147,8 +137,7 @@ TuyaDevice.prototype.resolveIds = function () {
 /**
 * Gets a device's current status. Defaults to returning only the value of the first result,
 * but by setting {schema: true} you can get everything.
-* @param {Object} [options] - optional options for getting data
-* @param {String} [options.id] - ID of device
+* @param {Object} [options] - options for getting data
 * @param {Boolean} [options.schema] - true to return entire schema, not just the first result
 * @example
 * // get status for device with one property
@@ -162,39 +151,16 @@ TuyaDevice.prototype.resolveIds = function () {
 * @returns {Promise<Object>} - returns boolean if no options are provided, otherwise returns object of results
 */
 TuyaDevice.prototype.get = function (options) {
-  let currentDevice;
+  const payload = {'gwId': this.device.id, 'devId': this.device.id};
 
-  // If no ID is provided
-  if (options === undefined || options.id === undefined) {
-    currentDevice = this.devices[0]; // Use first device in array
-  } else { // Otherwise
-    // find the device by id in this.devices
-    const index = this.devices.findIndex(device => {
-      if (device.id === options.id) {
-        return true;
-      }
-      return false;
-    });
-    currentDevice = this.devices[index];
-  }
+  debug('Payload: ', payload);
 
-  // Add data to command
-  if ('gwId' in requests[currentDevice.type].status.command) {
-    requests[currentDevice.type].status.command.gwId = currentDevice.id;
-  }
-  if ('devId' in requests[currentDevice.type].status.command) {
-    requests[currentDevice.type].status.command.devId = currentDevice.id;
-  }
-
-  debug('Payload: ');
-  debug(requests[currentDevice.type].status.command);
-
-  // Create byte buffer from hex data
-  const thisData = Buffer.from(JSON.stringify(requests[currentDevice.type].status.command));
-  const buffer = this._constructBuffer(currentDevice.type, thisData, 'status');
+  const p = new parser();
+  // Create byte buffer
+  const buffer = p.encode({data: payload, commandByte: '0a'})
 
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer, this._responseTimeout).then(data => {
+    this._send(this.device.ip, buffer, this._responseTimeout).then(data => {
       if (options !== undefined && options.schema === true) {
         resolve(data);
       } else {
@@ -209,80 +175,52 @@ TuyaDevice.prototype.get = function (options) {
 /**
 * Sets a property on a device.
 * @param {Object} options - options for setting properties
-* @param {String} [options.id] - ID of device
 * @param {Boolean} options.set - `true` for on, `false` for off
 * @param {Number} [options.dps] - dps index to change
 * @example
-* // set default property on default device
+* // set default property
 * tuya.set({set: true}).then(() => console.log('device was changed'))
 * @example
-* // set custom property on non-default device
-* tuya.set({id: 'xxxxxxxxxxxxxxxxxxxx', 'dps': 2, set: true}).then(() => console.log('device was changed'))
+* // set custom property
+* tuya.set({'dps': 2, set: true}).then(() => console.log('device was changed'))
 * @returns {Promise<Boolean>} - returns `true` if the command succeeded
 */
 TuyaDevice.prototype.set = function (options) {
-  let currentDevice;
-
-  // If no ID is provided
-  if (options === undefined || options.id === undefined) {
-    currentDevice = this.devices[0]; // Use first device in array
-  } else { // Otherwise
-    // find the device by id in this.devices
-    const index = this.devices.findIndex(device => {
-      if (device.id === options.id) {
-        return true;
-      }
-      return false;
-    });
-    currentDevice = this.devices[index];
-  }
-
-  const thisRequest = requests[currentDevice.type].set.command;
-
-  // Add data to command
-  const now = new Date();
-  if ('gwId' in thisRequest) {
-    thisRequest.gwId = currentDevice.id;
-  }
-  if ('devId' in thisRequest) {
-    thisRequest.devId = currentDevice.id;
-  }
-  if ('uid' in thisRequest) {
-    thisRequest.uid = currentDevice.uid;
-  }
-  if ('t' in thisRequest) {
-    thisRequest.t = (parseInt(now.getTime() / 1000, 10)).toString();
-  }
+  let dps = {};
 
   if (options.dps === undefined) {
-    thisRequest.dps = {1: options.set};
+    dps = {1: options.set};
   } else {
-    thisRequest.dps = {[options.dps.toString()]: options.set};
+    dps = {[options.dps.toString()]: options.set};
   }
 
-  debug('Payload: ');
-  debug(thisRequest);
+  const now = new Date();
+  const timeStamp = (parseInt(now.getTime() / 1000, 10)).toString();
+
+  const payload = {
+    devId: this.device.id,
+    uid: '',
+    t: timeStamp,
+    dps: dps
+  };
+
+  debug('Payload:');
+  debug(payload);
 
   // Encrypt data
-  currentDevice.cipher.start({iv: ''});
-  currentDevice.cipher.update(forge.util.createBuffer(JSON.stringify(thisRequest), 'utf8'));
-  currentDevice.cipher.finish();
-
-  // Encode binary data to Base64
-  const data = forge.util.encode64(currentDevice.cipher.output.data);
+  const data = this.device.cipher.encrypt({data: JSON.stringify(payload)});
 
   // Create MD5 signature
-  const preMd5String = 'data=' + data + '||lpv=' + currentDevice.version + '||' + currentDevice.key;
-  const md5hash = forge.md.md5.create().update(preMd5String).digest().toHex();
-  const md5 = md5hash.toString().toLowerCase().substr(8, 16);
+  const md5 = this.device.cipher.MD5('data=' + data + '||lpv=' + this.device.version + '||' + this.device.key);
 
   // Create byte buffer from hex data
-  const thisData = Buffer.from(currentDevice.version + md5 + data);
-  const buffer = this._constructBuffer(currentDevice.type, thisData, 'set');
+  const p = new parser();
+  const thisData = Buffer.from(this.device.version + md5 + data);
+  const buffer = p.encode({data: thisData, commandByte: '07'});
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(currentDevice.ip, buffer, this._responseTimeout).then(() => {
+    this._send(this.device.ip, buffer, this._responseTimeout).then(() => {
       resolve(true);
     }).catch(err => {
       reject(err);
@@ -306,7 +244,7 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
 
     const connectOperation = retry.operation({
       retries: this._connectRetryAttempts,
-      maxRetryTime: this._connectTotalTimeout,
+      maxRetryTime: this._connectTotalTimeout
     });
 
     client.on('error', error => {
@@ -315,7 +253,7 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
       }
     });
 
-    connectOperation.attempt((connectAttempts) => {
+    connectOperation.attempt(connectAttempts => {
       debug('connect attempt', connectAttempts);
 
       client.connect(6668, ip, () => {
@@ -324,7 +262,7 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
         client.write(buffer);
 
         let timeout = setTimeout(() => {
-          error(new Error("Timeout waiting for response"));
+          error(new Error('Timeout waiting for response'));
           timeout = null;
         }, responseTimeout);
 
@@ -340,7 +278,7 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
           client.destroy();
         }
 
-        let p = new parser();
+        const p = new parser();
 
         client.on('data', data => {
           debug('Received data back.');
@@ -353,28 +291,11 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
         });
 
         client.on('error', err => {
-          error(e);
+          error(err);
         });
       });
     });
   });
-};
-
-/**
-* Constructs a protocol-complient buffer given device type, data, and command.
-* @private
-* @param {String} type - type of device
-* @param {String} data - data to put in buffer
-* @param {String} command - command (status || set)
-* @returns {Buffer} buffer - buffer of data
-*/
-TuyaDevice.prototype._constructBuffer = function (type, data, command) {
-  // Construct prefix of packet according to protocol
-  const prefixLength = (data.toString('hex').length + requests[type].suffix.length) / 2;
-  const prefix = requests[type].prefix + requests[type][command].hexByte + '000000' + prefixLength.toString(16);
-
-  // Create final buffer: prefix + data + suffix
-  return Buffer.from(prefix + data.toString('hex') + requests[type].suffix, 'hex');
 };
 
 module.exports = TuyaDevice;

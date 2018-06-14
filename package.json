@@ -4,7 +4,7 @@
   "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
   "main": "index.js",
   "scripts": {
-    "style": "xo --space --fix",
+    "test": "xo && ava",
     "document": "documentation build index.js -f md | (echo 'Docs \n=========' && cat) > docs/API.md",
     "pushtags": "git push origin master --tags"
   },
@@ -32,7 +32,30 @@
     "retry": "^0.10.1"
   },
   "devDependencies": {
+    "ava": "^0.25.0",
     "documentation": "^5.3.3",
-    "xo": "^0.18.2"
+    "xo": "^0.21.1"
+  },
+  "xo": {
+    "space": true,
+    "ignores": [
+      "docs"
+    ],
+    "rules": {
+      "max-len": [
+        "error",
+        {
+          "code": 90
+        }
+      ],
+      "indent": [
+        "error",
+        2,
+        {
+          "ObjectExpression": "first",
+          "ArrayExpression": "first"
+        }
+      ]
+    }
   }
 }
