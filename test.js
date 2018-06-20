@@ -1,12 +1,25 @@
 import test from 'ava';
 
-const parser = require('./lib/message-parser');
-const mp = new parser();
+const Parser = require('./lib/message-parser');
+const Cipher = require('./lib/cipher');
 
-test('decode message', t => {
-  const b = Buffer.from('000055aa000000000000000a0000005d000000007b226465764964223a223034323030343839363863363361626562333534222c22647073223a7b2231223a747275652c2232223a302c2234223a3931322c2235223a313032352c2236223a313137357d7d440c87ca0000aa55', 'hex');
-  mp.append(b);
-  console.log(mp.parse());
-  console.log(mp.decode());
-  t.is(apiResult.length, 56);
+test('encode and decode message', t => {
+  const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
+
+  const encoded = Parser.encode({data: payload, commandByte: '0a'});
+
+  t.deepEqual(Parser.parse(encoded), payload);
 });
+
+test('decode encrypted message', t => {
+  const message = '3.133ed3d4a21effe90zrA8OK3r3JMiUXpXDWauNppY4Am2c8rZ6sb4Yf15MjM8n5ByDx+QWeCZtcrPqddxLrhm906bSKbQAFtT1uCp+zP5AxlqJf5d0Pp2OxyXyjg=';
+  const equals = { devId: '002004265ccf7fb1b659',
+  dps: { '1': false, '2': 0 },
+  t: 1529442366,
+  s: 8 }
+  const cipher = new Cipher({key: 'bbe88b3f4106d354', version: 3.1});
+
+  const result = cipher.decrypt(message);
+
+  t.deepEqual(result, equals)
+})

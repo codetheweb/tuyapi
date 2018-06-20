@@ -50,6 +50,7 @@ See the [docs](docs/API.md).
 1. Add automated tests
 2. Document details of protocol
 3. Retry when ECONNRESET is thrown
+4. Figure out correct CRC algorithm 
 
 ## Contributors
 
