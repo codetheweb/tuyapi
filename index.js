@@ -113,26 +113,31 @@ TuyaDevice.prototype.resolveIds = function (options) {
         this.device.ip = data.ip;
         // Change protocol version if necessary
         this.device.version = data.version;
-        
+
         // Cleanup
         this.listener.close();
         this.listener.removeAllListeners();
         resolve(true);
       }
     });
+
+    this.listener.on('error', err => reject(err));
   }), options.timeout * 1000, () => {
     // Have to do this so we exit cleanly
     this.listener.close();
     this.listener.removeAllListeners();
-    throw new Error('resolveIds() timed out. Is the device ID correct and is the device powered on?');
+    // eslint-disable-next-line max-len
+    throw new Error('resolveIds() timed out. Is the device powered on and the ID correct?');
   });
 };
 
 /**
-* Gets a device's current status. Defaults to returning only the value of the first result,
+* Gets a device's current status.
+* Defaults to returning only the value of the first result,
 * but by setting {schema: true} you can get everything.
 * @param {Object} [options] - options for getting data
-* @param {Boolean} [options.schema] - true to return entire schema, not just the first result
+* @param {Boolean} [options.schema]
+* true to return entire schema, not just the first result
 * @example
 * // get status for device with one property
 * tuya.get().then(status => console.log(status))
@@ -142,7 +147,8 @@ TuyaDevice.prototype.resolveIds = function (options) {
 * @example
 * // get all available data from device
 * tuya.get({schema: true}).then(data => console.log(data))
-* @returns {Promise<Object>} - returns boolean if no options are provided, otherwise returns object of results
+* @returns {Promise<Object>}
+* returns boolean if no options are provided, otherwise returns object of results
 */
 TuyaDevice.prototype.get = function (options) {
   const payload = {gwId: this.device.id, devId: this.device.id};
@@ -153,7 +159,7 @@ TuyaDevice.prototype.get = function (options) {
   const buffer = Parser.encode({data: payload, commandByte: '0a'});
 
   return new Promise((resolve, reject) => {
-    this._send(this.device.ip, buffer, this._responseTimeout).then(data => {
+    this._send(this.device.ip, buffer).then(data => {
       if (options !== undefined && options.schema === true) {
         resolve(data);
       } else {
@@ -204,7 +210,9 @@ TuyaDevice.prototype.set = function (options) {
   const data = this.device.cipher.encrypt({data: JSON.stringify(payload)});
 
   // Create MD5 signature
-  const md5 = this.device.cipher.md5('data=' + data + '||lpv=' + this.device.version + '||' + this.device.key);
+  const md5 = this.device.cipher.md5('data=' + data +
+                                     '||lpv=' + this.device.version +
+                                     '||' + this.device.key);
 
   // Create byte buffer from hex data
   const thisData = Buffer.from(this.device.version + md5 + data);
@@ -212,7 +220,7 @@ TuyaDevice.prototype.set = function (options) {
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(this.device.ip, buffer, this._responseTimeout).then(() => {
+    this._send(this.device.ip, buffer).then(() => {
       resolve(true);
     }).catch(err => {
       reject(err);
@@ -225,10 +233,9 @@ TuyaDevice.prototype.set = function (options) {
 * @private
 * @param {String} ip - IP of device
 * @param {Buffer} buffer - buffer of data
-* @param {Number} responseTimeout - time to wait for a response in millis
 * @returns {Promise<string>} - returned data
 */
-TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
+TuyaDevice.prototype._send = function (ip, buffer) {
   debug('Sending this data: ', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
@@ -245,21 +252,13 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
       }
     });
 
-    connectOperation.attempt(connectAttempts => {
+    connectOperation.attempt(() => {
       client.connect(6668, ip, () => {
         client.write(buffer);
 
-        let timeout = setTimeout(() => {
-          error(new Error('Timeout waiting for response'));
-          timeout = null;
-        }, responseTimeout);
-
-        function error(e) {
-          debug('failed to communicate', e);
-          e.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          reject(e);
-          done();
-        }
+        const timeout = setTimeout(() => {
+          throw new Error('Timeout waiting for response');
+        }, this._responseTimeout);
 
         function done() {
           clearTimeout(timeout);
@@ -276,14 +275,15 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
 
           if (typeof data === 'object' || typeof data === 'undefined') {
             resolve(data);
-          }
-          else { // message is encrypted
+          } else { // Message is encrypted
             resolve(this.device.cipher.decrypt(data));
           }
         });
 
         client.on('error', err => {
-          error(err);
+          // eslint-disable-next-line max-len
+          err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+          throw err;
         });
       });
     });
