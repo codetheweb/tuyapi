@@ -15,12 +15,12 @@ const Parser = require('./lib/message-parser');
 /*
 * Check arguments for all functions, throw error if invalid
 * Check open issues on Github
-* Run style linter / tests
 * Parallel resolveIds()?
 * Use develop branch
 * Update docs on setup
 * Update docs for DPS
 * Add comments in code
+* Add coverage
 */
 
 /**

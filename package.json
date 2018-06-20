@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "xo && ava",
+    "cover": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
     "document": "documentation build index.js -f md | (echo 'Docs \n=========' && cat) > docs/API.md",
     "pushtags": "git push origin master --tags"
   },
@@ -33,7 +34,9 @@
   },
   "devDependencies": {
     "ava": "^0.25.0",
+    "coveralls": "^3.0.1",
     "documentation": "^5.3.3",
+    "nyc": "^12.0.2",
     "xo": "^0.21.1"
   },
   "xo": {
