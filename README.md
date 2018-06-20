@@ -42,16 +42,15 @@ See the [setup instructions](docs/SETUP.md) for how to find the needed parameter
 
 ## 📓 Docs
 
-See the [docs](docs/API.md).
+See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
 **IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
-1. Add automated tests
-2. Document details of protocol
-3. Retry when ECONNRESET is thrown
-4. Figure out correct CRC algorithm
+1. Document details of protocol
+2. Retry when ECONNRESET is thrown
+3. Figure out correct CRC algorithm
 
 ## Contributors
 
