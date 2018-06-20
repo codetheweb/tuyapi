@@ -1,5 +1,3 @@
-'use strict';
-
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
@@ -20,25 +18,19 @@ const Parser = require('./lib/message-parser');
 * Update docs on setup
 * Update docs for DPS
 * Add comments in code
-* Add coverage
 */
 
 /**
 * Represents a Tuya device.
 * @class
-* @param {Object} options - options for constructing a TuyaDevice
-* @param {String} [options.ip] - IP of device
-* @param {Number} [options.port=6668] - port of device
-* @param {String} options.id - ID of device
-* @param {String} options.key - encryption key of device
-* @param {Number} [options.version=3.1] - protocol version
+* @param {Object} options
+* @param {String} [options.ip] IP of device
+* @param {Number} [options.port=6668] port of device
+* @param {String} options.id ID of device
+* @param {String} options.key encryption key of device
+* @param {Number} [options.version=3.1] protocol version
 * @example
 * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
-* @example
-* const tuya = new TuyaDevice({
-* id: 'xxxxxxxxxxxxxxxxxxxx',
-* key: 'xxxxxxxxxxxxxxxx',
-* ip: 'xxx.xxx.xxx.xxx')
 */
 function TuyaDevice(options) {
   this.device = options;
@@ -72,10 +64,14 @@ function TuyaDevice(options) {
 /**
 * Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
 * you must call this before doing anything else.
-* @param {Object} [options] - options
-* @param {Number} [options.timeout=10] - how long, in seconds, to wait for device
+* @param {Object} [options]
+* @param {Number} [options.timeout=10]
+* how long, in seconds, to wait for device
 * to be resolved before timeout error is thrown
-* @returns {Promise<Boolean>} - true if IPs were found and devices are ready to be used
+* @example
+* tuya.resolveIds().then(() => console.log('ready!'))
+* @returns {Promise<Boolean>}
+* true if IP was found and device is ready to be used
 */
 TuyaDevice.prototype.resolveIds = function (options) {
   // Set default options
@@ -133,17 +129,18 @@ TuyaDevice.prototype.resolveIds = function (options) {
 
 /**
 * Gets a device's current status.
-* Defaults to returning only the value of the first result,
-* but by setting {schema: true} you can get everything.
-* @param {Object} [options] - options for getting data
+* Defaults to returning only the value of the first DPS index.
+* @param {Object} [options]
 * @param {Boolean} [options.schema]
-* true to return entire schema, not just the first result
+* true to return entire schema of device
+* @param {Number} [options.dps=1]
+* DPS index to return
 * @example
-* // get status for device with one property
+* // get first, default property from device
 * tuya.get().then(status => console.log(status))
 * @example
-* // get status for specific device with one property
-* tuya.get({id: 'xxxxxxxxxxxxxxxxxxxx'}).then(status => console.log(status))
+* // get second property from device
+* tuya.get({dps: 2}).then(status => console.log(status))
 * @example
 * // get all available data from device
 * tuya.get({schema: true}).then(data => console.log(data))
@@ -151,6 +148,9 @@ TuyaDevice.prototype.resolveIds = function (options) {
 * returns boolean if no options are provided, otherwise returns object of results
 */
 TuyaDevice.prototype.get = function (options) {
+  // Set empty object as default
+  options = options ? options : {};
+
   const payload = {gwId: this.device.id, devId: this.device.id};
 
   debug('Payload: ', payload);
@@ -160,8 +160,10 @@ TuyaDevice.prototype.get = function (options) {
 
   return new Promise((resolve, reject) => {
     this._send(this.device.ip, buffer).then(data => {
-      if (options !== undefined && options.schema === true) {
+      if (options.schema === true) {
         resolve(data);
+      } else if (options.dps) {
+        resolve(data.dps[options.dps]);
       } else {
         resolve(data.dps['1']);
       }
@@ -173,15 +175,15 @@ TuyaDevice.prototype.get = function (options) {
 
 /**
 * Sets a property on a device.
-* @param {Object} options - options for setting properties
-* @param {Boolean} options.set - `true` for on, `false` for off
-* @param {Number} [options.dps] - dps index to change
+* @param {Object} options
+* @param {Number} [options.dps=1] DPS index to set
+* @param {*} options.set value to set
 * @example
 * // set default property
 * tuya.set({set: true}).then(() => console.log('device was changed'))
 * @example
 * // set custom property
-* tuya.set({'dps': 2, set: true}).then(() => console.log('device was changed'))
+* tuya.set({dps: 2, set: true}).then(() => console.log('device was changed'))
 * @returns {Promise<Boolean>} - returns `true` if the command succeeded
 */
 TuyaDevice.prototype.set = function (options) {
@@ -231,9 +233,9 @@ TuyaDevice.prototype.set = function (options) {
 /**
 * Sends a query to a device.
 * @private
-* @param {String} ip - IP of device
-* @param {Buffer} buffer - buffer of data
-* @returns {Promise<string>} - returned data
+* @param {String} ip IP of device
+* @param {Buffer} buffer buffer of data
+* @returns {Promise<string>} returned data
 */
 TuyaDevice.prototype._send = function (ip, buffer) {
   debug('Sending this data: ', buffer.toString('hex'));
