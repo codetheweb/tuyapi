@@ -4,13 +4,12 @@
 const dgram = require('dgram');
 const net = require('net');
 const timeout = require('p-timeout');
-const forge = require('node-forge');
 const retry = require('retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
-const cipher = require('./lib/cipher');
-const parser = require('./lib/message-parser');
+const Cipher = require('./lib/cipher');
+const Parser = require('./lib/message-parser');
 
 // TODO:
 /*
@@ -21,6 +20,7 @@ const parser = require('./lib/message-parser');
 * Use develop branch
 * Update docs on setup
 * Update docs for DPS
+* Add comments in code
 */
 
 /**
@@ -48,10 +48,7 @@ function TuyaDevice(options) {
     throw new Error('ID is missing from device.');
   }
   if (this.device.key === undefined) {
-    throw new Error('Encryption key is missing from device with ID ' + this.device.id + '.');
-  }
-  if (this.device.type === undefined) {
-    this.device.type = 'outlet';
+    throw new Error('Encryption key is missing from device.');
   }
   if (this.device.port === undefined) {
     this.device.port = 6668;
@@ -61,7 +58,7 @@ function TuyaDevice(options) {
   }
 
   // Create cipher from key
-  this.device.cipher = new cipher({key: this.device.key});
+  this.device.cipher = new Cipher({key: this.device.key, version: this.device.version});
 
   this._connectTotalTimeout = undefined;
   this._connectRetryAttempts = undefined;
@@ -100,26 +97,23 @@ TuyaDevice.prototype.resolveIds = function (options) {
   debug('Finding IP for device ' + this.device.id);
 
   // Find IP for device
-  return timeout(new Promise(resolve => { // Timeout
+  return timeout(new Promise((resolve, reject) => { // Timeout
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
-      const p = new parser();
-      p.append(message);
+      const data = Parser.parse(message);
 
-      if (!p.parse()) {
-        reject(new Error('Failed to parse message'));
-      }
-
-      const data = p.decode();
-
-      debug('UDP data', data);
+      debug('UDP data:');
+      debug(data);
 
       const thisId = data.gwId;
 
       if (this.device.id === thisId) {
         // Add IP
         this.device.ip = data.ip;
+        // Change protocol version if necessary
+        this.device.version = data.version;
+        
         // Cleanup
         this.listener.close();
         this.listener.removeAllListeners();
@@ -151,13 +145,12 @@ TuyaDevice.prototype.resolveIds = function (options) {
 * @returns {Promise<Object>} - returns boolean if no options are provided, otherwise returns object of results
 */
 TuyaDevice.prototype.get = function (options) {
-  const payload = {'gwId': this.device.id, 'devId': this.device.id};
+  const payload = {gwId: this.device.id, devId: this.device.id};
 
   debug('Payload: ', payload);
 
-  const p = new parser();
   // Create byte buffer
-  const buffer = p.encode({data: payload, commandByte: '0a'})
+  const buffer = Parser.encode({data: payload, commandByte: '0a'});
 
   return new Promise((resolve, reject) => {
     this._send(this.device.ip, buffer, this._responseTimeout).then(data => {
@@ -201,7 +194,7 @@ TuyaDevice.prototype.set = function (options) {
     devId: this.device.id,
     uid: '',
     t: timeStamp,
-    dps: dps
+    dps
   };
 
   debug('Payload:');
@@ -211,12 +204,11 @@ TuyaDevice.prototype.set = function (options) {
   const data = this.device.cipher.encrypt({data: JSON.stringify(payload)});
 
   // Create MD5 signature
-  const md5 = this.device.cipher.MD5('data=' + data + '||lpv=' + this.device.version + '||' + this.device.key);
+  const md5 = this.device.cipher.md5('data=' + data + '||lpv=' + this.device.version + '||' + this.device.key);
 
   // Create byte buffer from hex data
-  const p = new parser();
   const thisData = Buffer.from(this.device.version + md5 + data);
-  const buffer = p.encode({data: thisData, commandByte: '07'});
+  const buffer = Parser.encode({data: thisData, commandByte: '07'});
 
   // Send request to change status
   return new Promise((resolve, reject) => {
@@ -254,11 +246,7 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
     });
 
     connectOperation.attempt(connectAttempts => {
-      debug('connect attempt', connectAttempts);
-
       client.connect(6668, ip, () => {
-        debug('write attempt', buffer);
-
         client.write(buffer);
 
         let timeout = setTimeout(() => {
@@ -278,15 +266,19 @@ TuyaDevice.prototype._send = function (ip, buffer, responseTimeout) {
           client.destroy();
         }
 
-        const p = new parser();
-
         client.on('data', data => {
-          debug('Received data back.');
-          p.append(data);
-          if (p.parse()) {
-            // TODO check for another message on the stream?
-            done();
-            resolve(p.decode());
+          debug('Received data back:');
+          debug(data.toString('hex'));
+
+          done();
+
+          data = Parser.parse(data);
+
+          if (typeof data === 'object' || typeof data === 'undefined') {
+            resolve(data);
+          }
+          else { // message is encrypted
+            resolve(this.device.cipher.decrypt(data));
           }
         });
 
