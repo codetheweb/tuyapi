@@ -5,7 +5,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/codetheweb/tuyapi/badge.svg?branch=master)](https://coveralls.io/github/codetheweb/tuyapi?branch=master)
 
 A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if port 6668 is open on your device chances are this library will work with it.
-Currently only supports smart plugs, but it should be fairly trivial to add other types of devices.
 
 ## Installation
 
@@ -22,13 +21,13 @@ let tuya = new TuyaDevice({
 
 tuya.resolveIds().then(() => {  
   tuya.get().then(status => {
-    console.log('Status: ' + status);
+    console.log('Status:', status);
 
     tuya.set({set: !status}).then(result => {
       console.log('Result of setting status to ' + !status + ': ' + result);
 
       tuya.get().then(status => {
-        console.log('New status: ' + status);
+        console.log('New status:', status);
         return;
       });
     });

@@ -9,17 +9,6 @@ const debug = require('debug')('TuyAPI');
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
-// TODO:
-/*
-* Check arguments for all functions, throw error if invalid
-* Check open issues on Github
-* Parallel resolveIds()?
-* Use develop branch
-* Update docs on setup
-* Update docs for DPS
-* Add comments in code
-*/
-
 /**
 * Represents a Tuya device.
 * @class
@@ -52,10 +41,7 @@ function TuyaDevice(options) {
   // Create cipher from key
   this.device.cipher = new Cipher({key: this.device.key, version: this.device.version});
 
-  this._connectTotalTimeout = undefined;
-  this._connectRetryAttempts = undefined;
-
-  this._responseTimeout = 10 * 1000;
+  this._responseTimeout = 10; // In seconds
 
   debug('Device: ');
   debug(this.device);
@@ -243,10 +229,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
   return new Promise((resolve, reject) => {
     const client = new net.Socket();
 
-    const connectOperation = retry.operation({
-      retries: this._connectRetryAttempts,
-      maxRetryTime: this._connectTotalTimeout
-    });
+    const connectOperation = retry.operation();
 
     client.on('error', error => {
       if (!connectOperation.retry(error)) {
@@ -260,7 +243,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
 
         const timeout = setTimeout(() => {
           throw new Error('Timeout waiting for response');
-        }, this._responseTimeout);
+        }, this._responseTimeout * 1000);
 
         function done() {
           clearTimeout(timeout);
