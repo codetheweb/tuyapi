@@ -48,8 +48,9 @@ function TuyaDevice(options) {
 }
 
 /**
-* Resolves IDs stored in class to IPs. If you didn't pass IPs to the constructor,
-* you must call this before doing anything else.
+* Resolves ID stored in class to IP. If you didn't
+* pass an IP to the constructor, you must call
+* this before doing anything else.
 * @param {Object} [options]
 * @param {Number} [options.timeout=10]
 * how long, in seconds, to wait for device
@@ -59,7 +60,7 @@ function TuyaDevice(options) {
 * @returns {Promise<Boolean>}
 * true if IP was found and device is ready to be used
 */
-TuyaDevice.prototype.resolveIds = function (options) {
+TuyaDevice.prototype.resolveId = function (options) {
   // Set default options
   options = options ? options : {};
 
@@ -111,6 +112,15 @@ TuyaDevice.prototype.resolveIds = function (options) {
     // eslint-disable-next-line max-len
     throw new Error('resolveIds() timed out. Is the device powered on and the ID correct?');
   });
+};
+
+/**
+* @deprecated since v3.0.0. Will be deleted in v4.0.0. Use resolveId() instead.
+*/
+TuyaDevice.prototype.resolveIds = function (options) {
+  // eslint-disable-next-line max-len
+  console.warn('resolveIds() is deprecated since v3.0.0. Will be deleted in v4.0.0. Use resolveId() instead.');
+  return this.resolveId(options);
 };
 
 /**
