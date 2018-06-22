@@ -278,7 +278,7 @@ TuyaDevice.prototype._send = function (ip, buffer) {
         client.on('error', err => {
           // eslint-disable-next-line max-len
           err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          throw err;
+          reject(err);
         });
       });
     });
