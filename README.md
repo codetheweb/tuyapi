@@ -50,6 +50,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 1. Document details of protocol
 2. Retry when ECONNRESET is thrown
 3. Figure out correct CRC algorithm
+4. Keep connection open between requests
 
 ## Contributors
 

@@ -115,11 +115,11 @@ TuyaDevice.prototype.resolveId = function (options) {
 };
 
 /**
-* @deprecated since v3.0.0. Will be deleted in v4.0.0. Use resolveId() instead.
+* @deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.
 */
 TuyaDevice.prototype.resolveIds = function (options) {
   // eslint-disable-next-line max-len
-  console.warn('resolveIds() is deprecated since v3.0.0. Will be deleted in v4.0.0. Use resolveId() instead.');
+  console.warn('resolveIds() is deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.');
   return this.resolveId(options);
 };
 
@@ -252,7 +252,8 @@ TuyaDevice.prototype._send = function (ip, buffer) {
         client.write(buffer);
 
         const timeout = setTimeout(() => {
-          throw new Error('Timeout waiting for response');
+          client.destroy();
+          reject(new Error('Timeout waiting for response'));
         }, this._responseTimeout * 1000);
 
         function done() {
