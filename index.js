@@ -227,61 +227,101 @@ TuyaDevice.prototype.set = function (options) {
 };
 
 /**
-* Sends a query to a device.
+* Sends a query to a device. Helper
+* function that wraps ._sendUnwrapped()
+* in a retry operation.
 * @private
 * @param {String} ip IP of device
 * @param {Buffer} buffer buffer of data
 * @returns {Promise<string>} returned data
 */
 TuyaDevice.prototype._send = function (ip, buffer) {
-  debug('Sending this data: ', buffer.toString('hex'));
+  const operation = retry.operation({
+    retries: 4,
+    factor: 1.5
+  });
 
   return new Promise((resolve, reject) => {
-    const client = new net.Socket();
+    operation.attempt(currentAttempt => {
+      debug('Socket attempt', currentAttempt);
 
-    const connectOperation = retry.operation();
+      this._sendUnwrapped(ip, buffer).then(result => {
+        resolve(result);
+      }).catch(error => {
+        if (operation.retry(error)) {
+          return;
+        }
 
-    client.on('error', error => {
-      if (!connectOperation.retry(error)) {
-        reject(error);
+        reject(operation.mainError());
+      });
+    });
+  });
+};
+
+/**
+* Sends a query to a device.
+* @private
+* @param {String} ip IP of device
+* @param {Buffer} buffer buffer of data
+* @returns {Promise<string>} returned data
+*/
+TuyaDevice.prototype._sendUnwrapped = function (ip, buffer) {
+  debug('Sending this data: ', buffer.toString('hex'));
+
+  const client = new net.Socket();
+
+  return new Promise((resolve, reject) => {
+    // Attempt to connect
+    client.connect(6668, ip);
+
+    // Default connect timeout is ~1 minute,
+    // 10 seconds is a more reasonable default
+    // since `retry` is used.
+    client.setTimeout(1000, () => {
+      client.emit('error', new Error('connection timed out'));
+      client.destroy();
+    });
+
+    // Send data when connected
+    client.on('connect', () => {
+      debug('Socket connected.');
+
+      // Remove connect timeout
+      client.setTimeout(0);
+
+      // Transmit data
+      client.write(buffer);
+
+      this._sendTimeout = setTimeout(() => {
+        client.destroy();
+        reject(new Error('Timeout waiting for response'));
+      }, this._responseTimeout * 1000);
+    });
+
+    // Parse response data
+    client.on('data', data => {
+      debug('Received data back:');
+      debug(data.toString('hex'));
+
+      clearTimeout(this._sendTimeout);
+      client.destroy();
+
+      data = Parser.parse(data);
+
+      if (typeof data === 'object' || typeof data === 'undefined') {
+        resolve(data);
+      } else { // Message is encrypted
+        resolve(this.device.cipher.decrypt(data));
       }
     });
 
-    connectOperation.attempt(() => {
-      client.connect(6668, ip, () => {
-        client.write(buffer);
+    // Handle errors
+    client.on('error', err => {
+      debug('Error event from socket.');
 
-        const timeout = setTimeout(() => {
-          client.destroy();
-          reject(new Error('Timeout waiting for response'));
-        }, this._responseTimeout * 1000);
-
-        function done() {
-          clearTimeout(timeout);
-          client.destroy();
-        }
-
-        client.on('data', data => {
-          debug('Received data back:');
-          debug(data.toString('hex'));
-
-          done();
-
-          data = Parser.parse(data);
-
-          if (typeof data === 'object' || typeof data === 'undefined') {
-            resolve(data);
-          } else { // Message is encrypted
-            resolve(this.device.cipher.decrypt(data));
-          }
-        });
-
-        client.on('error', err => {
-          // eslint-disable-next-line max-len
-          err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          reject(err);
-        });
-      });
+      // eslint-disable-next-line max-len
+      err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+      reject(err);
     });
   });
 };
