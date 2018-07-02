@@ -41,7 +41,7 @@ function TuyaDevice(options) {
   // Create cipher from key
   this.device.cipher = new Cipher({key: this.device.key, version: this.device.version});
 
-  this._responseTimeout = 10; // In seconds
+  this._responseTimeout = 5; // In seconds
 
   debug('Device: ');
   debug(this.device);
