@@ -236,6 +236,10 @@ TuyaDevice.prototype.set = function (options) {
 * @returns {Promise<string>} returned data
 */
 TuyaDevice.prototype._send = function (ip, buffer) {
+  if (typeof ip === 'undefined') {
+    throw new TypeError('Device missing IP address.');
+  }
+
   const operation = retry.operation({
     retries: 4,
     factor: 1.5
