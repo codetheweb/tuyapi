@@ -61,10 +61,15 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
 ## Related
 
-- [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+### Ports
 - [python-tuya](https://github.com/clach04/python-tuya) a Python port by [clach04](https://github.com/clach04)
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 
+### Projects built with TuyAPI
+- [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
+- [tuyaweb](https://github.com/bmachek/tuyaweb): a web interface for controlling devices by [bmachek](https://github.com/bmachek)
+
+To add your projects to either of the above lists, please open a pull request.
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-javascript.svg)](https://forthebadge.com)
 [![forthebadge](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)
