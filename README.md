@@ -17,19 +17,18 @@ const TuyaDevice = require('tuyapi');
 
 let tuya = new TuyaDevice({
   id: 'xxxxxxxxxxxxxxxxxxxx',
-  key: 'xxxxxxxxxxxxxxxx'});
+  key: 'xxxxxxxxxxxxxxxx',
+  ip: 'xxx.xxx.xxx.xxx'});
 
-tuya.resolveIds().then(() => {  
-  tuya.get().then(status => {
-    console.log('Status:', status);
+tuya.get().then(status => {
+  console.log('Status:', status);
 
-    tuya.set({set: !status}).then(result => {
-      console.log('Result of setting status to ' + !status + ': ' + result);
+  tuya.set({set: !status}).then(result => {
+    console.log('Result of setting status to ' + !status + ': ' + result);
 
-      tuya.get().then(status => {
-        console.log('New status:', status);
-        return;
-      });
+    tuya.get().then(status => {
+      console.log('New status:', status);
+      return;
     });
   });
 });
