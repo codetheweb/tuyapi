@@ -65,6 +65,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 
 ### Projects built with TuyAPI
+- [tuya-cli](https://github.com/TuyaAPI/cli): a CLI interface for Tuya devices
 - [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
 - [tuyaweb](https://github.com/bmachek/tuyaweb): a web interface for controlling devices by [bmachek](https://github.com/bmachek)
 
