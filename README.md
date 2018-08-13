@@ -68,6 +68,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [tuya-cli](https://github.com/TuyaAPI/cli): a CLI interface for Tuya devices
 - [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
 - [tuyaweb](https://github.com/bmachek/tuyaweb): a web interface for controlling devices by [bmachek](https://github.com/bmachek)
+- [homebridge-igenix-air-conditioner](https://github.com/ellneal/homebridge-igenix-air-conditioner): a [Homebridge](https://github.com/nfarina/homebridge) plugin for the Igenix IG9901WIFI air conditioner
 
 To add your projects to either of the above lists, please open a pull request.
 
