@@ -94,6 +94,7 @@ TuyaDevice.prototype.resolveId = function (options) {
       if (this.device.id === thisId) {
         // Add IP
         this.device.ip = data.ip;
+        this.device.productKey = data.productKey;
         // Change protocol version if necessary
         this.device.version = data.version;
 
