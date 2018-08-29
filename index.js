@@ -17,6 +17,7 @@ const Parser = require('./lib/message-parser');
 * @param {Number} [options.port=6668] port of device
 * @param {String} options.id ID of device
 * @param {String} options.key encryption key of device
+* @param {String} options.productKey product key of device
 * @param {Number} [options.version=3.1] protocol version
 * @example
 * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
@@ -94,6 +95,10 @@ TuyaDevice.prototype.resolveId = function (options) {
       if (this.device.id === thisId) {
         // Add IP
         this.device.ip = data.ip;
+
+        // Change product key if neccessary
+        this.device.productKey = data.productKey;
+
         // Change protocol version if necessary
         this.device.version = data.version;
 
