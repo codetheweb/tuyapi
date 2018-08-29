@@ -2,19 +2,20 @@
 <html>
 <head>
   <meta charset='utf-8' />
-  <title>tuyapi 3.0.0 | Documentation</title>
+  <title>tuyapi 3.0.1 | Documentation</title>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' type='text/css' rel='stylesheet' />
   <link href='assets/style.css' type='text/css' rel='stylesheet' />
   <link href='assets/github.css' type='text/css' rel='stylesheet' />
   <link href='assets/split.css' type='text/css' rel='stylesheet' />
+  <meta name='description' content='An easy-to-use API for devices that use Tuya&#39;s cloud services'>
 </head>
 <body class='documentation m0'>
     <div class='flex'>
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>tuyapi</h3>
-          <div class='mb1'><code>3.0.0</code></div>
+          <div class='mb1'><code>3.0.1</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -153,7 +154,7 @@
       <div id='split-right' class='relative overflow-auto height-viewport-100'>
         
           
-            <section class='p2 mb2 clearfix bg-white minishadow'>
+          <section class='p2 mb2 clearfix bg-white minishadow'>
 
   
   <div class='clearfix'>
@@ -168,8 +169,10 @@
 
   <p>Represents a Tuya device.</p>
 
-
-  <div class='pre p1 fill-light mt0'>new TuyaDevice(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>new TuyaDevice(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
+   
   
   
 
@@ -186,7 +189,7 @@
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    
           </div>
           
@@ -204,7 +207,7 @@
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.ip</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
+  <td class='break-word'><span class='code bold'>options.ip</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
   </td>
   <td class='break-word'><span>IP of device
 </span></td>
@@ -213,7 +216,7 @@
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.port</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.port</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>6668</code>)
   </td>
@@ -224,7 +227,7 @@
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.id</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  <td class='break-word'><span class='code bold'>options.id</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   </td>
   <td class='break-word'><span>ID of device
 </span></td>
@@ -233,7 +236,7 @@
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.key</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  <td class='break-word'><span class='code bold'>options.key</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   </td>
   <td class='break-word'><span>encryption key of device
 </span></td>
@@ -242,7 +245,16 @@
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.version</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.productKey</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  </td>
+  <td class='break-word'><span>product key of device
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.version</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>3.1</code>)
   </td>
@@ -296,8 +308,10 @@
 pass an IP to the constructor, you must call
 this before doing anything else.</p>
 
-
-  <div class='pre p1 fill-light mt0'>resolveId(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>resolveId(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
+   
   
   
 
@@ -314,7 +328,7 @@ this before doing anything else.</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</code>
 	    
           </div>
           
@@ -332,7 +346,7 @@ this before doing anything else.</p>
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.timeout</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.timeout</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>10</code>)
   </td>
@@ -356,7 +370,7 @@ to be resolved before timeout error is thrown
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
         true if IP was found and device is ready to be used
 
       
@@ -396,8 +410,10 @@ to be resolved before timeout error is thrown
   
 
   
-
-  <div class='pre p1 fill-light mt0'>resolveIds(options: any)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>resolveIds(options: any)</div>
+   
   
   
 
@@ -457,8 +473,10 @@ to be resolved before timeout error is thrown
   <p>Gets a device's current status.
 Defaults to returning only the value of the first DPS index.</p>
 
-
-  <div class='pre p1 fill-light mt0'>get(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>get(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></div>
+   
   
   
 
@@ -475,7 +493,7 @@ Defaults to returning only the value of the first DPS index.</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</code>
 	    
           </div>
           
@@ -493,7 +511,7 @@ Defaults to returning only the value of the first DPS index.</p>
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.schema</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>?</code>
+  <td class='break-word'><span class='code bold'>options.schema</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>?</code>
   </td>
   <td class='break-word'><span>true to return entire schema of device
 </span></td>
@@ -502,7 +520,7 @@ Defaults to returning only the value of the first DPS index.</p>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>1</code>)
   </td>
@@ -525,7 +543,7 @@ Defaults to returning only the value of the first DPS index.</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></code>:
         returns boolean if no options are provided, otherwise returns object of results
 
       
@@ -575,8 +593,10 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
 
   <p>Sets a property on a device.</p>
 
-
-  <div class='pre p1 fill-light mt0'>set(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>set(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
+   
   
   
 
@@ -593,7 +613,7 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    
           </div>
           
@@ -611,7 +631,7 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>1</code>)
   </td>
@@ -643,7 +663,7 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
         returns 
 <code>true</code>
  if the command succeeded
@@ -684,10 +704,9 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   
 </section>
 
-          
         
           
-            <section class='p2 mb2 clearfix bg-white minishadow'>
+          <section class='p2 mb2 clearfix bg-white minishadow'>
 
   
   <div class='clearfix'>
@@ -702,8 +721,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   <p>Class for encrypting and decrypting payloads.</p>
 
-
-  <div class='pre p1 fill-light mt0'>new TuyaCipher(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>new TuyaCipher(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
+   
   
   
 
@@ -720,7 +741,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    
           </div>
           
@@ -738,7 +759,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.key</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  <td class='break-word'><span class='code bold'>options.key</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   </td>
   <td class='break-word'><span>localKey of cipher
 </span></td>
@@ -747,7 +768,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.version</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  <td class='break-word'><span class='code bold'>options.version</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   </td>
   <td class='break-word'><span>protocol version
 </span></td>
@@ -797,8 +818,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   <p>Encrypts data.</p>
 
-
-  <div class='pre p1 fill-light mt0'>encrypt(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): (<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>encrypt(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): (<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+   
   
   
 
@@ -815,7 +838,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    
           </div>
           
@@ -833,7 +856,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   </td>
   <td class='break-word'><span>data to encrypt
 </span></td>
@@ -842,7 +865,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.base64</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
+  <td class='break-word'><span class='code bold'>options.base64</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
   
     (default <code>true</code>)
   </td>
@@ -866,7 +889,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
+      <code>(<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
         returns Buffer unless options.base64 is true
 
       
@@ -907,8 +930,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   <p>Decrypts data.</p>
 
-
-  <div class='pre p1 fill-light mt0'>decrypt(data: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>decrypt(data: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+   
   
   
 
@@ -925,7 +950,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
 	    to decrypt
 
           </div>
@@ -940,7 +965,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
+      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
         returns object if data is JSON, else returns string
 
       
@@ -975,8 +1000,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   <p>Calculates a MD5 hash.</p>
 
-
-  <div class='pre p1 fill-light mt0'>md5(data: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>md5(data: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
+   
   
   
 
@@ -993,7 +1020,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
 	    to hash
 
           </div>
@@ -1008,7 +1035,7 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>:
         last 8 characters of hash of data
 
       
@@ -1036,10 +1063,9 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   
 </section>
 
-          
         
           
-            <section class='p2 mb2 clearfix bg-white minishadow'>
+          <section class='p2 mb2 clearfix bg-white minishadow'>
 
   
   <div class='clearfix'>
@@ -1054,8 +1080,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   <p>Class for decoding and encoding payloads.</p>
 
-
-  <div class='pre p1 fill-light mt0'>new MessageParser()</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>new MessageParser()</div>
+   
   
   
 
@@ -1095,8 +1123,10 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
   <p>Static wrapper for lower-level MessageParser
 functions to easily parse packets.</p>
 
-
-  <div class='pre p1 fill-light mt0'>parse(data: <a href="https://nodejs.org/api/buffer.html">Buffer</a>): (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">Undefined</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>parse(data: <a href="https://nodejs.org/api/buffer.html">Buffer</a>): (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/undefined">Undefined</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
+   
   
   
 
@@ -1128,7 +1158,7 @@ functions to easily parse packets.</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">Undefined</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
+      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/undefined">Undefined</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
         An object or string, depending on whether
 data contains an object. Undefined if
 there is no data in packet.
@@ -1166,8 +1196,10 @@ there is no data in packet.
   <p>Static wrapper for lower-level MessageParser
 functions to easily encode packets</p>
 
-
-  <div class='pre p1 fill-light mt0'>encode(options: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://nodejs.org/api/buffer.html">Buffer</a></div>
+ 
+  
+    <div class='pre p1 fill-light mt0'>encode(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://nodejs.org/api/buffer.html">Buffer</a></div>
+   
   
   
 
@@ -1184,7 +1216,7 @@ functions to easily encode packets</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    
           </div>
           
@@ -1202,7 +1234,7 @@ functions to easily encode packets</p>
             <tbody class='mt1'>
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
   </td>
   <td class='break-word'><span>data to encode
 </span></td>
@@ -1211,7 +1243,7 @@ functions to easily encode packets</p>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.commandByte</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
+  <td class='break-word'><span class='code bold'>options.commandByte</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   </td>
   <td class='break-word'><span>command byte
 </span></td>
@@ -1262,7 +1294,6 @@ functions to easily encode packets</p>
   
 </section>
 
-          
         
       </div>
     </div>
