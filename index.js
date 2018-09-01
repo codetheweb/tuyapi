@@ -326,12 +326,11 @@ TuyaDevice.prototype.set = function(options) {
     data: thisData,
     commandByte: '07'
   });
-
+  client.write(buffer);
   return new Promise((resolve, reject) => {
-    resolve(function() {
-      client.write(buffer);
-      true;
-    });
+    resolve(
+      true
+    );
   });
 
   // Send request to change status
