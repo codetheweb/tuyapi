@@ -346,9 +346,13 @@ TuyaDevice.prototype.set = function(options) {
   }, this._responseTimeout * 1000);
 
   return new Promise((resolve, reject) => {
-    resolve(
-      this.client.write(buffer)
-    );
+    if (!this.client.destroyed) {
+      resolve(
+        this.client.write(buffer)
+      );
+    } else {
+      reject(new Error("No write, client destroyed"));
+    }
   });
 
   // Send request to change status
