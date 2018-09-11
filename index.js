@@ -168,8 +168,8 @@ TuyaDevice.prototype.get = function (options) {
       } else {
         resolve(data.dps['1']);
       }
-    }).catch(err => {
-      reject(err);
+    }).catch(error => {
+      reject(error);
     });
   });
 };
@@ -225,8 +225,8 @@ TuyaDevice.prototype.set = function (options) {
   return new Promise((resolve, reject) => {
     this._send(this.device.ip, buffer).then(() => {
       resolve(true);
-    }).catch(err => {
-      reject(err);
+    }).catch(error => {
+      reject(error);
     });
   });
 };
