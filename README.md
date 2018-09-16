@@ -38,11 +38,15 @@ This should report the current status, set the device to the opposite of what it
 
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
+
+## 📝 Notes
+- Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
+- Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the offical app.
+
+
 ## 📓 Docs
 
 See the [docs](https://codetheweb.github.io/tuyapi/index.html).
-
-**IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
