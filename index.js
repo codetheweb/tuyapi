@@ -3,8 +3,8 @@
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
-const inherits = require('util').inherits;
-const EventEmitter = require('events').EventEmitter;
+const {inherits} = require('util');
+const {EventEmitter} = require('events');
 const timeout = require('p-timeout');
 const retry = require('retry');
 const debug = require('debug')('TuyAPI');
@@ -181,7 +181,7 @@ TuyaDevice.prototype.get = function (options) {
   return new Promise((resolve, reject) => {
     this._send(buffer, 10).then(data => {
       if (this.device.persistentConnection) {
-          return resolve(true);
+        return resolve(true);
       }
 
       if (options.schema === true) {
@@ -257,7 +257,7 @@ TuyaDevice.prototype.set = function (options) {
   return new Promise((resolve, reject) => {
     this._send(buffer, 7).then(() => {
       if (this.device.persistentConnection) {
-          return resolve(true);
+        return resolve(true);
       }
       resolve(true);
     }).catch(error => {
@@ -291,8 +291,8 @@ TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
 
       this._sendUnwrapped(buffer, expectedResponseCommandByte).then(
         (result, commandByte) => {
-        resolve(result, commandByte);
-      }).catch(error => {
+          resolve(result, commandByte);
+        }).catch(error => {
         if (operation.retry(error)) {
           return;
         }
@@ -315,17 +315,19 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
   return new Promise((resolve, reject) => {
     if (!this.device.persistentConnection) {
       this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
-        if (expectedResponseCommandByte !== commandByte) return false;
+        if (expectedResponseCommandByte !== commandByte) {
+          return false;
+        }
 
         if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
+          clearTimeout(this._sendTimeout);
         }
         this.disconnect();
         return resolve(data, commandByte);
       };
       this.dataRejector = err => {
         if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
+          clearTimeout(this._sendTimeout);
         }
 
         debug('Error event from socket.');
@@ -344,14 +346,16 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
       this.client.write(buffer);
 
       this._sendTimeout = setTimeout(() => {
-        if (this.client) this.client.destroy();
+        if (this.client) {
+          this.client.destroy();
+        }
         this.dataResolver = null;
         this.dataRejector = null;
         return reject(new Error('Timeout waiting for response'));
       }, this._responseTimeout * 1000);
 
       if (this.device.persistentConnection) {
-          return resolve(true);
+        return resolve(true);
       }
     });
   });
@@ -502,7 +506,9 @@ TuyaDevice.prototype.connect = function () {
  */
 TuyaDevice.prototype.disconnect = function () {
   this._persistentConnectionStopped = true;
-  if (!this.client) return;
+  if (!this.client) {
+    return;
+  }
 
   debug('Disconnect');
   this.client.destroy();
