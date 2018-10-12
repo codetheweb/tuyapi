@@ -8,7 +8,9 @@ test('encode and decode message', t => {
 
   const encoded = Parser.encode({data: payload, commandByte: '0a'});
 
-  t.deepEqual(Parser.parse(encoded), payload);
+  const parsed = Parser.parse(encoded);
+  t.deepEqual(parsed.data, payload);
+  t.deepEqual(parsed.commandByte, 10);
 });
 
 test('decode encrypted message', t => {
