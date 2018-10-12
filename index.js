@@ -359,7 +359,6 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
       }
     });
   });
-
 };
 
 /**
