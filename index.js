@@ -191,8 +191,8 @@ TuyaDevice.prototype.get = function (options) {
       } else {
         resolve(data.dps['1']);
       }
-    }).catch(err => {
-      reject(err);
+    }).catch(error => {
+      reject(error);
     });
   });
 };
@@ -260,8 +260,8 @@ TuyaDevice.prototype.set = function (options) {
           return resolve(true);
       }
       resolve(true);
-    }).catch(err => {
-      reject(err);
+    }).catch(error => {
+      reject(error);
     });
   });
 };

@@ -38,11 +38,15 @@ This should report the current status, set the device to the opposite of what it
 
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
+
+## 📝 Notes
+- Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
+- Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the offical app.
+
+
 ## 📓 Docs
 
 See the [docs](https://codetheweb.github.io/tuyapi/index.html).
-
-**IMPORTANT**: Only one TCP connection can be in use with a device at once. If testing this, do not have the app on your phone open.
 
 ## TODO
 
@@ -69,6 +73,8 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
 - [tuyaweb](https://github.com/bmachek/tuyaweb): a web interface for controlling devices by [bmachek](https://github.com/bmachek)
 - [homebridge-igenix-air-conditioner](https://github.com/ellneal/homebridge-igenix-air-conditioner): a [Homebridge](https://github.com/nfarina/homebridge) plugin for the Igenix IG9901WIFI air conditioner
+- [magichome-led-controller](https://github.com/cajonKA/magichome-led-controller-node): a node to use magichome led RGB controller in [node-red](https://github.com/node-red/node-red)
+
 
 To add your projects to either of the above lists, please open a pull request.
 
