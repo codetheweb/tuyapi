@@ -3,11 +3,11 @@
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
+const inherits = require('util').inherits;
+const EventEmitter = require('events').EventEmitter;
 const timeout = require('p-timeout');
 const retry = require('retry');
 const debug = require('debug')('TuyAPI');
-const inherits = require('util').inherits;
-const EventEmitter = require('events').EventEmitter;
 
 // Helpers
 const Cipher = require('./lib/cipher');
@@ -25,7 +25,7 @@ inherits(TuyaDevice, EventEmitter);
  * @param {String} options.key encryption key of device
  * @param {String} options.productKey product key of device
  * @param {Number} [options.version=3.1] protocol version
- * @param {Boolean} [options.persistentConnection=false] flag if persistent connection should be used or not
+ * @param {Boolean} [options.persistentConnection=false] use persistent connection
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
  */
@@ -175,12 +175,14 @@ TuyaDevice.prototype.get = function (options) {
   // Create byte buffer
   const buffer = Parser.encode({
     data: payload,
-    commandByte: 0x0a
+    commandByte: 10 // 0x0a
   });
 
   return new Promise((resolve, reject) => {
-    this._send(buffer, 0x0a).then((data) => {
-      if (this.device.persistentConnection) return resolve(true);
+    this._send(buffer, 10).then(data => {
+      if (this.device.persistentConnection) {
+          return resolve(true);
+      }
 
       if (options.schema === true) {
         resolve(data);
@@ -248,13 +250,15 @@ TuyaDevice.prototype.set = function (options) {
   const thisData = Buffer.from(this.device.version + md5 + data);
   const buffer = Parser.encode({
     data: thisData,
-    commandByte: 0x07
+    commandByte: 7 // 0x07
   });
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(buffer, 0x07).then((result) => {
-      if (this.device.persistentConnection) return resolve(true);
+    this._send(buffer, 7).then(() => {
+      if (this.device.persistentConnection) {
+          return resolve(true);
+      }
       resolve(true);
     }).catch(err => {
       reject(err);
@@ -285,7 +289,8 @@ TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
     operation.attempt(currentAttempt => {
       debug('Send attempt', currentAttempt);
 
-      this._sendUnwrapped(buffer, expectedResponseCommandByte).then((result, commandByte) => {
+      this._sendUnwrapped(buffer, expectedResponseCommandByte).then(
+        (result, commandByte) => {
         resolve(result, commandByte);
       }).catch(error => {
         if (operation.retry(error)) {
@@ -309,15 +314,19 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
 
   return new Promise((resolve, reject) => {
     if (!this.device.persistentConnection) {
-      this.dataResolver = (data, commandByte) => { // delayed resolving of promise
+      this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
         if (expectedResponseCommandByte !== commandByte) return false;
 
-        if (this._sendTimeout) clearTimeout(this._sendTimeout);
+        if (this._sendTimeout) {
+            clearTimeout(this._sendTimeout);
+        }
         this.disconnect();
         return resolve(data, commandByte);
       };
-      this.dataRejector = (err) => {
-        if (this._sendTimeout) clearTimeout(this._sendTimeout);
+      this.dataRejector = err => {
+        if (this._sendTimeout) {
+            clearTimeout(this._sendTimeout);
+        }
 
         debug('Error event from socket.');
 
@@ -341,7 +350,9 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
         return reject(new Error('Timeout waiting for response'));
       }, this._responseTimeout * 1000);
 
-      if (this.device.persistentConnection) return resolve(true);
+      if (this.device.persistentConnection) {
+          return resolve(true);
+      }
     });
   });
 
@@ -353,7 +364,7 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
  * @returns {Promise<string>} returned data
  */
 TuyaDevice.prototype.__sendPing = function () {
-  debug("PING", this.device.ip, this.client ? this.client.destroyed : true);
+  debug('PING', this.device.ip, this.client ? this.client.destroyed : true);
   // Create byte buffer
   const buffer = Parser.encode({
     data: Buffer.allocUnsafe(0),
@@ -376,7 +387,7 @@ TuyaDevice.prototype.connect = function () {
     this.client = new net.Socket();
 
     // Attempt to connect
-    debug("Connect", this.device.ip);
+    debug('Connect', this.device.ip);
     this.client.connect(this.device.port, this.device.ip);
 
     // Default connect timeout is ~1 minute,
@@ -428,15 +439,16 @@ TuyaDevice.prototype.connect = function () {
       }, this._pingPongPeriod * 1000);
 
       if (typeof data === 'object') {
-        debug("Data:", this.client.remoteAddress, data, dataRes.commandByte);
+        debug('Data:', this.client.remoteAddress, data, dataRes.commandByte);
       } else if (typeof data === 'undefined') {
         if (dataRes.commandByte === 0x09) { // PONG received
           debug('PONG', this.device.ip, this.client ? this.client.destroyed : true);
           return;
         }
-        debug("undefined", this.client.remoteAddress, data, dataRes.commandByte);
+        debug('undefined', this.client.remoteAddress, data, dataRes.commandByte);
       } else { // Message is encrypted
-        debug("decrypt", this.client.remoteAddress, this.device.cipher.decrypt(data), dataRes.commandByte);
+        // eslint-disable-next-line max-len
+        debug('decrypt', this.client.remoteAddress, this.device.cipher.decrypt(data), dataRes.commandByte);
         data = this.device.cipher.decrypt(data);
       }
       if (this.dataResolver) {
@@ -445,9 +457,9 @@ TuyaDevice.prototype.connect = function () {
           this.dataRejector = null;
         }
       } else if (this.device.persistentConnection) {
-        this.emit("data", data, dataRes.commandByte);
+        this.emit('data', data, dataRes.commandByte);
       } else {
-        debug("Response undelivered");
+        debug('Response undelivered');
       }
     });
 
