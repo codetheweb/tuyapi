@@ -1,3 +1,5 @@
+'use strict';
+
 // Import packages
 const dgram = require('dgram');
 const net = require('net');
@@ -23,6 +25,7 @@ inherits(TuyaDevice, EventEmitter);
  * @param {String} options.key encryption key of device
  * @param {String} options.productKey product key of device
  * @param {Number} [options.version=3.1] protocol version
+ * @param {Boolean} [options.persistentConnection=false] flag if persistent connection should be used or not
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
  */
@@ -42,6 +45,9 @@ function TuyaDevice(options) {
   if (this.device.version === undefined) {
     this.device.version = 3.1;
   }
+  if (this.device.persistentConnection === undefined) {
+    this.device.persistentConnection = false;
+  }
 
   // Create cipher from key
   this.device.cipher = new Cipher({
@@ -49,109 +55,10 @@ function TuyaDevice(options) {
     version: this.device.version
   });
 
-  this._responseTimeout = 5;  // In seconds
-  this._connectTimeout = 1;   // In seconds
-  this._pollPeriod = 15;      // In seconds
-
-  if (this.device.ip != undefined) {
-
-    this.client = new net.Socket();
-
-    // Attempt to connect
-    debug("Connect", this.device.ip);
-    this.client.connect(this.device.port, this.device.ip);
-
-    // Default connect timeout is ~1 minute,
-    // 10 seconds is a more reasonable default
-    // since `retry` is used.
-    this.client.setTimeout(this._connectTimeout * 1000, () => {
-      this.client.emit('error', new Error('connection timed out'));
-      this.client.destroy();
-    });
-
-    // Send data when connected
-    this.client.on('connect', () => {
-      debug('Socket connected.');
-
-      // Remove connect timeout
-      this.client.setTimeout(0);
-
-      const payload = {
-        gwId: this.device.id,
-        devId: this.device.id
-      };
-
-      debug('Payload: ', payload);
-
-      // Create byte buffer
-      const buffer = Parser.encode({
-        data: payload,
-        commandByte: '0a'
-      });
-      debug(buffer.toString('hex'));
-      // Transmit data
-      this.client.write(buffer);
-
-      // Device status polling loop
-      clearInterval(this.polling);
-      this.polling = setInterval(
-        function() {
-          debug("Poll", this.device.ip, this.client.destroyed);
-          if (!this.client.destroyed) {
-            this.client.write(buffer);
-
-            // if a response is not received within _responseTimeout seconds, destory socket
-            this._sendTimeout = setTimeout(() => {
-              this.emit("error", this.client.remoteAddress);
-              debug('Timeout event from socket.', this.client.remoteAddress);
-              // Next poll loop will trigger reconnect
-              this.client.destroy();
-            }, this._responseTimeout * 1000);
-          } else {
-
-            // Reconnect socket to client
-            this.emit("error", this.device.ip);
-            debug("Reconnect:", this.device.ip);
-            this.client.connect(this.device.port, this.device.ip);
-            // if a connection is not received within _connectTimeout seconds, destory attempt
-            this.client.setTimeout(this._connectTimeout * 1000, () => {
-
-              // Next poll loop will trigger reconnect
-              this.client.destroy();
-            });
-          }
-        }.bind(this), this._pollPeriod * 1000);
-    });
-
-    // Parse response data
-    this.client.on('data', data => {
-      debug('Received data back:', this.client.remoteAddress);
-      debug(data.toString('hex'));
-
-      clearTimeout(this._sendTimeout);
-
-      data = Parser.parse(data);
-
-      if (typeof data === 'object') {
-        debug("Data:", this.client.remoteAddress, data);
-        this.emit("data", data);
-      } else if (typeof data === 'undefined') {
-        debug("undefined", this.client.remoteAddress, data);
-      } else { // Message is encrypted
-        debug("decrypt", this.client.remoteAddress, this.device.cipher.decrypt(data));
-        this.emit("data", this.device.cipher.decrypt(data));
-      }
-    });
-
-    // Handle errors
-    this.client.on('error', err => {
-      debug('Error event from socket.', this.device.ip);
-      this.emit('error', new Error('Error from socket'));
-      this.client.destroy();
-    });
-
-  }
-
+  this._responseTimeout = 5; // In seconds
+  this._connectTimeout = 1; // In seconds
+  this._pingPongPeriod = 10; // In seconds
+  this._persistentConnectionStopped = true;
 }
 
 /**
@@ -167,7 +74,7 @@ function TuyaDevice(options) {
  * @returns {Promise<Boolean>}
  * true if IP was found and device is ready to be used
  */
-TuyaDevice.prototype.resolveId = function(options) {
+TuyaDevice.prototype.resolveId = function (options) {
   // Set default options
   options = options ? options : {};
 
@@ -191,22 +98,22 @@ TuyaDevice.prototype.resolveId = function(options) {
     this.listener.on('message', message => {
       debug('Received UDP message.');
 
-      const data = Parser.parse(message);
+      const dataRes = Parser.parse(message);
 
       debug('UDP data:');
-      debug(data);
+      debug(dataRes.data);
 
-      const thisId = data.gwId;
+      const thisId = dataRes.data.gwId;
 
-      if (this.device.id === thisId) {
+      if (this.device.id === thisId && dataRes.data) {
         // Add IP
-        this.device.ip = data.ip;
+        this.device.ip = dataRes.data.ip;
 
         // Change product key if neccessary
-        this.device.productKey = data.productKey;
+        this.device.productKey = dataRes.data.productKey;
 
         // Change protocol version if necessary
-        this.device.version = data.version;
+        this.device.version = dataRes.data.version;
 
         // Cleanup
         this.listener.close();
@@ -221,14 +128,14 @@ TuyaDevice.prototype.resolveId = function(options) {
     this.listener.close();
     this.listener.removeAllListeners();
     // eslint-disable-next-line max-len
-    throw new Error('resolveIds() timed out. Is the device powered on and the ID correct?');
+    Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
   });
 };
 
 /**
  * @deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.
  */
-TuyaDevice.prototype.resolveIds = function(options) {
+TuyaDevice.prototype.resolveIds = function (options) {
   // eslint-disable-next-line max-len
   console.warn('resolveIds() is deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.');
   return this.resolveId(options);
@@ -254,7 +161,7 @@ TuyaDevice.prototype.resolveIds = function(options) {
  * @returns {Promise<Object>}
  * returns boolean if no options are provided, otherwise returns object of results
  */
-TuyaDevice.prototype.get = function(options) {
+TuyaDevice.prototype.get = function (options) {
   // Set empty object as default
   options = options ? options : {};
 
@@ -268,26 +175,24 @@ TuyaDevice.prototype.get = function(options) {
   // Create byte buffer
   const buffer = Parser.encode({
     data: payload,
-    commandByte: '0a'
+    commandByte: 0x0a
   });
 
   return new Promise((resolve, reject) => {
-    resolve(client.write(buffer));
-  });
+    this._send(buffer, 0x0a).then((data) => {
+      if (this.device.persistentConnection) return resolve(true);
 
-  //return new Promise((resolve, reject) => {
-  //  this._send(this.device.ip, buffer).then(data => {
-  //    if (options.schema === true) {
-  //      resolve(data);
-  //    } else if (options.dps) {
-  //      resolve(data.dps[options.dps]);
-  //    } else {
-  //      resolve(data.dps['1']);
-  //    }
-  //  }).catch(err => {
-  //    reject(err);
-  //  });
-  //});
+      if (options.schema === true) {
+        resolve(data);
+      } else if (options.dps) {
+        resolve(data.dps[options.dps]);
+      } else {
+        resolve(data.dps['1']);
+      }
+    }).catch(err => {
+      reject(err);
+    });
+  });
 };
 
 /**
@@ -303,7 +208,7 @@ TuyaDevice.prototype.get = function(options) {
  * tuya.set({dps: 2, set: true}).then(() => console.log('device was changed'))
  * @returns {Promise<Boolean>} - returns `true` if the command succeeded
  */
-TuyaDevice.prototype.set = function(options) {
+TuyaDevice.prototype.set = function (options) {
   let dps = {};
 
   if (options.dps === undefined) {
@@ -326,7 +231,7 @@ TuyaDevice.prototype.set = function(options) {
     dps
   };
 
-  debug('Payload:', this.client.remoteAddress);
+  debug('Payload:', this.device.ip);
   debug(payload);
 
   // Encrypt data
@@ -343,34 +248,18 @@ TuyaDevice.prototype.set = function(options) {
   const thisData = Buffer.from(this.device.version + md5 + data);
   const buffer = Parser.encode({
     data: thisData,
-    commandByte: '07'
-  });
-
-  clearTimeout(this._sendTimeout);
-  this._sendTimeout = setTimeout(() => {
-    this.emit("error", this.client.remoteAddress);
-    debug('Timeout event from socket.', this.client.remoteAddress);
-    this.client.destroy();
-  }, this._responseTimeout * 1000);
-
-  return new Promise((resolve, reject) => {
-    if (!this.client.destroyed) {
-      resolve(
-        this.client.write(buffer)
-      );
-    } else {
-      reject(new Error("No write, client destroyed"));
-    }
+    commandByte: 0x07
   });
 
   // Send request to change status
-  //return new Promise((resolve, reject) => {
-  //  this._send(this.device.ip, buffer).then(() => {
-  //    resolve(true);
-  //  }).catch(err => {
-  //    reject(err);
-  //  });
-  //});
+  return new Promise((resolve, reject) => {
+    this._send(buffer, 0x07).then((result) => {
+      if (this.device.persistentConnection) return resolve(true);
+      resolve(true);
+    }).catch(err => {
+      reject(err);
+    });
+  });
 };
 
 /**
@@ -382,8 +271,8 @@ TuyaDevice.prototype.set = function(options) {
  * @param {Buffer} buffer buffer of data
  * @returns {Promise<string>} returned data
  */
-TuyaDevice.prototype._send = function(ip, buffer) {
-  if (typeof ip === 'undefined') {
+TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
+  if (typeof this.device.ip === 'undefined') {
     throw new TypeError('Device missing IP address.');
   }
 
@@ -394,10 +283,10 @@ TuyaDevice.prototype._send = function(ip, buffer) {
 
   return new Promise((resolve, reject) => {
     operation.attempt(currentAttempt => {
-      debug('Socket attempt', currentAttempt);
+      debug('Send attempt', currentAttempt);
 
-      this._sendUnwrapped(ip, buffer).then(result => {
-        resolve(result);
+      this._sendUnwrapped(buffer, expectedResponseCommandByte).then((result, commandByte) => {
+        resolve(result, commandByte);
       }).catch(error => {
         if (operation.retry(error)) {
           return;
@@ -412,23 +301,88 @@ TuyaDevice.prototype._send = function(ip, buffer) {
 /**
  * Sends a query to a device.
  * @private
- * @param {String} ip IP of device
  * @param {Buffer} buffer buffer of data
  * @returns {Promise<string>} returned data
  */
-TuyaDevice.prototype._sendUnwrapped = function(ip, buffer) {
-  debug('Sending this data: ', buffer.toString('hex'));
-
-  this.client = new net.Socket();
+TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandByte) {
+  debug('Sending this data:', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
+    if (!this.device.persistentConnection) {
+      this.dataResolver = (data, commandByte) => { // delayed resolving of promise
+        if (expectedResponseCommandByte !== commandByte) return false;
+
+        if (this._sendTimeout) clearTimeout(this._sendTimeout);
+        this.disconnect();
+        return resolve(data, commandByte);
+      };
+      this.dataRejector = (err) => {
+        if (this._sendTimeout) clearTimeout(this._sendTimeout);
+
+        debug('Error event from socket.');
+
+        // eslint-disable-next-line max-len
+        err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
+        return reject(err);
+      };
+    }
+    this.connect().then(() => {
+      if (this.pingpongTimeout) {
+        clearTimeout(this.pingpongTimeout);
+        this.pingpongTimeout = null;
+      }
+      // Transmit data
+      this.client.write(buffer);
+
+      this._sendTimeout = setTimeout(() => {
+        if (this.client) this.client.destroy();
+        this.dataResolver = null;
+        this.dataRejector = null;
+        return reject(new Error('Timeout waiting for response'));
+      }, this._responseTimeout * 1000);
+
+      if (this.device.persistentConnection) return resolve(true);
+    });
+  });
+
+};
+
+/**
+ * Send Ping to the device
+ * @private
+ * @returns {Promise<string>} returned data
+ */
+TuyaDevice.prototype.__sendPing = function () {
+  debug("PING", this.device.ip, this.client ? this.client.destroyed : true);
+  // Create byte buffer
+  const buffer = Parser.encode({
+    data: Buffer.allocUnsafe(0),
+    commandByte: 0x09
+  });
+  debug('PingPong: ' + buffer.toString('hex'));
+
+  this._sendUnwrapped(buffer);
+};
+
+/**
+ * Connects to the device, use to start receiving updates
+ * when using persitent connection
+ * @private
+ * @returns {Promise<string>} returned data
+ */
+TuyaDevice.prototype.connect = function () {
+  this._persistentConnectionStopped = false;
+  if (!this.client) {
+    this.client = new net.Socket();
+
     // Attempt to connect
-    this.client.connect(6668, ip);
+    debug("Connect", this.device.ip);
+    this.client.connect(this.device.port, this.device.ip);
 
     // Default connect timeout is ~1 minute,
     // 10 seconds is a more reasonable default
     // since `retry` is used.
-    this.client.setTimeout(this._connectTimeout*1000, () => {
+    this.client.setTimeout(this._connectTimeout * 1000, () => {
       this.client.emit('error', new Error('connection timed out'));
       this.client.destroy();
     });
@@ -440,51 +394,106 @@ TuyaDevice.prototype._sendUnwrapped = function(ip, buffer) {
       // Remove connect timeout
       this.client.setTimeout(0);
 
-      // Transmit data
-      this.client.write(buffer);
+      if (this.device.persistentConnection) {
+        this.emit('connected');
 
-      this._sendTimeout = setTimeout(() => {
-        this.client.destroy();
-        reject(new Error('Timeout waiting for response'));
-      }, this._responseTimeout * 1000);
+        if (this.pingpongTimeout) {
+          clearTimeout(this.pingpongTimeout);
+          this.pingpongTimeout = null;
+        }
+        this.pingpongTimeout = setTimeout(() => {
+          this.__sendPing();
+        }, this._pingPongPeriod * 1000);
+
+        this.get();
+      }
     });
 
     // Parse response data
     this.client.on('data', data => {
-      debug('Received data back:');
+      debug('Received data back:', this.client.remoteAddress);
       debug(data.toString('hex'));
 
       clearTimeout(this._sendTimeout);
-      this.client.destroy();
 
-      data = Parser.parse(data);
+      const dataRes = Parser.parse(data);
+      data = dataRes.data;
 
-      if (typeof data === 'object' || typeof data === 'undefined') {
-        resolve(data);
+      if (this.pingpongTimeout) {
+        clearTimeout(this.pingpongTimeout);
+        this.pingpongTimeout = null;
+      }
+      this.pingpongTimeout = setTimeout(() => {
+        this.__sendPing();
+      }, this._pingPongPeriod * 1000);
+
+      if (typeof data === 'object') {
+        debug("Data:", this.client.remoteAddress, data, dataRes.commandByte);
+      } else if (typeof data === 'undefined') {
+        if (dataRes.commandByte === 0x09) { // PONG received
+          debug('PONG', this.device.ip, this.client ? this.client.destroyed : true);
+          return;
+        }
+        debug("undefined", this.client.remoteAddress, data, dataRes.commandByte);
       } else { // Message is encrypted
-        resolve(this.device.cipher.decrypt(data));
+        debug("decrypt", this.client.remoteAddress, this.device.cipher.decrypt(data), dataRes.commandByte);
+        data = this.device.cipher.decrypt(data);
+      }
+      if (this.dataResolver) {
+        if (this.dataResolver(data, dataRes.commandByte)) {
+          this.dataResolver = null;
+          this.dataRejector = null;
+        }
+      } else if (this.device.persistentConnection) {
+        this.emit("data", data, dataRes.commandByte);
+      } else {
+        debug("Response undelivered");
       }
     });
 
     // Handle errors
     this.client.on('error', err => {
-      debug('Error event from socket.');
-      debug("Reconnect", this.device.ip);
-      this.client.connect(6668, ip);
-
-      // Default connect timeout is ~1 minute,
-      // 10 seconds is a more reasonable default
-      // since `retry` is used.
-      this.client.setTimeout(this._connectTimeout*1000, () => {
-        this.client.emit('error', new Error('connection timed out'));
-        this.client.destroy();
-      });
-
-      // eslint-disable-next-line max-len
-      err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-      reject(err);
+      debug('Error event from socket.', this.device.ip, err);
+      if (this.dataRejector) {
+        this.dataRejector(err);
+        this.dataRejector = null;
+        this.dataResolver = null;
+      } else if (this.device.persistentConnection) {
+        this.emit('error', new Error('Error from socket'));
+      }
+      this.client.destroy();
     });
-  });
+
+    // Handle errors
+    this.client.on('close', () => {
+      debug('Close socket.', this.device.ip);
+      this.emit('disconnected');
+      this.client.destroy();
+      this.client = null;
+      if (this.pingpongTimeout) {
+        clearTimeout(this.pingpongTimeout);
+        this.pingpongTimeout = null;
+      }
+      if (this.device.persistentConnection && !this._persistentConnectionStopped) {
+        setTimeout(() => {
+          this.connect();
+        }, 1000);
+      }
+    });
+  }
+  return Promise.resolve(true);
+};
+
+/**
+ * Disconnects a connection if it is there
+ * @private
+ */
+TuyaDevice.prototype.disconnect = function () {
+  this._persistentConnectionStopped = true;
+  if (!this.client) return;
+
+  debug('Disconnect');
+  this.client.destroy();
 };
 
 module.exports = TuyaDevice;
