@@ -26,6 +26,9 @@ inherits(TuyaDevice, EventEmitter);
  * @param {String} options.productKey product key of device
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.persistentConnection=false] use persistent connection
+ *                  use methods [connect]{@link TuyaDevice#connect}connect or [get]{@link TuyaDevice#get}
+                    to connect to device initially and [disconnect]{@link TuyaDevice#disconnect} to stop
+                    the persistent connection
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
  */
@@ -381,8 +384,11 @@ TuyaDevice.prototype.__sendPing = function () {
 /**
  * Connects to the device, use to start receiving updates
  * when using persitent connection
- * @private
- * @returns {Promise<string>} returned data
+ * @returns {Promise<Boolean>}
+ * @emits TuyaDevice#error
+ * @emits TuyaDevice#connected
+ * @emits TuyaDevice#data
+ * @emits TuyaDevice#disconnected
  */
 TuyaDevice.prototype.connect = function () {
   this._persistentConnectionStopped = false;
@@ -397,6 +403,12 @@ TuyaDevice.prototype.connect = function () {
     // 10 seconds is a more reasonable default
     // since `retry` is used.
     this.client.setTimeout(this._connectTimeout * 1000, () => {
+      /**
+       * Error event
+       *
+       * @event TuyaDevice#error
+       * @property {Error} error - Error that happend
+       */
       this.client.emit('error', new Error('connection timed out'));
       this.client.destroy();
     });
@@ -409,6 +421,11 @@ TuyaDevice.prototype.connect = function () {
       this.client.setTimeout(0);
 
       if (this.device.persistentConnection) {
+        /**
+         * Info event that connection to device is established
+         *
+         * @event TuyaDevice#connected
+         */
         this.emit('connected');
 
         if (this.pingpongTimeout) {
@@ -460,6 +477,14 @@ TuyaDevice.prototype.connect = function () {
           this.dataRejector = null;
         }
       } else if (this.device.persistentConnection) {
+        /**
+         * Data event to report data received from the device
+         *
+         * @event TuyaDevice#data
+         * @property {Object} data - received data
+         * @property {Number} commandByte - commandByte of result
+         *           (e.g. 7=requested response, 8=proactive update from device)
+         */
         this.emit('data', data, dataRes.commandByte);
       } else {
         debug('Response undelivered');
@@ -482,6 +507,11 @@ TuyaDevice.prototype.connect = function () {
     // Handle errors
     this.client.on('close', () => {
       debug('Close socket.', this.device.ip);
+      /**
+       * Info event that connection to device is destroyed
+       *
+       * @event TuyaDevice#disconnected
+       */
       this.emit('disconnected');
       this.client.destroy();
       this.client = null;
@@ -500,8 +530,9 @@ TuyaDevice.prototype.connect = function () {
 };
 
 /**
- * Disconnects a connection if it is there
- * @private
+ * Disconnects from the device, use to stop receiving updates
+ * when using persitent connection
+ * @returns {Promise<Boolean>}
  */
 TuyaDevice.prototype.disconnect = function () {
   this._persistentConnectionStopped = true;
