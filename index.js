@@ -26,8 +26,9 @@ inherits(TuyaDevice, EventEmitter);
  * @param {String} options.productKey product key of device
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.persistentConnection=false] use persistent connection
- *                  use methods [connect]{@link TuyaDevice#connect}connect or [get]{@link TuyaDevice#get}
-                    to connect to device initially and [disconnect]{@link TuyaDevice#disconnect} to stop
+ *                  use methods [connect]{@link TuyaDevice#connect} connect or
+                    [get]{@link TuyaDevice#get} to connect to device initially and
+                    [disconnect]{@link TuyaDevice#disconnect} to stop
                     the persistent connection
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx', key: 'xxxxxxxxxxxxxxxx'})
