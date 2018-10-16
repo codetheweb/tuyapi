@@ -477,7 +477,7 @@ TuyaDevice.prototype.connect = function () {
           this.dataResolver = null;
           this.dataRejector = null;
         }
-      } else if (this.device.persistentConnection) {
+      } else if (this.device.persistentConnection && data) {
         /**
          * Data event to report data received from the device
          *
