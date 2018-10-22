@@ -153,6 +153,8 @@ TuyaDevice.prototype.resolveIds = function (options) {
  * true to return entire schema of device
  * @param {Number} [options.dps=1]
  * DPS index to return
+ * @param {Boolean} [options.returnAsEvent=false]
+ * true to return the result as event, false to get it returned as Promise
  * @example
  * // get first, default property from device
  * tuya.get().then(status => console.log(status))
@@ -183,11 +185,10 @@ TuyaDevice.prototype.get = function (options) {
   });
 
   return new Promise((resolve, reject) => {
-    this._send(buffer, 10).then(data => {
-      if (this.device.persistentConnection) {
-        return resolve(true);
+    this._send(buffer, 10, options.returnAsEvent).then(data => {
+      if (options.returnAsEvent) {
+        return resolve();
       }
-
       if (options.schema === true) {
         resolve(data);
       } else if (options.dps) {
@@ -259,10 +260,7 @@ TuyaDevice.prototype.set = function (options) {
 
   // Send request to change status
   return new Promise((resolve, reject) => {
-    this._send(buffer, 7).then(() => {
-      if (this.device.persistentConnection) {
-        return resolve(true);
-      }
+    this._send(buffer, 7, false).then(() => {
       resolve(true);
     }).catch(error => {
       reject(error);
@@ -277,9 +275,11 @@ TuyaDevice.prototype.set = function (options) {
  * @private
  * @param {String} ip IP of device
  * @param {Buffer} buffer buffer of data
+ * @param {Boolean} returnAsEvent return result as event or as resolved promise
  * @returns {Promise<string>} returned data
  */
-TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
+// eslint-disable-next-line max-len
+TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte, returnAsEvent) {
   if (typeof this.device.ip === 'undefined') {
     throw new TypeError('Device missing IP address.');
   }
@@ -293,7 +293,7 @@ TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
     operation.attempt(currentAttempt => {
       debug('Send attempt', currentAttempt);
 
-      this._sendUnwrapped(buffer, expectedResponseCommandByte).then(
+      this._sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent).then(
         (result, commandByte) => {
           resolve(result, commandByte);
         }).catch(error => {
@@ -311,13 +311,15 @@ TuyaDevice.prototype._send = function (buffer, expectedResponseCommandByte) {
  * Sends a query to a device.
  * @private
  * @param {Buffer} buffer buffer of data
+ * @param {Boolean} returnAsEvent return result as event or as resolved promise
  * @returns {Promise<string>} returned data
  */
-TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandByte) {
+// eslint-disable-next-line max-len
+TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandByte, returnAsEvent) {
   debug('Sending this data:', buffer.toString('hex'));
 
   return new Promise((resolve, reject) => {
-    if (!this.device.persistentConnection) {
+    if (!returnAsEvent) {
       this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
         if (expectedResponseCommandByte !== commandByte) {
           return false;
@@ -326,8 +328,11 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
         if (this._sendTimeout) {
           clearTimeout(this._sendTimeout);
         }
-        this.disconnect();
-        return resolve(data, commandByte);
+        if (!this.device.persistentConnection) {
+          this.disconnect();
+        }
+        resolve(data, commandByte);
+        return true;
       };
       this.dataRejector = err => {
         if (this._sendTimeout) {
@@ -357,9 +362,8 @@ TuyaDevice.prototype._sendUnwrapped = function (buffer, expectedResponseCommandB
         this.dataRejector = null;
         return reject(new Error('Timeout waiting for response'));
       }, this._responseTimeout * 1000);
-
-      if (this.device.persistentConnection) {
-        return resolve(true);
+      if (returnAsEvent) {
+        resolve();
       }
     });
   });
@@ -375,11 +379,11 @@ TuyaDevice.prototype.__sendPing = function () {
   // Create byte buffer
   const buffer = Parser.encode({
     data: Buffer.allocUnsafe(0),
-    commandByte: 0x09
+    commandByte: 9 // 0x09
   });
   debug('PingPong: ' + buffer.toString('hex'));
 
-  this._sendUnwrapped(buffer);
+  this._sendUnwrapped(buffer, 9, true);
 };
 
 /**
@@ -437,7 +441,7 @@ TuyaDevice.prototype.connect = function () {
           this.__sendPing();
         }, this._pingPongPeriod * 1000);
 
-        this.get();
+        this.get({returnAsEvent: true});
       }
     });
 
@@ -476,8 +480,10 @@ TuyaDevice.prototype.connect = function () {
         if (this.dataResolver(data, dataRes.commandByte)) {
           this.dataResolver = null;
           this.dataRejector = null;
+          return;
         }
-      } else if (this.device.persistentConnection && data) {
+      }
+      if (this.device.persistentConnection && data) {
         /**
          * Data event to report data received from the device
          *

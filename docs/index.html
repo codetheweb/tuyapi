@@ -325,11 +325,12 @@
 use methods 
 [connect]
 <a href="#tuyadeviceconnect">TuyaDevice#connect</a>
-connect or 
+ connect or
+
 [get]
 <a href="#tuyadeviceget">TuyaDevice#get</a>
+ to connect to device initially and
 
-to connect to device initially and 
 [disconnect]
 <a href="#tuyadevicedisconnect">TuyaDevice#disconnect</a>
  to stop
@@ -600,6 +601,17 @@ Defaults to returning only the value of the first DPS index.</p>
     (default <code>1</code>)
   </td>
   <td class='break-word'><span>DPS index to return
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.returnAsEvent</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
+  
+    (default <code>false</code>)
+  </td>
+  <td class='break-word'><span>true to return the result as event, false to get it returned as Promise
 </span></td>
 </tr>
 
