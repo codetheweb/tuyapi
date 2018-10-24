@@ -12,21 +12,58 @@ A library for communicating with devices that use the [Tuya](http://tuya.com) cl
 
 ## Basic Usage
 
+### Asynchronous (event based, recommended)
 ```javascript
-const TuyaDevice = require('tuyapi');
+const device = new TuyAPI({
+  id: 'xxxxxxxxxxxxxxxxxxxx',
+  key: 'xxxxxxxxxxxxxxxx',
+  ip: 'xxx.xxx.xxx.xxx',
+  persistentConnection: true});
 
-let tuya = new TuyaDevice({
+device.on('connected',() => {
+  console.log('Connected to device.');
+});
+
+device.on('disconnected',() => {
+  console.log('Disconnected from device.');
+});
+
+device.on('data', data => {
+  console.log('Data from device:', data);
+
+  const status = data.dps['1'];
+
+  console.log('Current status:', status);
+
+  device.set({set: !status}).then(result => {
+    console.log('Result of setting status:', result);
+    device.disconnect();
+  });
+});
+
+device.on('error',(err) => {
+  console.log('Error: ' + err);
+});
+
+device.connect();
+```
+
+### Synchronous
+```javascript
+const TuyAPI = require('tuyapi');
+
+const device = new TuyAPI({
   id: 'xxxxxxxxxxxxxxxxxxxx',
   key: 'xxxxxxxxxxxxxxxx',
   ip: 'xxx.xxx.xxx.xxx'});
 
-tuya.get().then(status => {
+device.get().then(status => {
   console.log('Status:', status);
 
-  tuya.set({set: !status}).then(result => {
+  device.set({set: !status}).then(result => {
     console.log('Result of setting status to ' + !status + ': ' + result);
 
-    tuya.get().then(status => {
+    device.get().then(status => {
       console.log('New status:', status);
       return;
     });
@@ -34,7 +71,7 @@ tuya.get().then(status => {
 });
 ```
 
-This should report the current status, set the device to the opposite of what it currently is, then report the changed status.
+This should report the current status, set the device to the opposite of what it currently is, then report the changed status.  The above examples will work with smart plugs; they may need some tweaking for other types of devices.
 
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
