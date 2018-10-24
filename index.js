@@ -150,6 +150,8 @@ class TuyaDevice extends EventEmitter {
   /**
    * Gets a device's current status.
    * Defaults to returning only the value of the first DPS index.
+   * If `returnAsEvent = true`, all options are ignored and
+   * all data returned from device is emitted as event.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire schema of device
@@ -158,6 +160,9 @@ class TuyaDevice extends EventEmitter {
    * @param {Boolean} [options.returnAsEvent=false]
    * true to emit `data` event when result is returned, false
    * to return Promise
+   * @example
+   * // get all properties and emit event with data
+   * tuya.get({returnAsEvent: true});
    * @example
    * // get first, default property from device
    * tuya.get().then(status => console.log(status))
@@ -393,10 +398,10 @@ class TuyaDevice extends EventEmitter {
    * Connects to the device, use to initally
    * open a socket when using a persistent connection.
    * @returns {Promise<Boolean>}
-   * @emits TuyaDevice#error
    * @emits TuyaDevice#connected
-   * @emits TuyaDevice#data
    * @emits TuyaDevice#disconnected
+   * @emits TuyaDevice#data
+   * @emits TuyaDevice#error
    */
   connect() {
     this._persistentConnectionStopped = false;
@@ -412,10 +417,10 @@ class TuyaDevice extends EventEmitter {
       // since `retry` is used.
       this.client.setTimeout(this._connectTimeout * 1000, () => {
         /**
-         * Error event
-         *
+         * Emitted on socket error, usually a
+         * result of a connection timeout.
          * @event TuyaDevice#error
-         * @property {Error} error - Error that happend
+         * @property {Error} error error event
          */
         this.client.emit('error', new Error('connection timed out'));
         this.client.destroy();
@@ -432,8 +437,11 @@ class TuyaDevice extends EventEmitter {
 
         if (this.device.persistentConnection) {
           /**
-           * Info event that connection to device is established
-           *
+           * Emitted when socket is connected
+           * to device. This event may be emitted
+           * multiple times within the same script,
+           * so don't use this as a trigger for your
+           * initialization code.
            * @event TuyaDevice#connected
            */
           this.emit('connected');
@@ -490,16 +498,16 @@ class TuyaDevice extends EventEmitter {
         }
         if (this.device.persistentConnection && data) {
           /**
-           * Data event to report data received from the device
-           *
+           * Emitted when data is returned from device.
            * @event TuyaDevice#data
-           * @property {Object} data - received data
-           * @property {Number} commandByte - commandByte of result
-           *           (e.g. 7=requested response, 8=proactive update from device)
+           * @property {Object} data received data
+           * @property {Number} commandByte
+           * commandByte of result
+           * (e.g. 7=requested response, 8=proactive update from device)
            */
           this.emit('data', data, dataRes.commandByte);
         } else {
-          debug('Response undelivered');
+          debug('Response undelivered.');
         }
       });
 
@@ -523,8 +531,11 @@ class TuyaDevice extends EventEmitter {
         this._connected = false;
 
         /**
-         * Info event that connection to device is destroyed
-         *
+         * Emitted when a socket is disconnected
+         * from device. Not an exclusive event:
+         * `error` and `disconnected` may be emitted
+         * at the same time if, for example, the device
+         * goes off the network.
          * @event TuyaDevice#disconnected
          */
         this.emit('disconnected');

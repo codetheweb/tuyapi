@@ -485,7 +485,9 @@ to be resolved before timeout error is thrown
   
 
   <p>Gets a device's current status.
-Defaults to returning only the value of the first DPS index.</p>
+Defaults to returning only the value of the first DPS index.
+If <code>returnAsEvent = true</code>, all options are ignored and
+all data returned from device is emitted as event.</p>
 
  
   
@@ -582,6 +584,10 @@ to return Promise
 
   
     <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get all properties and emit event with data</span>
+tuya.get({<span class="hljs-attr">returnAsEvent</span>: <span class="hljs-literal">true</span>});</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get first, default property from device</span>
@@ -979,7 +985,8 @@ when using a persistent connection.</p>
   </div>
   
 
-  <p>Error event</p>
+  <p>Emitted on socket error, usually a
+result of a connection timeout.</p>
 
  
   
@@ -1003,7 +1010,7 @@ when using a persistent connection.</p>
       
         <div class='space-bottom0'>
           <span class='code bold'>error</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error">Error</a>)</code>
-          : Error that happend
+          : error event
 
           
         </div>
@@ -1039,7 +1046,11 @@ when using a persistent connection.</p>
   </div>
   
 
-  <p>Info event that connection to device is established</p>
+  <p>Emitted when socket is connected
+to device. This event may be emitted
+multiple times within the same script,
+so don't use this as a trigger for your
+initialization code.</p>
 
  
   
@@ -1087,7 +1098,7 @@ when using a persistent connection.</p>
   </div>
   
 
-  <p>Data event to report data received from the device</p>
+  <p>Emitted when data is returned from device.</p>
 
  
   
@@ -1155,7 +1166,11 @@ when using a persistent connection.</p>
   </div>
   
 
-  <p>Info event that connection to device is destroyed</p>
+  <p>Emitted when a socket is disconnected
+from device. Not an exclusive event:
+<code>error</code> and <code>disconnected</code> may be emitted
+at the same time if, for example, the device
+goes off the network.</p>
 
  
   
