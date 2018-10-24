@@ -41,7 +41,7 @@ See the [setup instructions](docs/SETUP.md) for how to find the needed parameter
 
 ## 📝 Notes
 - Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
-- Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the offical app.
+- Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the official app.
 
 
 ## 📓 Docs
@@ -52,7 +52,6 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
 1. Document details of protocol
 2. Figure out correct CRC algorithm
-3. Keep connection open between requests
 
 ## Contributors
 
@@ -61,6 +60,9 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [clach04](https://github.com/clach04)
 - [jepsonrob](https://github.com/jepsonrob)
 - [tjfontaine](https://github.com/tjfontaine)
+- [NorthernMan54](https://github.com/NorthernMan54)
+- [Apollon77](https://github.com/Apollon770)
+- [dresende](https://github.com/dresende)
 
 ## Related
 

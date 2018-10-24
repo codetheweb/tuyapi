@@ -74,11 +74,27 @@
                         #disconnect
                       </a></li>
                       
+                      <li><a
+                        href='#tuyadeviceisconnected'
+                        class='regular pre-open'>
+                        #isConnected
+                      </a></li>
+                      
                     </ul>
                   
                   
                   
                 </div>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#events'
+                  class="h5 bold black caps">
+                  Events
+                  
+                </a>
                 
                 </li>
               
@@ -122,80 +138,6 @@
                 
                 </li>
               
-                
-                <li><a
-                  href='#tuyacipher'
-                  class=" toggle-sibling">
-                  TuyaCipher
-                  <span class='icon'>▸</span>
-                </a>
-                
-                <div class='toggle-target display-none'>
-                  
-                  
-                    <ul class='list-reset py1-ul pl1'>
-                      <li class='h5'><span>Instance members</span></li>
-                      
-                      <li><a
-                        href='#tuyacipherencrypt'
-                        class='regular pre-open'>
-                        #encrypt
-                      </a></li>
-                      
-                      <li><a
-                        href='#tuyacipherdecrypt'
-                        class='regular pre-open'>
-                        #decrypt
-                      </a></li>
-                      
-                      <li><a
-                        href='#tuyaciphermd5'
-                        class='regular pre-open'>
-                        #md5
-                      </a></li>
-                      
-                    </ul>
-                  
-                  
-                  
-                </div>
-                
-                </li>
-              
-                
-                <li><a
-                  href='#messageparser'
-                  class=" toggle-sibling">
-                  MessageParser
-                  <span class='icon'>▸</span>
-                </a>
-                
-                <div class='toggle-target display-none'>
-                  
-                  <ul class='list-reset py1-ul pl1'>
-                    <li class='h5'><span>Static members</span></li>
-                    
-                      <li><a
-                        href='#messageparserparse'
-                        class='regular pre-open'>
-                        .parse
-                      </a></li>
-                    
-                      <li><a
-                        href='#messageparserencode'
-                        class='regular pre-open'>
-                        .encode
-                      </a></li>
-                    
-                    </ul>
-                  
-                  
-                  
-                  
-                </div>
-                
-                </li>
-              
             </ul>
           </div>
           <div class='mt1 h6 quiet'>
@@ -226,6 +168,13 @@
     <div class='pre p1 fill-light mt0'>new TuyaDevice(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
    
   
+  
+    <p>
+      Extends
+      
+        EventEmitter
+      
+    </p>
   
 
   
@@ -321,20 +270,7 @@
   
     (default <code>false</code>)
   </td>
-  <td class='break-word'><span>use persistent connection
-use methods 
-[connect]
-<a href="#tuyadeviceconnect">TuyaDevice#connect</a>
- connect or
-
-[get]
-<a href="#tuyadeviceget">TuyaDevice#get</a>
- to connect to device initially and
-
-[disconnect]
-<a href="#tuyadevicedisconnect">TuyaDevice#disconnect</a>
- to stop
-the persistent connection
+  <td class='break-word'><span>whether or not to use a persistent socket with heartbeat packets
 </span></td>
 </tr>
 
@@ -358,7 +294,9 @@ the persistent connection
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> tuya = <span class="hljs-keyword">new</span> TuyaDevice({<span class="hljs-attr">id</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxxxxxx'</span>, <span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>})</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> tuya = <span class="hljs-keyword">new</span> TuyaDevice({<span class="hljs-attr">id</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxxxxxx'</span>,
+                             <span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>,
+                             <span class="hljs-attr">persistentConnection</span>: <span class="hljs-literal">true</span>})</pre>
     
   
 
@@ -611,7 +549,10 @@ Defaults to returning only the value of the first DPS index.</p>
   
     (default <code>false</code>)
   </td>
-  <td class='break-word'><span>true to return the result as event, false to get it returned as Promise
+  <td class='break-word'><span>true to emit 
+<code>data</code>
+ event when result is returned, false
+to return Promise
 </span></td>
 </tr>
 
@@ -796,8 +737,8 @@ tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>
 
   
 
-  <p>Connects to the device, use to start receiving updates
-when using persitent connection</p>
+  <p>Connects to the device, use to initally
+open a socket when using a persistent connection.</p>
 
  
   
@@ -853,8 +794,9 @@ when using persitent connection</p>
 
   
 
-  <p>Disconnects from the device, use to stop receiving updates
-when using persitent connection</p>
+  <p>Disconnects from the device, use to
+close the socket or exit gracefully
+when using a persistent connection.</p>
 
  
   
@@ -898,7 +840,124 @@ when using persitent connection</p>
       </div>
     </div>
   
+    <div class='border-bottom' id='tuyadeviceisconnected'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>isConnected()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Returns current connection status to device.
+(<code>true</code> if connected, <code>false</code> otherwise.)</p>
+
+ 
+  
+    <div class='pre p1 fill-light mt0'>isConnected(): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></div>
+   
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>:
+        
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
 </div>
+
+  
+
+  
+</section>
+
+        
+          
+            <div class='keyline-top-not py2'>
+  <section class='py2 clearfix'>
+
+    <h2 id='events' class='mt0'>
+      Events
+    </h2>
+
+    
+      <p>Events that TuyAPI emits.</p>
+
+    
+  </section>
+</div>
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='events'>
+      Events
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>Events that TuyAPI emits.</p>
+
+ 
+   
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
 
   
 
@@ -1121,606 +1180,6 @@ when using persitent connection</p>
   
 
   
-
-  
-
-  
-
-  
-</section>
-
-        
-          
-          <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-  <div class='clearfix'>
-    
-    <h3 class='fl m0' id='tuyacipher'>
-      TuyaCipher
-    </h3>
-    
-    
-  </div>
-  
-
-  <p>Class for encrypting and decrypting payloads.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>new TuyaCipher(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
-	    
-          </div>
-          
-          <table class='mt1 mb2 fixed-table h5 col-12'>
-            <colgroup>
-              <col width='30%' />
-              <col width='70%' />
-            </colgroup>
-            <thead>
-              <tr class='bold fill-light'>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody class='mt1'>
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.key</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
-  </td>
-  <td class='break-word'><span>localKey of cipher
-</span></td>
-</tr>
-
-
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.version</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
-  </td>
-  <td class='break-word'><span>protocol version
-</span></td>
-</tr>
-
-
-              
-            </tbody>
-          </table>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> cipher = <span class="hljs-keyword">new</span> TuyaCipher({<span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>, <span class="hljs-attr">version</span>: <span class="hljs-number">3.1</span>})</pre>
-    
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
-    <div class="clearfix">
-  
-    <div class='border-bottom' id='tuyacipherencrypt'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>encrypt(options)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Encrypts data.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>encrypt(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): (<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
-	    
-          </div>
-          
-          <table class='mt1 mb2 fixed-table h5 col-12'>
-            <colgroup>
-              <col width='30%' />
-              <col width='70%' />
-            </colgroup>
-            <thead>
-              <tr class='bold fill-light'>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody class='mt1'>
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
-  </td>
-  <td class='break-word'><span>data to encrypt
-</span></td>
-</tr>
-
-
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.base64</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
-  
-    (default <code>true</code>)
-  </td>
-  <td class='break-word'><span><code>true</code>
- to return result in Base64
-</span></td>
-</tr>
-
-
-              
-            </tbody>
-          </table>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
-        returns Buffer unless options.base64 is true
-
-      
-    
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>TuyaCipher.encrypt({<span class="hljs-attr">data</span>: <span class="hljs-string">'hello world'</span>})</pre>
-    
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='tuyacipherdecrypt'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>decrypt(data)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Decrypts data.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>decrypt(data: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    to decrypt
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>:
-        returns object if data is JSON, else returns string
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='tuyaciphermd5'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>md5(data)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Calculates a MD5 hash.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>md5(data: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    to hash
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>:
-        last 8 characters of hash of data
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-</div>
-
-  
-
-  
-</section>
-
-        
-          
-          <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-  <div class='clearfix'>
-    
-    <h3 class='fl m0' id='messageparser'>
-      MessageParser
-    </h3>
-    
-    
-  </div>
-  
-
-  <p>Class for decoding and encoding payloads.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>new MessageParser()</div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Static Members</div>
-    <div class="clearfix">
-  
-    <div class='border-bottom' id='messageparserparse'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>parse(data)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Static wrapper for lower-level MessageParser
-functions to easily parse packets.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>parse(data: <a href="https://nodejs.org/api/buffer.html">Buffer</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>data</span> <code class='quiet'>(<a href="https://nodejs.org/api/buffer.html">Buffer</a>)</code>
-	    packet to parse
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code>:
-        result
-
-      
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>:
-        result.data decoded data, if available in response
-
-      
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>:
-        result.commandByte command byte from decoded data
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='messageparserencode'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>encode(options)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Static wrapper for lower-level MessageParser
-functions to easily encode packets</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>encode(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://nodejs.org/api/buffer.html">Buffer</a></div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
-	    
-          </div>
-          
-          <table class='mt1 mb2 fixed-table h5 col-12'>
-            <colgroup>
-              <col width='30%' />
-              <col width='70%' />
-            </colgroup>
-            <thead>
-              <tr class='bold fill-light'>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody class='mt1'>
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://nodejs.org/api/buffer.html">Buffer</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
-  </td>
-  <td class='break-word'><span>data to encode
-</span></td>
-</tr>
-
-
-              
-                <tr>
-  <td class='break-word'><span class='code bold'>options.commandByte</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
-  </td>
-  <td class='break-word'><span>command byte
-</span></td>
-</tr>
-
-
-              
-            </tbody>
-          </table>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://nodejs.org/api/buffer.html">Buffer</a></code>:
-        binary payload
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-</div>
 
   
 
