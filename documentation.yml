@@ -1,0 +1,5 @@
+toc:
+  - TuyaDevice
+  - name: Events
+    description: |
+      Events that TuyAPI emits.
