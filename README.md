@@ -37,7 +37,6 @@ device.on('data', data => {
 
   device.set({set: !status}).then(result => {
     console.log('Result of setting status:', result);
-    device.disconnect();
   });
 });
 
@@ -46,6 +45,9 @@ device.on('error',(err) => {
 });
 
 device.connect();
+
+// Disconnect after 10 seconds
+setTimeout(() => { device.disconnect(); }, 10000);
 ```
 
 ### Synchronous
