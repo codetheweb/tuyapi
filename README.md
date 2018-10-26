@@ -100,7 +100,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [jepsonrob](https://github.com/jepsonrob)
 - [tjfontaine](https://github.com/tjfontaine)
 - [NorthernMan54](https://github.com/NorthernMan54)
-- [Apollon77](https://github.com/Apollon770)
+- [Apollon77](https://github.com/Apollon77)
 - [dresende](https://github.com/dresende)
 
 ## Related
