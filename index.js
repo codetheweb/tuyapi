@@ -425,6 +425,7 @@ class TuyaDevice extends EventEmitter {
         /**
          * Emitted on socket error, usually a
          * result of a connection timeout.
+         * Also emitted on parsing errors.
          * @event TuyaDevice#error
          * @property {Error} error error event
          */
