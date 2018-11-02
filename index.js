@@ -104,7 +104,14 @@ class TuyaDevice extends EventEmitter {
       this.listener.on('message', message => {
         debug('Received UDP message.');
 
-        const dataRes = Parser.parse(message);
+        let dataRes;
+        try {
+          dataRes = Parser.parse(message);
+        }
+        catch(error) {
+          debug(error);
+          return;
+        }
 
         debug('UDP data:');
         debug(dataRes.data);
@@ -465,9 +472,6 @@ class TuyaDevice extends EventEmitter {
 
         clearTimeout(this._sendTimeout);
 
-        const dataRes = Parser.parse(data);
-        data = dataRes.data;
-
         if (this.pingpongTimeout) {
           clearTimeout(this.pingpongTimeout);
           this.pingpongTimeout = null;
@@ -475,6 +479,17 @@ class TuyaDevice extends EventEmitter {
         this.pingpongTimeout = setTimeout(() => {
           this.__sendPing();
         }, this._pingPongPeriod * 1000);
+
+        let dataRes;
+        try {
+          dataRes = Parser.parse(data);
+        }
+        catch(error) {
+          debug(error);
+          this.emit('error', error);
+          return;
+        }
+        data = dataRes.data;
 
         if (typeof data === 'object') {
           debug('Data:', this.client.remoteAddress, data, dataRes.commandByte);
