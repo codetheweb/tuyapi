@@ -107,8 +107,7 @@ class TuyaDevice extends EventEmitter {
         let dataRes;
         try {
           dataRes = Parser.parse(message);
-        }
-        catch(error) {
+        } catch (error) {
           debug(error);
           return;
         }
@@ -483,8 +482,7 @@ class TuyaDevice extends EventEmitter {
         let dataRes;
         try {
           dataRes = Parser.parse(data);
-        }
-        catch(error) {
+        } catch (error) {
           debug(error);
           this.emit('error', error);
           return;
