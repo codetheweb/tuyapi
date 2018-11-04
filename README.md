@@ -117,6 +117,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [homebridge-igenix-air-conditioner](https://github.com/ellneal/homebridge-igenix-air-conditioner): a [Homebridge](https://github.com/nfarina/homebridge) plugin for the Igenix IG9901WIFI air conditioner
 - [magichome-led-controller](https://github.com/cajonKA/magichome-led-controller-node): a node to use magichome led RGB controller in [node-red](https://github.com/node-red/node-red)
 - [ioBroker.tuya](https://github.com/Apollon77/ioBroker.tuya): an ioBroker (http://iobroker.net/) adapter to get data and control devices incl. schema parsing
+- [node-red-contrib-tuya-smart](https://github.com/hgross/node-red-contrib-tuya-smart): A NodeRED input node utilizing tuyapi to connect the smart home
 
 
 To add your projects to either of the above lists, please open a pull request.
