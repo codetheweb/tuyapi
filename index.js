@@ -203,7 +203,7 @@ class TuyaDevice extends EventEmitter {
         if (options.returnAsEvent) {
           return resolve();
         }
-        if (typeof data === "string") {
+        if (typeof data === 'string') {
           reject(data);
         } else if (options.schema === true) {
           resolve(data);
