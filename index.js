@@ -140,7 +140,7 @@ class TuyaDevice extends EventEmitter {
       this.listener.close();
       this.listener.removeAllListeners();
       // eslint-disable-next-line max-len
-      Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
+      return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
     });
   }
 
