@@ -10,6 +10,67 @@ const debug = require('debug')('TuyAPI');
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
+function resolveId (device, options) {
+  // Create new listener
+  let listener = dgram.createSocket('udp4');
+  listener.bind(6666);
+
+  debug('Finding IP for device ' + device.id);
+
+  // Find IP for device
+  return timeout(new Promise((resolve, reject) => { // Timeout
+    listener.on('message', message => {
+      debug('Received UDP message.');
+
+      let dataRes;
+      try {
+        dataRes = Parser.parse(message);
+      } catch (error) {
+        debug(error);
+        return;
+      }
+
+      debug('UDP data:');
+      debug(dataRes.data);
+
+      const thisId = dataRes.data.gwId;
+
+      if (device.id === thisId && dataRes.data) {
+        // Add IP
+        device.ip = dataRes.data.ip;
+
+        // Change product key if neccessary
+        device.productKey = dataRes.data.productKey;
+
+        // Change protocol version if necessary
+        device.version = dataRes.data.version;
+
+        // Cleanup
+        listener.close();
+        listener.removeAllListeners();
+        resolve(true);
+      }
+    });
+
+    listener.on('error', err => reject(err));
+  }), options.timeout * 1000, () => {
+    // Have to do this so we exit cleanly
+    listener.close();
+    listener.removeAllListeners();
+    // eslint-disable-next-line max-len
+    return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
+  });
+}
+
+let resolveIdQueue = Promise.resolve();
+function serialResolveId (device, options) {
+  let promise = resolveIdQueue.catch(() => {}).then(() => {
+    return resolveId(device, options);
+  });
+  resolveIdQueue = promise;
+  return promise;
+}
+
 /**
  * Represents a Tuya device.
  * @class
@@ -93,55 +154,7 @@ class TuyaDevice extends EventEmitter {
       return Promise.resolve(true);
     }
 
-    // Create new listener
-    this.listener = dgram.createSocket('udp4');
-    this.listener.bind(6666);
-
-    debug('Finding IP for device ' + this.device.id);
-
-    // Find IP for device
-    return timeout(new Promise((resolve, reject) => { // Timeout
-      this.listener.on('message', message => {
-        debug('Received UDP message.');
-
-        let dataRes;
-        try {
-          dataRes = Parser.parse(message);
-        } catch (error) {
-          debug(error);
-          return;
-        }
-
-        debug('UDP data:');
-        debug(dataRes.data);
-
-        const thisId = dataRes.data.gwId;
-
-        if (this.device.id === thisId && dataRes.data) {
-          // Add IP
-          this.device.ip = dataRes.data.ip;
-
-          // Change product key if neccessary
-          this.device.productKey = dataRes.data.productKey;
-
-          // Change protocol version if necessary
-          this.device.version = dataRes.data.version;
-
-          // Cleanup
-          this.listener.close();
-          this.listener.removeAllListeners();
-          resolve(true);
-        }
-      });
-
-      this.listener.on('error', err => reject(err));
-    }), options.timeout * 1000, () => {
-      // Have to do this so we exit cleanly
-      this.listener.close();
-      this.listener.removeAllListeners();
-      // eslint-disable-next-line max-len
-      return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
-    });
+    return serialResolveId(this.device, options);
   }
 
   /**
