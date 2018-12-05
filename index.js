@@ -10,9 +10,9 @@ const debug = require('debug')('TuyAPI');
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
-function resolveId (device, options) {
+function resolveId(device, options) {
   // Create new listener
-  let listener = dgram.createSocket('udp4');
+  const listener = dgram.createSocket('udp4');
   listener.bind(6666);
 
   debug('Finding IP for device ' + device.id);
@@ -63,10 +63,12 @@ function resolveId (device, options) {
 }
 
 let resolveIdQueue = Promise.resolve();
-function serialResolveId (device, options) {
-  let promise = resolveIdQueue.catch(() => {}).then(() => {
+
+function serialResolveId(device, options) {
+  const promise = resolveIdQueue.catch(() => {}).then(() => {
     return resolveId(device, options);
   });
+
   resolveIdQueue = promise;
   return promise;
 }
