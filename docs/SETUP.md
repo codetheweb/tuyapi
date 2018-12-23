@@ -10,8 +10,10 @@
 
 5. [Configure the proxy](http://www.iphonehacks.com/2017/02/how-to-configure-use-proxy-iphone-ipad.html) on your phone with the parameters provided in the console.
 
-6. Open Tuya Smart and refresh the list of devices by "pulling down".
+6. Enable full trust of certificate by going to Settings > General > About > Certificate Trust Settings
 
-7. A list of ID and key pairs should appear in the console.
+7. Open Tuya Smart and refresh the list of devices by "pulling down".
 
-8. It's recommended to untrust the root certificate after you're done for security purposes.
+8. A list of ID and key pairs should appear in the console.
+
+9. It's recommended to untrust the root certificate after you're done for security purposes.
