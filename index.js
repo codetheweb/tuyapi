@@ -238,7 +238,8 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} options
    * @param {Number} [options.dps=1] DPS index to set
    * @param {*} [options.set] value to set
-   * @param {Boolean} [options.multiple=false] Whether or not multiple properties should be set with options.data
+   * @param {Boolean} [options.multiple=false]
+   * Whether or not multiple properties should be set with options.data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @example
    * // set default property
