@@ -237,19 +237,31 @@ class TuyaDevice extends EventEmitter {
    * Sets a property on a device.
    * @param {Object} options
    * @param {Number} [options.dps=1] DPS index to set
-   * @param {*} options.set value to set
+   * @param {*} [options.set] value to set
+   * @param {Boolean} [options.multiple=false] Whether or not multiple properties should be set with options.data
+   * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @example
    * // set default property
    * tuya.set({set: true}).then(() => console.log('device was changed'))
    * @example
    * // set custom property
    * tuya.set({dps: 2, set: true}).then(() => console.log('device was changed'))
+   * @example
+   * // set multiple properties
+   * tuya.set({
+   *           multiple: true,
+   *           data: {
+   *             '1': true,
+   *             '2': 'white'
+   *          }}).then(() => console.log('device was changed'))
    * @returns {Promise<Boolean>} - returns `true` if the command succeeded
    */
   set(options) {
     let dps = {};
 
-    if (options.dps === undefined) {
+    if (options.multiple === true) {
+      dps = options.data;
+    } else if (options.dps === undefined) {
       dps = {
         1: options.set
       };

@@ -120,7 +120,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [node-red-contrib-tuya-smart](https://github.com/hgross/node-red-contrib-tuya-smart): A NodeRED input node utilizing tuyapi to connect the smart home
 
 
-To add your projects to either of the above lists, please open a pull request.
+To add your project to either of the above lists, please open a pull request.
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-javascript.svg)](https://forthebadge.com)
 [![forthebadge](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)

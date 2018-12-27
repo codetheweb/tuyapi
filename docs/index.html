@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset='utf-8' />
-  <title>tuyapi 3.1.1 | Documentation</title>
+  <title>tuyapi 3.1.5 | Documentation</title>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' type='text/css' rel='stylesheet' />
   <link href='assets/style.css' type='text/css' rel='stylesheet' />
@@ -15,7 +15,7 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>tuyapi</h3>
-          <div class='mb1'><code>3.1.1</code></div>
+          <div class='mb1'><code>3.1.5</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -676,9 +676,31 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.set</span> <code class='quiet'>any</code>
+  <td class='break-word'><span class='code bold'>options.set</span> <code class='quiet'>any?</code>
   </td>
   <td class='break-word'><span>value to set
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.multiple</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
+  
+    (default <code>false</code>)
+  </td>
+  <td class='break-word'><span>Whether or not multiple properties should be set with options.data
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.data</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code>
+  
+    (default <code>{}</code>)
+  </td>
+  <td class='break-word'><span>Multiple properties to set at once. See above.
 </span></td>
 </tr>
 
@@ -718,6 +740,15 @@ tuya.set({<span class="hljs-attr">set</span>: <span class="hljs-literal">true</s
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set custom property</span>
 tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set multiple properties</span>
+tuya.set({
+          <span class="hljs-attr">multiple</span>: <span class="hljs-literal">true</span>,
+          <span class="hljs-attr">data</span>: {
+            <span class="hljs-string">'1'</span>: <span class="hljs-literal">true</span>,
+            <span class="hljs-string">'2'</span>: <span class="hljs-string">'white'</span>
+         }}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
     
   
 
