@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/codetheweb/tuyapi/badge.svg?branch=master)](https://coveralls.io/github/codetheweb/tuyapi?branch=master)
 ![Node Version](https://img.shields.io/badge/node-%3E=6-blue.svg)
 
-A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if port 6668 is open on your device chances are this library will work with it.
+A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if your device works with the TuyaSmart app or port 6668 is open on your device chances are this library will work.
 
 ## Installation
 
