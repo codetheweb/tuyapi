@@ -41,7 +41,7 @@
     "coveralls": "3.0.2",
     "documentation": "9.1.1",
     "nyc": "13.1.0",
-    "xo": "0.23.0"
+    "xo": "0.24.0"
   },
   "xo": {
     "space": true,
