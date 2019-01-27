@@ -37,7 +37,7 @@
     "retry": "^0.10.1"
   },
   "devDependencies": {
-    "ava": "1.1.0",
+    "ava": "1.2.0",
     "coveralls": "3.0.2",
     "documentation": "9.1.1",
     "nyc": "13.1.0",
