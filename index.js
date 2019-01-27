@@ -369,7 +369,7 @@ class TuyaDevice extends EventEmitter {
       if (!returnAsEvent) {
         this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
           if (expectedResponseCommandByte !== commandByte) {
-            return false;
+            reject(new Error('Returned command byte did not match expected byte.'));
           }
 
           if (this._sendTimeout) {
