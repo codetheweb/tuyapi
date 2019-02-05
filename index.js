@@ -79,8 +79,10 @@ function serialResolveId(device, options) {
  * @param {Object} options
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
- * @param {String} options.id ID of device
- * @param {String} options.key encryption key of device
+ * @param {String} options.id ID of device (also called `devId`)
+ * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
+ * if omitted assumed to be the same as `options.id`
+ * @param {String} options.key encryption key of device (also called `localKey`)
  * @param {String} options.productKey product key of device
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.persistentConnection=false]
@@ -99,6 +101,10 @@ class TuyaDevice extends EventEmitter {
     // Defaults
     if (this.device.id === undefined) {
       throw new Error('ID is missing from device.');
+    }
+
+    if (this.device.gwID === undefined) {
+      this.device.gwID = this.device.id;
     }
 
     if (this.device.key === undefined) {
@@ -205,7 +211,7 @@ class TuyaDevice extends EventEmitter {
     options = options ? options : {};
 
     const payload = {
-      gwId: this.device.id,
+      gwId: this.device.gwID,
       devId: this.device.id
     };
 
@@ -282,6 +288,7 @@ class TuyaDevice extends EventEmitter {
 
     const payload = {
       devId: this.device.id,
+      gwId: this.device.gwID,
       uid: '',
       t: timeStamp,
       dps
