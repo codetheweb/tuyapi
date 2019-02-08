@@ -42,6 +42,10 @@ function resolveId(device, options) {
         // Add ID
         device.id = dataRes.data.gwId;
 
+        // Update gwID if required
+        if (device.gwID === undefined) {
+          device.gwID = dataRes.data.gwId;
+        }
         // Change product key if neccessary
         device.productKey = dataRes.data.productKey;
 
@@ -76,6 +80,13 @@ function serialResolveId(device, options) {
   return promise;
 }
 
+function checkIfValidString(input) {
+  if  (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
+    return false
+  }
+  return true
+}
+
 /**
  * Represents a Tuya device.
  * @class
@@ -102,17 +113,29 @@ class TuyaDevice extends EventEmitter {
     this.device = options;
 
     // Defaults
-    if (this.device.id === undefined) {
-      throw new Error('ID is missing from device.');
+    if ( ! (checkIfValidString(this.device.id) || checkIfValidString(this.device.ip))) {
+      throw new Error('ID and IP are missing from device.');
     }
 
-    if (this.device.gwID === undefined) {
-      this.device.gwID = this.device.id;
+    if ( ! checkIfValidString(this.device.id)) {
+      debug('ID is missing from device. Run resolveID() to get from IP');
+    } else if (this.device.gwID === undefined) {
+        this.device.gwID = this.device.id;
     }
 
-    if (this.device.key === undefined) {
-      throw new Error('Encryption key is missing from device.');
+    if ( ! checkIfValidString(this.device.ip)) {
+      debug('IP is missing from device. Run resolveID() to get from ID');
     }
+
+    if ( ! checkIfValidString(this.device.key)) {
+      debug('Encryption key is missing from device. Only get commands will work');
+    } else  {
+      // Create cipher from key
+      this.device.cipher = new Cipher({
+        key: this.device.key,
+        version: this.device.version
+      });
+    }   
 
     if (this.device.port === undefined) {
       this.device.port = 6668;
@@ -125,12 +148,6 @@ class TuyaDevice extends EventEmitter {
     if (this.device.persistentConnection === undefined) {
       this.device.persistentConnection = false;
     }
-
-    // Create cipher from key
-    this.device.cipher = new Cipher({
-      key: this.device.key,
-      version: this.device.version
-    });
 
     // Private variables
 
@@ -164,7 +181,7 @@ class TuyaDevice extends EventEmitter {
       options.timeout = 10;
     }
 
-    if (this.device.ip !== undefined && this.device.id !== undefined && this.device.id.length != 0) {
+    if (checkIfValidString(this.device.id) && checkIfValidString(this.device.ip)) {
       debug('No IPs or IDs to search for');
       return Promise.resolve(true);
     }
