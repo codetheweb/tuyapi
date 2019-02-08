@@ -15,7 +15,7 @@ function resolveId(device, options) {
   const listener = dgram.createSocket('udp4');
   listener.bind(6666);
 
-  debug('Finding IP for device ' + device.id);
+  debug(`Finding missing IP: ${device.ip} or Device ID: ${device.id}`);
 
   // Find IP for device
   return timeout(new Promise((resolve, reject) => { // Timeout
@@ -34,10 +34,13 @@ function resolveId(device, options) {
       debug(dataRes.data);
 
       const thisId = dataRes.data.gwId;
-
-      if (device.id === thisId && dataRes.data) {
+      const thisIp = dataRes.data.ip;
+      if ((device.id === thisId || device.ip === thisIp) && dataRes.data) {
         // Add IP
         device.ip = dataRes.data.ip;
+
+        // Add ID
+        device.id = dataRes.data.gwId;
 
         // Change product key if neccessary
         device.productKey = dataRes.data.productKey;
@@ -161,8 +164,8 @@ class TuyaDevice extends EventEmitter {
       options.timeout = 10;
     }
 
-    if (this.device.ip !== undefined) {
-      debug('No IPs to search for');
+    if (this.device.ip !== undefined && this.device.id !== undefined && this.device.id.length != 0) {
+      debug('No IPs or IDs to search for');
       return Promise.resolve(true);
     }
 
