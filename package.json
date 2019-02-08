@@ -1,11 +1,12 @@
 {
   "name": "tuyapi",
-  "version": "2.0.0",
-  "description": "An easy-to-use API for devices that use Tuya's cloud services (currently only supports smart plugs)",
+  "version": "3.2.3",
+  "description": "An easy-to-use API for devices that use Tuya's cloud services",
   "main": "index.js",
   "scripts": {
-    "style": "xo --space --fix",
-    "document": "documentation build index.js -f md | (echo 'Docs \n=========' && cat) > docs/API.md",
+    "test": "xo --quiet && ava",
+    "cover": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "document": "documentation build index.js -f html -o docs --config documentation.yml",
     "pushtags": "git push origin master --tags"
   },
   "repository": {
@@ -16,7 +17,11 @@
     "tuya",
     "iot",
     "plug",
-    "jinvoo"
+    "jinvoo",
+    "switch",
+    "api",
+    "socket",
+    "protocol"
   ],
   "author": "Max Isom <codetheweb@icloud.com> (https://maxisom.me)",
   "license": "MIT",
@@ -25,12 +30,39 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
-    "net-retry-connect": "^0.1.1",
-    "node-forge": "^0.7.1",
-    "string-occurrence": "^1.2.0"
+    "crc": "^3.5.0",
+    "debug": "^4.0.0",
+    "node-forge": "^0.8.0",
+    "p-timeout": "^2.0.1",
+    "retry": "^0.10.1"
   },
   "devDependencies": {
-    "documentation": "^5.3.3",
-    "xo": "^0.18.2"
+    "ava": "1.2.1",
+    "coveralls": "3.0.2",
+    "documentation": "9.1.1",
+    "nyc": "13.2.0",
+    "xo": "0.24.0"
+  },
+  "xo": {
+    "space": true,
+    "ignores": [
+      "docs"
+    ],
+    "rules": {
+      "max-len": [
+        "error",
+        {
+          "code": 90
+        }
+      ],
+      "indent": [
+        "error",
+        2,
+        {
+          "ObjectExpression": "first",
+          "ArrayExpression": "first"
+        }
+      ]
+    }
   }
 }
