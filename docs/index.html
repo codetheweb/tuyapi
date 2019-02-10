@@ -526,12 +526,12 @@ to be resolved before timeout error is thrown
 
   <p>Gets a device's current status.
 Defaults to returning only the value of the first DPS index.
-If <code>returnAsEvent = true</code>, all options are ignored and
-all data returned from device is emitted as event.</p>
+If <code>persistentConnection == true</code>, all data returned
+from device is emitted as event.</p>
 
  
   
-    <div class='pre p1 fill-light mt0'>get(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></div>
+    <div class='pre p1 fill-light mt0'>get(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)></div>
    
   
   
@@ -586,20 +586,6 @@ all data returned from device is emitted as event.</p>
 
 
               
-                <tr>
-  <td class='break-word'><span class='code bold'>options.returnAsEvent</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
-  
-    (default <code>false</code>)
-  </td>
-  <td class='break-word'><span>true to emit 
-<code>data</code>
- event when result is returned, false
-to return Promise
-</span></td>
-</tr>
-
-
-              
             </tbody>
           </table>
           
@@ -613,7 +599,7 @@ to return Promise
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)></code>:
         returns boolean if no options are provided, otherwise returns object of results
 
       
@@ -624,10 +610,6 @@ to return Promise
 
   
     <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get all properties and emit event with data</span>
-tuya.get({<span class="hljs-attr">returnAsEvent</span>: <span class="hljs-literal">true</span>});</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get first, default property from device</span>

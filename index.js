@@ -124,7 +124,7 @@ class TuyaDevice extends EventEmitter {
         version: this.device.version
       });
     } else {
-      throw new TypeError('Key is missing or incorrect.')
+      throw new TypeError('Key is missing or incorrect.');
     }
 
     // Defaults
@@ -176,7 +176,8 @@ class TuyaDevice extends EventEmitter {
       options.timeout = 10;
     }
 
-    if (this.checkIfValidString(this.device.id) && this.checkIfValidString(this.device.ip)) {
+    if (this.checkIfValidString(this.device.id) &&
+        this.checkIfValidString(this.device.ip)) {
       debug('No IPs or IDs to search for');
       return Promise.resolve(true);
     }
@@ -196,19 +197,13 @@ class TuyaDevice extends EventEmitter {
   /**
    * Gets a device's current status.
    * Defaults to returning only the value of the first DPS index.
-   * If `returnAsEvent = true`, all options are ignored and
-   * all data returned from device is emitted as event.
+   * If `persistentConnection == true`, all data returned
+   * from device is emitted as event.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire schema of device
    * @param {Number} [options.dps=1]
    * DPS index to return
-   * @param {Boolean} [options.returnAsEvent=false]
-   * true to emit `data` event when result is returned, false
-   * to return Promise
-   * @example
-   * // get all properties and emit event with data
-   * tuya.get({returnAsEvent: true});
    * @example
    * // get first, default property from device
    * tuya.get().then(status => console.log(status))
@@ -218,10 +213,10 @@ class TuyaDevice extends EventEmitter {
    * @example
    * // get all available data from device
    * tuya.get({schema: true}).then(data => console.log(data))
-   * @returns {Promise<Object>}
+   * @returns {Promise<Boolean|Object>}
    * returns boolean if no options are provided, otherwise returns object of results
    */
-  get(options) {
+  async get(options) {
     // Set empty object as default
     options = options ? options : {};
 
@@ -238,25 +233,26 @@ class TuyaDevice extends EventEmitter {
       commandByte: 10 // 0x0a
     });
 
-    return new Promise((resolve, reject) => {
-      this._send(buffer, 10, options.returnAsEvent).then(data => {
-        if (options.returnAsEvent) {
-          return resolve();
-        }
+    // Send request and parse response
+    try {
+      const data = await this._send(buffer, 10, options.persistentConnection);
 
-        if (typeof data === 'string') {
-          reject(data);
-        } else if (options.schema === true) {
-          resolve(data);
-        } else if (options.dps) {
-          resolve(data.dps[options.dps]);
-        } else {
-          resolve(data.dps['1']);
-        }
-      }).catch(error => {
-        reject(error);
-      });
-    });
+      if (typeof data !== 'object') {
+        // Error was returned
+        throw new TypeError('Bad response: ' + data);
+      } else if (options.schema === true) {
+        // Return whole response
+        return data;
+      } else if (options.dps) {
+        // Return specific property
+        return data.dps[options.dps];
+      } else {
+        // Return first property by default
+        return data.dps['1'];
+      }
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -283,7 +279,12 @@ class TuyaDevice extends EventEmitter {
    *          }}).then(() => console.log('device was changed'))
    * @returns {Promise<Boolean>} - returns `true` if the command succeeded
    */
-  set(options) {
+  async set(options) {
+    // Check arguments
+    if (options === undefined || Object.entries(options).length === 0) {
+      throw new TypeError('No arguments were passed.');
+    }
+
     let dps = {};
 
     if (options.multiple === true) {
@@ -309,8 +310,7 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    debug('Payload:', this.device.ip);
-    debug(payload);
+    debug('Payload:', payload);
 
     // Encrypt data
     const data = this.device.cipher.encrypt({
@@ -324,19 +324,21 @@ class TuyaDevice extends EventEmitter {
 
     // Create byte buffer from hex data
     const thisData = Buffer.from(this.device.version + md5 + data);
+
+    // Encode into packet
     const buffer = Parser.encode({
       data: thisData,
       commandByte: 7 // 0x07
     });
 
-    // Send request to change status
-    return new Promise((resolve, reject) => {
-      this._send(buffer, 7, false).then(() => {
-        resolve(true);
-      }).catch(error => {
-        reject(error);
-      });
-    });
+    // Send request
+    try {
+      await this._send(buffer, 7, false);
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
