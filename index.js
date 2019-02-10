@@ -81,21 +81,17 @@ function serialResolveId(device, options) {
   return promise;
 }
 
-function checkIfValidString(input) {
-  if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
-    return false;
-  }
-
-  return true;
-}
-
 /**
  * Represents a Tuya device.
+ *
+ * You *must* pass either an IP or an ID. If
+ * you're experiencing problems when only passing
+ * one, try passing both if possible.
  * @class
  * @param {Object} options
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
- * @param {String} options.id ID of device (also called `devId`)
+ * @param {String} [options.id] ID of device (also called `devId`)
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
@@ -112,33 +108,26 @@ class TuyaDevice extends EventEmitter {
   constructor(options) {
     super();
 
+    // Set device to user-passed options
     this.device = options;
 
-    // Defaults
-    if (!(checkIfValidString(this.device.id) || checkIfValidString(this.device.ip))) {
-      throw new Error('ID and IP are missing from device.');
+    // Check arguments
+    if (!(this.checkIfValidString(this.device.id) ||
+          this.checkIfValidString(this.device.ip))) {
+      throw new TypeError('ID and IP are missing from device.');
     }
 
-    if (!checkIfValidString(this.device.id)) {
-      debug('ID is missing from device. Run resolveID() to get from IP');
-    } else if (this.device.gwID === undefined) {
-      this.device.gwID = this.device.id;
-    }
-
-    if (!checkIfValidString(this.device.ip)) {
-      debug('IP is missing from device. Run resolveID() to get from ID');
-    }
-
-    if (checkIfValidString(this.device.key)) {
+    if (this.checkIfValidString(this.device.key) && this.device.key.length === 16) {
       // Create cipher from key
       this.device.cipher = new Cipher({
         key: this.device.key,
         version: this.device.version
       });
     } else {
-      debug('Encryption key is missing from device. Only get commands will work');
+      throw new TypeError('Key is missing or incorrect.')
     }
 
+    // Defaults
     if (this.device.port === undefined) {
       this.device.port = 6668;
     }
@@ -151,7 +140,11 @@ class TuyaDevice extends EventEmitter {
       this.device.persistentConnection = false;
     }
 
-    // Private variables
+    if (this.device.gwID === undefined) {
+      this.device.gwID = this.device.id;
+    }
+
+    // Private instance variables
 
     // Socket connected state
     this._connected = false;
@@ -183,7 +176,7 @@ class TuyaDevice extends EventEmitter {
       options.timeout = 10;
     }
 
-    if (checkIfValidString(this.device.id) && checkIfValidString(this.device.ip)) {
+    if (this.checkIfValidString(this.device.id) && this.checkIfValidString(this.device.ip)) {
       debug('No IPs or IDs to search for');
       return Promise.resolve(true);
     }
@@ -672,6 +665,21 @@ class TuyaDevice extends EventEmitter {
    */
   isConnected() {
     return this._connected;
+  }
+
+  /**
+   * Checks a given input string.
+   * Returns `true` if is string and length != 0, returns `false` otherwise.
+   * @private
+   * @param {String} input
+   * @returns {Boolean}
+   */
+  checkIfValidString(input) {
+    if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
+      return false;
+    }
+
+    return true;
   }
 }
 
