@@ -3,7 +3,7 @@ const dgram = require('dgram');
 const net = require('net');
 const {EventEmitter} = require('events');
 const timeout = require('p-timeout');
-const retry = require('retry');
+const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
@@ -238,35 +238,26 @@ class TuyaDevice extends EventEmitter {
    * @private
    * @param {String} ip IP of device
    * @param {Buffer} buffer buffer of data
-   * @param {Boolean} returnAsEvent return result as event or as resolved promise
-   * @returns {Promise<string>} returned data
+   * @param {Boolean} returnAsEvent return result as event or as resolved Promise
+   * @returns {Promise<String>} returned data
    */
   _send(buffer, expectedResponseCommandByte, returnAsEvent) {
+    // Check for IP
     if (typeof this.device.ip === 'undefined') {
       throw new TypeError('Device missing IP address.');
     }
 
-    const operation = retry.operation({
-      retries: 4,
-      factor: 1.5
-    });
+    return pRetry(async () => {
+      try {
+        const response = await this._sendUnwrapped(buffer,
+          expectedResponseCommandByte,
+          returnAsEvent);
 
-    return new Promise((resolve, reject) => {
-      operation.attempt(currentAttempt => {
-        debug('Send attempt', currentAttempt);
-
-        this._sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent).then(
-          (result, commandByte) => {
-            resolve(result, commandByte);
-          }).catch(error => {
-          if (operation.retry(error)) {
-            return;
-          }
-
-          reject(operation.mainError());
-        });
-      });
-    });
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    }, {retries: 5});
   }
 
   /**

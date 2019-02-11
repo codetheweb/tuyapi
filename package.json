@@ -38,8 +38,8 @@
     "crc": "^3.5.0",
     "debug": "^4.0.0",
     "node-forge": "^0.8.0",
-    "p-timeout": "^2.0.1",
-    "retry": "^0.10.1"
+    "p-retry": "^3.0.1",
+    "p-timeout": "^2.0.1"
   },
   "devDependencies": {
     "ava": "1.2.1",
