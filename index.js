@@ -24,10 +24,11 @@ const Parser = require('./lib/message-parser');
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
- * @param {String} options.productKey product key of device
+ * @param {String} [options.productKey] product key of device
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.persistentConnection=false]
- * whether or not to use a persistent socket with heartbeat packets
+ * whether or not to use a persistent socket with
+ * heartbeat packets (there's really no downside)
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx',
@@ -39,6 +40,11 @@ class TuyaDevice extends EventEmitter {
 
     // Set device to user-passed options
     this.device = options;
+
+    // Default version (necessary for later checks)
+    if (this.device.version === undefined) {
+      this.device.version = 3.1;
+    }
 
     // Check arguments
     if (!(this.checkIfValidString(this.device.id) ||
@@ -59,10 +65,6 @@ class TuyaDevice extends EventEmitter {
     // Defaults
     if (this.device.port === undefined) {
       this.device.port = 6668;
-    }
-
-    if (this.device.version === undefined) {
-      this.device.version = 3.1;
     }
 
     if (this.device.persistentConnection === undefined) {
@@ -106,7 +108,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean|Object>}
    * returns boolean if no options are provided, otherwise returns object of results
    */
-  async get(options) {
+  get(options) {
     // Set empty object as default
     options = options ? options : {};
 
@@ -124,25 +126,30 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send request and parse response
-    try {
-      const data = await this._send(buffer, 10, options.persistentConnection);
+    return new Promise((resolve, reject) => {
+      try {
+        this._send(buffer).then(() => {
+          const resolveGet = data => {
+            this.removeListener('data', resolveGet);
 
-      if (typeof data !== 'object') {
-        // Error was returned
-        throw new TypeError('Bad response: ' + data);
-      } else if (options.schema === true) {
-        // Return whole response
-        return data;
-      } else if (options.dps) {
-        // Return specific property
-        return data.dps[options.dps];
-      } else {
-        // Return first property by default
-        return data.dps['1'];
+            if (options.schema === true) {
+              // Return whole response
+              resolve(data);
+            } else if (options.dps) {
+              // Return specific property
+              resolve(data.dps[options.dps]);
+            } else {
+              // Return first property by default
+              resolve(data.dps['1']);
+            }
+          };
+
+          this.on('data', resolveGet);
+        });
+      } catch (error) {
+        reject(error);
       }
-    } catch (error) {
-      throw error;
-    }
+    });
   }
 
   /**
@@ -169,7 +176,7 @@ class TuyaDevice extends EventEmitter {
    *          }}).then(() => console.log('device was changed'))
    * @returns {Promise<Boolean>} - returns `true` if the command succeeded
    */
-  async set(options) {
+  set(options) {
     // Check arguments
     if (options === undefined || Object.entries(options).length === 0) {
       throw new TypeError('No arguments were passed.');
@@ -222,13 +229,21 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send request
-    try {
-      await this._send(buffer, 7, false);
+    return new Promise((resolve, reject) => {
+      try {
+        this._send(buffer).then(() => {
+          const resolveSet = _ => {
+            this.removeListener('data', resolveSet);
 
-      return true;
-    } catch (error) {
-      throw error;
-    }
+            resolve(true);
+          };
+
+          this.on('data', resolveSet);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**
@@ -237,11 +252,9 @@ class TuyaDevice extends EventEmitter {
    * in a retry operation.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @param {Number} expectedCommandByte the expected command byte in the response
-   * @param {Boolean} returnAsEvent return result as event or as resolved Promise
    * @returns {Promise<String>} returned data
    */
-  _send(buffer, expectedResponseCommandByte, returnAsEvent) {
+  _send(buffer) {
     // Check for IP
     if (typeof this.device.ip === 'undefined') {
       throw new TypeError('Device missing IP address.');
@@ -250,9 +263,7 @@ class TuyaDevice extends EventEmitter {
     // Retry up to 5 times
     return pRetry(async () => {
       try {
-        const response = await this._sendUnwrapped(buffer,
-          expectedResponseCommandByte,
-          returnAsEvent);
+        const response = await this._sendUnwrapped(buffer);
 
         return response;
       } catch (error) {
@@ -265,52 +276,14 @@ class TuyaDevice extends EventEmitter {
    * Sends a query to a device.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @param {Number} expectedCommandByte the expected command byte in the response
-   * @param {Boolean} returnAsEvent return result as event or as resolved Promise
    * @returns {Promise<String>} returned data
    */
-  _sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent) {
+  _sendUnwrapped(buffer) {
     debug(`Sending data: ${buffer.toString('hex')}`);
 
     return new Promise((resolve, reject) => {
-      if (!returnAsEvent) {
-        this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
-          if (expectedResponseCommandByte !== commandByte) {
-            reject(new Error('Returned command byte did not match expected byte.'));
-          }
-
-          if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
-          }
-
-          if (!this.device.persistentConnection) {
-            this.disconnect();
-          }
-
-          resolve(data, commandByte);
-          return true;
-        };
-
-        this.dataRejector = err => {
-          if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
-          }
-
-          debug('Error event from socket.');
-
-          // eslint-disable-next-line max-len
-          err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          return reject(err);
-        };
-      }
-
       // Connect to device
       this.connect().then(() => {
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
-
         // Transmit data
         this.client.write(buffer);
 
@@ -319,13 +292,10 @@ class TuyaDevice extends EventEmitter {
             this.client.destroy();
           }
 
-          this.dataResolver = null;
-          this.dataRejector = null;
           return reject(new Error('Timeout waiting for response'));
         }, this._responseTimeout * 1000);
-        if (returnAsEvent) {
-          resolve();
-        }
+
+        resolve();
       });
     });
   }
@@ -401,11 +371,7 @@ class TuyaDevice extends EventEmitter {
            */
           this.emit('connected');
 
-          if (this.pingpongTimeout) {
-            clearTimeout(this.pingpongTimeout);
-            this.pingpongTimeout = null;
-          }
-
+          // Periodically send heartbeat ping
           this.pingpongTimeout = setTimeout(() => {
             this._sendPing();
           }, this._pingPongPeriod * 1000);
@@ -419,16 +385,8 @@ class TuyaDevice extends EventEmitter {
         debug('Received data back:', this.client.remoteAddress);
         debug(data.toString('hex'));
 
+        // Response was received, so stop waiting
         clearTimeout(this._sendTimeout);
-
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
-
-        this.pingpongTimeout = setTimeout(() => {
-          this._sendPing();
-        }, this._pingPongPeriod * 1000);
 
         let dataRes;
         try {
@@ -445,7 +403,12 @@ class TuyaDevice extends EventEmitter {
           debug('Data:', this.client.remoteAddress, data, dataRes.commandByte);
         } else if (typeof data === 'undefined') {
           if (dataRes.commandByte === 0x09) { // PONG received
-            debug('PONG', this.device.ip, this.client ? this.client.destroyed : true);
+            debug('Pong', this.device.ip, this.client ? this.client.destroyed : true);
+            return;
+          }
+
+          if (dataRes.commandByte === 0x07) { // Set succeeded
+            debug('Set succeeded.');
             return;
           }
 
@@ -456,27 +419,15 @@ class TuyaDevice extends EventEmitter {
           data = this.device.cipher.decrypt(data);
         }
 
-        if (this.dataResolver) {
-          if (this.dataResolver(data, dataRes.commandByte)) {
-            this.dataResolver = null;
-            this.dataRejector = null;
-            return;
-          }
-        }
-
-        if (this.device.persistentConnection && data) {
-          /**
-           * Emitted when data is returned from device.
-           * @event TuyaDevice#data
-           * @property {Object} data received data
-           * @property {Number} commandByte
-           * commandByte of result
-           * (e.g. 7=requested response, 8=proactive update from device)
-           */
-          this.emit('data', data, dataRes.commandByte);
-        } else {
-          debug('Response undelivered.');
-        }
+        /**
+         * Emitted when data is returned from device.
+         * @event TuyaDevice#data
+         * @property {Object} data received data
+         * @property {Number} commandByte
+         * commandByte of result
+         * (e.g. 7=requested response, 8=proactive update from device)
+         */
+        this.emit('data', data, dataRes.commandByte);
       });
 
       // Handle errors
@@ -510,6 +461,7 @@ class TuyaDevice extends EventEmitter {
         this.emit('disconnected');
         this.client.destroy();
         this.client = null;
+
         if (this.pingpongTimeout) {
           clearTimeout(this.pingpongTimeout);
           this.pingpongTimeout = null;
@@ -667,6 +619,23 @@ class TuyaDevice extends EventEmitter {
       // eslint-disable-next-line max-len
       return Promise.reject(new Error('find() timed out. Is the device powered on and the ID or IP correct?'));
     });
+  }
+
+  async toggle(property) {
+    property = property === undefined ? '1' : property.toString();
+
+    try {
+      // Get status
+      const status = await this.get({dps: property});
+
+      // Set to opposite
+      await this.set({set: !status, dps: property});
+
+      // Return new status
+      return await this.get({dps: property});
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
