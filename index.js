@@ -236,8 +236,8 @@ class TuyaDevice extends EventEmitter {
    * function that wraps ._sendUnwrapped()
    * in a retry operation.
    * @private
-   * @param {String} ip IP of device
    * @param {Buffer} buffer buffer of data
+   * @param {Number} expectedCommandByte the expected command byte in the response
    * @param {Boolean} returnAsEvent return result as event or as resolved Promise
    * @returns {Promise<String>} returned data
    */
@@ -247,6 +247,7 @@ class TuyaDevice extends EventEmitter {
       throw new TypeError('Device missing IP address.');
     }
 
+    // Retry up to 5 times
     return pRetry(async () => {
       try {
         const response = await this._sendUnwrapped(buffer,
@@ -264,11 +265,12 @@ class TuyaDevice extends EventEmitter {
    * Sends a query to a device.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @param {Boolean} returnAsEvent return result as event or as resolved promise
-   * @returns {Promise<string>} returned data
+   * @param {Number} expectedCommandByte the expected command byte in the response
+   * @param {Boolean} returnAsEvent return result as event or as resolved Promise
+   * @returns {Promise<String>} returned data
    */
   _sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent) {
-    debug('Sending this data:', buffer.toString('hex'));
+    debug(`Sending data: ${buffer.toString('hex')}`);
 
     return new Promise((resolve, reject) => {
       if (!returnAsEvent) {
@@ -302,6 +304,7 @@ class TuyaDevice extends EventEmitter {
         };
       }
 
+      // Connect to device
       this.connect().then(() => {
         if (this.pingpongTimeout) {
           clearTimeout(this.pingpongTimeout);
@@ -328,19 +331,20 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Sends a ping to the device
+   * Sends a heartbeat ping to the device
    * @private
    * @returns {Promise<string>} returned data
    */
-  __sendPing() {
-    debug('PING', this.device.ip, this.client ? this.client.destroyed : true);
+  _sendPing() {
+    debug(`Pinging ${this.device.ip}`);
+
     // Create byte buffer
     const buffer = Parser.encode({
       data: Buffer.allocUnsafe(0),
       commandByte: 9 // 0x09
     });
-    debug('PingPong: ' + buffer.toString('hex'));
 
+    // Send ping
     this._sendUnwrapped(buffer, 9, true);
   }
 
@@ -403,7 +407,7 @@ class TuyaDevice extends EventEmitter {
           }
 
           this.pingpongTimeout = setTimeout(() => {
-            this.__sendPing();
+            this._sendPing();
           }, this._pingPongPeriod * 1000);
 
           this.get({returnAsEvent: true});
@@ -423,7 +427,7 @@ class TuyaDevice extends EventEmitter {
         }
 
         this.pingpongTimeout = setTimeout(() => {
-          this.__sendPing();
+          this._sendPing();
         }, this._pingPongPeriod * 1000);
 
         let dataRes;
@@ -661,7 +665,7 @@ class TuyaDevice extends EventEmitter {
       listener.removeAllListeners();
 
       // eslint-disable-next-line max-len
-      return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
+      return Promise.reject(new Error('find() timed out. Is the device powered on and the ID or IP correct?'));
     });
   }
 }
