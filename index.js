@@ -10,77 +10,6 @@ const debug = require('debug')('TuyAPI');
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
-function resolveId(device, options) {
-  // Create new listener
-  const listener = dgram.createSocket('udp4');
-  listener.bind(6666);
-
-  debug(`Finding missing IP: ${device.ip} or Device ID: ${device.id}`);
-
-  // Find IP for device
-  return timeout(new Promise((resolve, reject) => { // Timeout
-    listener.on('message', message => {
-      debug('Received UDP message.');
-
-      let dataRes;
-      try {
-        dataRes = Parser.parse(message);
-      } catch (error) {
-        debug(error);
-        return;
-      }
-
-      debug('UDP data:');
-      debug(dataRes.data);
-
-      const thisId = dataRes.data.gwId;
-      const thisIp = dataRes.data.ip;
-      if ((device.id === thisId || device.ip === thisIp) && dataRes.data) {
-        // Add IP
-        device.ip = dataRes.data.ip;
-
-        // Add ID
-        device.id = dataRes.data.gwId;
-
-        // Update gwID if required
-        if (device.gwID === undefined) {
-          device.gwID = dataRes.data.gwId;
-        }
-
-        // Change product key if neccessary
-        device.productKey = dataRes.data.productKey;
-
-        // Change protocol version if necessary
-        device.version = dataRes.data.version;
-
-        // Cleanup
-        listener.close();
-        listener.removeAllListeners();
-        resolve(true);
-      }
-    });
-
-    listener.on('error', err => reject(err));
-  }), options.timeout * 1000, () => {
-    // Have to do this so we exit cleanly
-    listener.close();
-    listener.removeAllListeners();
-    // eslint-disable-next-line max-len
-    return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
-  });
-}
-
-let resolveIdQueue = Promise.resolve();
-
-function serialResolveId(device, options) {
-  const promise = resolveIdQueue.catch(() => {}).then(() => {
-    return resolveId(device, options);
-  });
-
-  resolveIdQueue = promise;
-  return promise;
-}
-
 /**
  * Represents a Tuya device.
  *
@@ -153,45 +82,6 @@ class TuyaDevice extends EventEmitter {
     this._connectTimeout = 1; // Seconds
     this._pingPongPeriod = 10; // Seconds
     this._persistentConnectionStopped = true;
-  }
-
-  /**
-   * Resolves ID stored in class to IP. If you didn't
-   * pass an IP to the constructor, you must call
-   * this before doing anything else.
-   * @param {Object} [options]
-   * @param {Number} [options.timeout=10]
-   * how long, in seconds, to wait for device
-   * to be resolved before timeout error is thrown
-   * @example
-   * tuya.resolveIds().then(() => console.log('ready!'))
-   * @returns {Promise<Boolean>}
-   * true if IP was found and device is ready to be used
-   */
-  resolveId(options) {
-    // Set default options
-    options = options ? options : {};
-
-    if (options.timeout === undefined) {
-      options.timeout = 10;
-    }
-
-    if (this.checkIfValidString(this.device.id) &&
-        this.checkIfValidString(this.device.ip)) {
-      debug('No IPs or IDs to search for');
-      return Promise.resolve(true);
-    }
-
-    return serialResolveId(this.device, options);
-  }
-
-  /**
-   * @deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.
-   */
-  resolveIds(options) {
-    // eslint-disable-next-line max-len
-    console.warn('resolveIds() is deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.');
-    return this.resolveId(options);
   }
 
   /**
@@ -682,6 +572,106 @@ class TuyaDevice extends EventEmitter {
     }
 
     return true;
+  }
+
+  /**
+   * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
+   */
+  resolveId(options) {
+    // eslint-disable-next-line max-len
+    console.warn('resolveId() is deprecated since v4.0.0. Will be removed in v5.0.0. Use find() instead.');
+    return this.find(options);
+  }
+
+  /**
+   * Finds an ID or IP, depending on what's missing.
+   * If you didn't pass either to the constructor,
+   * you must call this before anything else.
+   * @param {Object} [options]
+   * @param {Number} [options.timeout=10]
+   * how long, in seconds, to wait for device
+   * to be resolved before timeout error is thrown
+   * @example
+   * tuya.find().then(() => console.log('ready!'))
+   * @returns {Promise<Boolean>}
+   * true if IP was found and device is ready to be used
+   */
+  find(options) {
+    // Set default options
+    options = options ? options : {};
+
+    // Default timeout of 10 seconds
+    if (options.timeout === undefined) {
+      options.timeout = 10;
+    }
+
+    if (this.checkIfValidString(this.device.id) &&
+        this.checkIfValidString(this.device.ip)) {
+      // Don't need to do anything
+      debug('IP and ID are both resolved.');
+      return Promise.resolve(true);
+    }
+
+    // Create new listener
+    const listener = dgram.createSocket('udp4');
+    listener.bind(6666);
+
+    debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
+
+    // Find IP for device
+    return timeout(async () => { // Timeout
+      listener.on('message', message => {
+        debug('Received UDP message.');
+
+        let dataRes;
+        try {
+          dataRes = Parser.parse(message);
+        } catch (error) {
+          debug(error);
+          return;
+        }
+
+        debug('UDP data:');
+        debug(dataRes.data);
+
+        const thisId = dataRes.data.gwId;
+        const thisIp = dataRes.data.ip;
+        if ((this.device.id === thisId || this.device.ip === thisIp) && dataRes.data) {
+          // Add IP
+          this.device.ip = dataRes.data.ip;
+
+          // Add ID
+          this.device.id = dataRes.data.gwId;
+
+          // Update gwID if required
+          if (this.device.gwID === undefined) {
+            this.device.gwID = dataRes.data.gwId;
+          }
+
+          // Change product key if neccessary
+          this.device.productKey = dataRes.data.productKey;
+
+          // Change protocol version if necessary
+          this.device.version = dataRes.data.version;
+
+          // Cleanup
+          listener.close();
+          listener.removeAllListeners();
+          return true;
+        }
+      });
+
+      listener.on('error', err => {
+        throw err;
+      });
+    }, options.timeout * 1000, () => {
+      // Have to do this so we exit cleanly
+      listener.close();
+      listener.removeAllListeners();
+
+      // eslint-disable-next-line max-len
+      return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
+    });
   }
 }
 
