@@ -128,8 +128,11 @@ class TuyaDevice extends EventEmitter {
     // Send request and parse response
     return new Promise((resolve, reject) => {
       try {
+        // Send request
         this._send(buffer).then(() => {
+          // Runs when data event is emitted
           const resolveGet = data => {
+            // Remove self listener
             this.removeListener('data', resolveGet);
 
             if (options.schema === true) {
@@ -144,6 +147,7 @@ class TuyaDevice extends EventEmitter {
             }
           };
 
+          // Add listener
           this.on('data', resolveGet);
         });
       } catch (error) {
@@ -182,6 +186,7 @@ class TuyaDevice extends EventEmitter {
       throw new TypeError('No arguments were passed.');
     }
 
+    // Defaults
     let dps = {};
 
     if (options.multiple === true) {
@@ -196,9 +201,11 @@ class TuyaDevice extends EventEmitter {
       };
     }
 
+    // Get time
     const now = new Date();
     const timeStamp = (parseInt(now.getTime() / 1000, 10)).toString();
 
+    // Construct payload
     const payload = {
       devId: this.device.id,
       gwId: this.device.gwID,
@@ -228,16 +235,21 @@ class TuyaDevice extends EventEmitter {
       commandByte: 7 // 0x07
     });
 
-    // Send request
+    // Send request and wait for response
     return new Promise((resolve, reject) => {
       try {
+        // Send request
         this._send(buffer).then(() => {
+          // Runs when data event is emitted
           const resolveSet = _ => {
+            // Remove self listener
             this.removeListener('data', resolveSet);
 
+            // Return true
             resolve(true);
           };
 
+          // Add listener to data event
           this.on('data', resolveSet);
         });
       } catch (error) {
@@ -252,7 +264,7 @@ class TuyaDevice extends EventEmitter {
    * in a retry operation.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @returns {Promise<String>} returned data
+   * @returns {Promise<Boolean>} `true` if query was successfully sent
    */
   _send(buffer) {
     // Check for IP
@@ -263,41 +275,17 @@ class TuyaDevice extends EventEmitter {
     // Retry up to 5 times
     return pRetry(async () => {
       try {
-        const response = await this._sendUnwrapped(buffer);
+        // Connect to device
+        this.connect().then(() => {
+          // Transmit data
+          this.client.write(buffer);
 
-        return response;
+          return true;
+        });
       } catch (error) {
         throw error;
       }
     }, {retries: 5});
-  }
-
-  /**
-   * Sends a query to a device.
-   * @private
-   * @param {Buffer} buffer buffer of data
-   * @returns {Promise<String>} returned data
-   */
-  _sendUnwrapped(buffer) {
-    debug(`Sending data: ${buffer.toString('hex')}`);
-
-    return new Promise((resolve, reject) => {
-      // Connect to device
-      this.connect().then(() => {
-        // Transmit data
-        this.client.write(buffer);
-
-        this._sendTimeout = setTimeout(() => {
-          if (this.client) {
-            this.client.destroy();
-          }
-
-          return reject(new Error('Timeout waiting for response'));
-        }, this._responseTimeout * 1000);
-
-        resolve();
-      });
-    });
   }
 
   /**
@@ -490,6 +478,12 @@ class TuyaDevice extends EventEmitter {
     this._persistentConnectionStopped = true;
     this._connected = false;
 
+    // Clear timeouts
+    clearTimeout(this._sendTimeout);
+    clearTimeout(this._connectTimeout);
+    clearTimeout(this._responseTimeout);
+    clearTimeout(this.pingpongTimeout);
+
     if (!this.client) {
       return;
     }
@@ -621,6 +615,11 @@ class TuyaDevice extends EventEmitter {
     });
   }
 
+  /**
+   * Toggles a boolean property.
+   * @param {Number} [property=1] property to toggle
+   * @returns {Promise<Boolean>} the resulting state
+   */
   async toggle(property) {
     property = property === undefined ? '1' : property.toString();
 
