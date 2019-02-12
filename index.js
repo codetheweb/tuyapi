@@ -89,8 +89,6 @@ class TuyaDevice extends EventEmitter {
   /**
    * Gets a device's current status.
    * Defaults to returning only the value of the first DPS index.
-   * If `persistentConnection == true`, all data returned
-   * from device is emitted as event.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire schema of device
@@ -307,9 +305,9 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Connects to the device, use to initally
-   * open a socket when using a persistent connection.
-   * @returns {Promise<Boolean>}
+   * Connects to the device. Can be called even
+   * if device is already connected.
+   * @returns {Promise<Boolean>} `true` if connect succeeds
    * @emits TuyaDevice#connected
    * @emits TuyaDevice#disconnected
    * @emits TuyaDevice#data
@@ -339,34 +337,7 @@ class TuyaDevice extends EventEmitter {
         this.client.destroy();
       });
 
-      // Send data when connected
-      this.client.on('connect', () => {
-        debug('Socket connected.');
-
-        this._connected = true;
-
-        // Remove connect timeout
-        this.client.setTimeout(0);
-
-        if (this.device.persistentConnection) {
-          /**
-           * Emitted when socket is connected
-           * to device. This event may be emitted
-           * multiple times within the same script,
-           * so don't use this as a trigger for your
-           * initialization code.
-           * @event TuyaDevice#connected
-           */
-          this.emit('connected');
-
-          // Periodically send heartbeat ping
-          this.pingpongTimeout = setTimeout(() => {
-            this._sendPing();
-          }, this._pingPongPeriod * 1000);
-
-          this.get({returnAsEvent: true});
-        }
-      });
+      // Add event listeners to socket
 
       // Parse response data
       this.client.on('data', data => {
@@ -421,18 +392,13 @@ class TuyaDevice extends EventEmitter {
       // Handle errors
       this.client.on('error', err => {
         debug('Error event from socket.', this.device.ip, err);
-        if (this.dataRejector) {
-          this.dataRejector(err);
-          this.dataRejector = null;
-          this.dataResolver = null;
-        } else if (this.device.persistentConnection) {
-          this.emit('error', new Error('Error from socket'));
-        }
+
+        this.emit('error', new Error('Error from socket'));
 
         this.client.destroy();
       });
 
-      // Handle errors
+      // Handle socket closure
       this.client.on('close', () => {
         debug('Socket closed:', this.device.ip);
 
@@ -448,21 +414,49 @@ class TuyaDevice extends EventEmitter {
          */
         this.emit('disconnected');
         this.client.destroy();
-        this.client = null;
 
         if (this.pingpongTimeout) {
           clearTimeout(this.pingpongTimeout);
           this.pingpongTimeout = null;
         }
+      });
 
-        if (this.device.persistentConnection && !this._persistentConnectionStopped) {
-          setTimeout(() => {
-            this.connect();
-          }, 1000);
-        }
+      // Return when connected
+      return new Promise(resolve => {
+        this.client.on('connect', () => {
+          debug('Socket connected.');
+
+          this._connected = true;
+
+          // Remove connect timeout
+          this.client.setTimeout(0);
+
+          /**
+          * Emitted when socket is connected
+          * to device. This event may be emitted
+          * multiple times within the same script,
+          * so don't use this as a trigger for your
+          * initialization code.
+          * @event TuyaDevice#connected
+          */
+          this.emit('connected');
+
+          // Periodically send heartbeat ping
+          this.pingpongTimeout = setTimeout(() => {
+            this._sendPing();
+          }, this._pingPongPeriod * 1000);
+
+          // Automatically ask for current state so we
+          // can emit a `data` event as soon as possible
+          this.get();
+
+          // Return
+          resolve(true);
+        });
       });
     }
 
+    // Return if already connected
     return Promise.resolve(true);
   }
 

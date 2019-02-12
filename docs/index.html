@@ -116,16 +116,6 @@
               
                 
                 <li><a
-                  href='#eventtuyadeviceconnected'
-                  class="">
-                  TuyaDevice#connected
-                  
-                </a>
-                
-                </li>
-              
-                
-                <li><a
                   href='#eventtuyadevicedata'
                   class="">
                   TuyaDevice#data
@@ -139,6 +129,16 @@
                   href='#eventtuyadevicedisconnected'
                   class="">
                   TuyaDevice#disconnected
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#eventtuyadeviceconnected'
+                  class="">
+                  TuyaDevice#connected
                   
                 </a>
                 
@@ -366,9 +366,7 @@ heartbeat packets (there's really no downside)
   
 
   <p>Gets a device's current status.
-Defaults to returning only the value of the first DPS index.
-If <code>persistentConnection == true</code>, all data returned
-from device is emitted as event.</p>
+Defaults to returning only the value of the first DPS index.</p>
 
  
   
@@ -637,8 +635,8 @@ tuya.set({
 
   
 
-  <p>Connects to the device, use to initally
-open a socket when using a persistent connection.</p>
+  <p>Connects to the device. Can be called even
+if device is already connected.</p>
 
  
   
@@ -662,7 +660,8 @@ open a socket when using a persistent connection.</p>
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
-        
+        <code>true</code>
+ if connect succeeds
 
       
     
@@ -1170,58 +1169,6 @@ Also emitted on parsing errors.</p>
   
   <div class='clearfix'>
     
-    <h3 class='fl m0' id='eventtuyadeviceconnected'>
-      TuyaDevice#connected
-    </h3>
-    
-    
-  </div>
-  
-
-  <p>Emitted when socket is connected
-to device. This event may be emitted
-multiple times within the same script,
-so don't use this as a trigger for your
-initialization code.</p>
-
- 
-  
-    <div class='pre p1 fill-light mt0'>TuyaDevice#connected</div>
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-        
-          
-          <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-  <div class='clearfix'>
-    
     <h3 class='fl m0' id='eventtuyadevicedata'>
       TuyaDevice#data
     </h3>
@@ -1307,6 +1254,58 @@ goes off the network.</p>
  
   
     <div class='pre p1 fill-light mt0'>TuyaDevice#disconnected</div>
+   
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='eventtuyadeviceconnected'>
+      TuyaDevice#connected
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>Emitted when socket is connected
+to device. This event may be emitted
+multiple times within the same script,
+so don't use this as a trigger for your
+initialization code.</p>
+
+ 
+  
+    <div class='pre p1 fill-light mt0'>TuyaDevice#connected</div>
    
   
   
