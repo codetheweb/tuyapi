@@ -113,7 +113,8 @@ class TuyaDevice extends EventEmitter {
       devId: this.device.id
     };
 
-    debug('Payload: ', payload);
+    debug('GET Payload:');
+    debug(payload);
 
     // Create byte buffer
     const buffer = Parser.encode({
@@ -210,7 +211,8 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    debug('Payload:', payload);
+    debug('SET Payload:');
+    debug(payload);
 
     // Encrypt data
     const data = this.device.cipher.encrypt({
@@ -287,7 +289,6 @@ class TuyaDevice extends EventEmitter {
   /**
    * Sends a heartbeat ping to the device
    * @private
-   * @returns {Promise<string>} returned data
    */
   _sendPing() {
     debug(`Pinging ${this.device.ip}`);
@@ -316,7 +317,7 @@ class TuyaDevice extends EventEmitter {
       this.client = new net.Socket();
 
       // Attempt to connect
-      debug('Connect', this.device.ip);
+      debug(`Connecting to ${this.device.ip}...`);
       this.client.connect(this.device.port, this.device.ip);
 
       // Default connect timeout is ~1 minute,
@@ -338,7 +339,7 @@ class TuyaDevice extends EventEmitter {
 
       // Parse response data
       this.client.on('data', data => {
-        debug('Received data back:', this.client.remoteAddress);
+        debug('Received response');
         debug(data.toString('hex'));
 
         // Response was received, so stop waiting
@@ -356,10 +357,11 @@ class TuyaDevice extends EventEmitter {
         data = dataRes.data;
 
         if (typeof data === 'object') {
-          debug('Data:', this.client.remoteAddress, data, dataRes.commandByte);
+          debug('Parsed response data:');
+          debug(data);
         } else if (typeof data === 'undefined') {
           if (dataRes.commandByte === 0x09) { // PONG received
-            debug('Pong', this.device.ip, this.client ? this.client.destroyed : true);
+            debug('Pong', this.device.ip);
             return;
           }
 
@@ -368,11 +370,11 @@ class TuyaDevice extends EventEmitter {
             return;
           }
 
-          debug('undefined', this.client.remoteAddress, data, dataRes.commandByte);
+          debug(`Undefined data with command byte ${dataRes.commandByte}`);
         } else { // Message is encrypted
-          // eslint-disable-next-line max-len
-          debug('decrypt', this.client.remoteAddress, this.device.cipher.decrypt(data), dataRes.commandByte);
           data = this.device.cipher.decrypt(data);
+          debug('Decrypted response data:');
+          debug(data);
         }
 
         /**
@@ -397,7 +399,7 @@ class TuyaDevice extends EventEmitter {
 
       // Handle socket closure
       this.client.on('close', () => {
-        debug('Socket closed:', this.device.ip);
+        debug(`Socket closed: ${this.device.ip}`);
 
         this._connected = false;
 
@@ -461,7 +463,6 @@ class TuyaDevice extends EventEmitter {
    * Disconnects from the device, use to
    * close the socket or exit gracefully
    * when using a persistent connection.
-   * @returns {Promise<Boolean>}
    */
   disconnect() {
     debug('Disconnect');
@@ -483,8 +484,8 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Returns current connection status to device.
-   * (`true` if connected, `false` otherwise.)
    * @returns {Boolean}
+   * (`true` if connected, `false` otherwise.)
    */
   isConnected() {
     return this._connected;
@@ -492,10 +493,10 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Checks a given input string.
-   * Returns `true` if is string and length != 0, returns `false` otherwise.
    * @private
-   * @param {String} input
+   * @param {String} input input string
    * @returns {Boolean}
+   * `true` if is string and length != 0, `false` otherwise.
    */
   checkIfValidString(input) {
     if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
@@ -539,7 +540,7 @@ class TuyaDevice extends EventEmitter {
     if (this.checkIfValidString(this.device.id) &&
         this.checkIfValidString(this.device.ip)) {
       // Don't need to do anything
-      debug('IP and ID are both resolved.');
+      debug('IP and ID are already both resolved.');
       return Promise.resolve(true);
     }
 
