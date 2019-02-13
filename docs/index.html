@@ -294,7 +294,7 @@ if omitted assumed to be the same as
                 <tr>
   <td class='break-word'><span class='code bold'>options.productKey</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
   </td>
-  <td class='break-word'><span>product key of device
+  <td class='break-word'><span>product key of device (currently unused)
 </span></td>
 </tr>
 
@@ -314,7 +314,7 @@ if omitted assumed to be the same as
                 <tr>
   <td class='break-word'><span class='code bold'>options.persistentConnection</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
   
-    (default <code>false</code>)
+    (default <code>true</code>)
   </td>
   <td class='break-word'><span>whether or not to use a persistent socket with
 heartbeat packets (there's really no downside)
@@ -342,8 +342,7 @@ heartbeat packets (there's really no downside)
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> tuya = <span class="hljs-keyword">new</span> TuyaDevice({<span class="hljs-attr">id</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxxxxxx'</span>,
-                             <span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>,
-                             <span class="hljs-attr">persistentConnection</span>: <span class="hljs-literal">true</span>})</pre>
+                             <span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>})</pre>
     
   
 
@@ -408,7 +407,7 @@ Defaults to returning only the value of the first DPS index.</p>
                 <tr>
   <td class='break-word'><span class='code bold'>options.schema</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>?</code>
   </td>
-  <td class='break-word'><span>true to return entire schema of device
+  <td class='break-word'><span>true to return entire list of properties from device
 </span></td>
 </tr>
 
@@ -439,7 +438,7 @@ Defaults to returning only the value of the first DPS index.</p>
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)></code>:
-        returns boolean if no options are provided, otherwise returns object of results
+        returns boolean if single property is requested, otherwise returns object of results
 
       
     
@@ -596,11 +595,11 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set default property</span>
-tuya.set({<span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
+tuya.set({<span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned on'</span>))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set custom property</span>
-tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
+tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">set</span>: <span class="hljs-literal">false</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned off'</span>))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set multiple properties</span>
@@ -870,7 +869,7 @@ when using a persistent connection.</p>
   
 
   <p>Finds an ID or IP, depending on what's missing.
-If you didn't pass either to the constructor,
+If you didn't pass an ID or IP to the constructor,
 you must call this before anything else.</p>
 
  
@@ -936,7 +935,7 @@ to be resolved before timeout error is thrown
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
-        true if IP was found and device is ready to be used
+        true if ID/IP was found and device is ready to be used
 
       
     

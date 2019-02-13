@@ -24,15 +24,14 @@ const Parser = require('./lib/message-parser');
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
- * @param {String} [options.productKey] product key of device
+ * @param {String} [options.productKey] product key of device (currently unused)
  * @param {Number} [options.version=3.1] protocol version
- * @param {Boolean} [options.persistentConnection=false]
+ * @param {Boolean} [options.persistentConnection=true]
  * whether or not to use a persistent socket with
  * heartbeat packets (there's really no downside)
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
- *                              key: 'xxxxxxxxxxxxxxxx',
- *                              persistentConnection: true})
+ *                              key: 'xxxxxxxxxxxxxxxx'})
  */
 class TuyaDevice extends EventEmitter {
   constructor(options) {
@@ -68,7 +67,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     if (this.device.persistentConnection === undefined) {
-      this.device.persistentConnection = false;
+      this.device.persistentConnection = true;
     }
 
     if (this.device.gwID === undefined) {
@@ -83,7 +82,6 @@ class TuyaDevice extends EventEmitter {
     this._responseTimeout = 5; // Seconds
     this._connectTimeout = 1; // Seconds
     this._pingPongPeriod = 10; // Seconds
-    this._persistentConnectionStopped = true;
   }
 
   /**
@@ -91,7 +89,7 @@ class TuyaDevice extends EventEmitter {
    * Defaults to returning only the value of the first DPS index.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
-   * true to return entire schema of device
+   * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
    * @example
@@ -104,7 +102,7 @@ class TuyaDevice extends EventEmitter {
    * // get all available data from device
    * tuya.get({schema: true}).then(data => console.log(data))
    * @returns {Promise<Boolean|Object>}
-   * returns boolean if no options are provided, otherwise returns object of results
+   * returns boolean if single property is requested, otherwise returns object of results
    */
   get(options) {
     // Set empty object as default
@@ -164,10 +162,10 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @example
    * // set default property
-   * tuya.set({set: true}).then(() => console.log('device was changed'))
+   * tuya.set({set: true}).then(() => console.log('device was turned on'))
    * @example
    * // set custom property
-   * tuya.set({dps: 2, set: true}).then(() => console.log('device was changed'))
+   * tuya.set({dps: 2, set: false}).then(() => console.log('device was turned off'))
    * @example
    * // set multiple properties
    * tuya.set({
@@ -257,9 +255,9 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Sends a query to a device. Helper
-   * function that wraps ._sendUnwrapped()
-   * in a retry operation.
+   * Sends a query to a device. Helper function
+   * that connects to a device if necessary and
+   * wraps the entire operation in a retry.
    * @private
    * @param {Buffer} buffer buffer of data
    * @returns {Promise<Boolean>} `true` if query was successfully sent
@@ -314,7 +312,6 @@ class TuyaDevice extends EventEmitter {
    * @emits TuyaDevice#error
    */
   connect() {
-    this._persistentConnectionStopped = false;
     if (!this.client) {
       this.client = new net.Socket();
 
@@ -469,7 +466,6 @@ class TuyaDevice extends EventEmitter {
   disconnect() {
     debug('Disconnect');
 
-    this._persistentConnectionStopped = true;
     this._connected = false;
 
     // Clear timeouts
@@ -520,7 +516,7 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Finds an ID or IP, depending on what's missing.
-   * If you didn't pass either to the constructor,
+   * If you didn't pass an ID or IP to the constructor,
    * you must call this before anything else.
    * @param {Object} [options]
    * @param {Number} [options.timeout=10]
@@ -529,7 +525,7 @@ class TuyaDevice extends EventEmitter {
    * @example
    * tuya.find().then(() => console.log('ready!'))
    * @returns {Promise<Boolean>}
-   * true if IP was found and device is ready to be used
+   * true if ID/IP was found and device is ready to be used
    */
   find(options) {
     // Set default options
