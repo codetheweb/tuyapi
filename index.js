@@ -547,7 +547,7 @@ class TuyaDevice extends EventEmitter {
     debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
 
     // Find IP for device
-    return timeout(async () => { // Timeout
+    return timeout(new Promise((resolve, reject) => { // Timeout
       listener.on('message', message => {
         debug('Received UDP message.');
 
@@ -556,7 +556,7 @@ class TuyaDevice extends EventEmitter {
           dataRes = Parser.parse(message);
         } catch (error) {
           debug(error);
-          return;
+          reject(error);
         }
 
         debug('UDP data:');
@@ -585,20 +585,20 @@ class TuyaDevice extends EventEmitter {
           // Cleanup
           listener.close();
           listener.removeAllListeners();
-          return true;
+          resolve(true);
         }
       });
 
       listener.on('error', err => {
-        throw err;
+        reject(err);
       });
-    }, options.timeout * 1000, () => {
+    }), options.timeout * 1000, () => {
       // Have to do this so we exit cleanly
       listener.close();
       listener.removeAllListeners();
 
       // eslint-disable-next-line max-len
-      return Promise.reject(new Error('find() timed out. Is the device powered on and the ID or IP correct?'));
+      throw new Error('find() timed out. Is the device powered on and the ID or IP correct?');
     });
   }
 
