@@ -80,7 +80,7 @@ class TuyaDevice extends EventEmitter {
     this._connected = false;
 
     this._responseTimeout = 5; // Seconds
-    this._connectTimeout = 1; // Seconds
+    this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
   }
 
@@ -272,17 +272,13 @@ class TuyaDevice extends EventEmitter {
 
     // Retry up to 5 times
     return pRetry(async () => {
-      try {
-        // Connect to device
-        this.connect().then(() => {
-          // Transmit data
-          this.client.write(buffer);
+      // Connect to device
+      await this.connect();
 
-          return true;
-        });
-      } catch (error) {
-        throw error;
-      }
+      // Send data
+      this.client.write(buffer);
+
+      return true;
     }, {retries: 5});
   }
 
@@ -300,7 +296,7 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send ping
-    this._sendUnwrapped(buffer, 9, true);
+    this._send(buffer);
   }
 
   /**
@@ -313,115 +309,115 @@ class TuyaDevice extends EventEmitter {
    * @emits TuyaDevice#error
    */
   connect() {
-    if (!this.client) {
-      this.client = new net.Socket();
+    if (!this.isConnected()) {
+      return new Promise((resolve, reject) => {
+        this.client = new net.Socket();
 
-      // Attempt to connect
-      debug(`Connecting to ${this.device.ip}...`);
-      this.client.connect(this.device.port, this.device.ip);
+        // Attempt to connect
+        debug(`Connecting to ${this.device.ip}...`);
+        this.client.connect(this.device.port, this.device.ip);
 
-      // Default connect timeout is ~1 minute,
-      // 10 seconds is a more reasonable default
-      // since `retry` is used.
-      this.client.setTimeout(this._connectTimeout * 1000, () => {
-        /**
-         * Emitted on socket error, usually a
-         * result of a connection timeout.
-         * Also emitted on parsing errors.
-         * @event TuyaDevice#error
-         * @property {Error} error error event
-         */
-        this.client.emit('error', new Error('connection timed out'));
-        this.client.destroy();
-      });
+        // Default connect timeout is ~1 minute,
+        // 5 seconds is a more reasonable default
+        // since `retry` is used.
+        this.client.setTimeout(this._connectTimeout * 1000, () => {
+          /**
+           * Emitted on socket error, usually a
+           * result of a connection timeout.
+           * Also emitted on parsing errors.
+           * @event TuyaDevice#error
+           * @property {Error} error error event
+           */
+          // this.emit('error', new Error('connection timed out'));
+          this.client.destroy();
+          reject(new Error('connection timed out'));
+        });
 
-      // Add event listeners to socket
+        // Add event listeners to socket
 
-      // Parse response data
-      this.client.on('data', data => {
-        debug('Received response');
-        debug(data.toString('hex'));
+        // Parse response data
+        this.client.on('data', data => {
+          debug('Received response');
+          debug(data.toString('hex'));
 
-        // Response was received, so stop waiting
-        clearTimeout(this._sendTimeout);
+          // Response was received, so stop waiting
+          clearTimeout(this._sendTimeout);
 
-        let dataRes;
-        try {
-          dataRes = Parser.parse(data);
-        } catch (error) {
-          debug(error);
-          this.emit('error', error);
-          return;
-        }
-
-        data = dataRes.data;
-
-        if (typeof data === 'object') {
-          debug('Parsed response data:');
-          debug(data);
-        } else if (typeof data === 'undefined') {
-          if (dataRes.commandByte === 0x09) { // PONG received
-            debug('Pong', this.device.ip);
+          let dataRes;
+          try {
+            dataRes = Parser.parse(data);
+          } catch (error) {
+            debug(error);
+            this.emit('error', error);
             return;
           }
 
-          if (dataRes.commandByte === 0x07) { // Set succeeded
-            debug('Set succeeded.');
-            return;
+          data = dataRes.data;
+
+          if (typeof data === 'object') {
+            debug('Parsed response data:');
+            debug(data);
+          } else if (typeof data === 'undefined') {
+            if (dataRes.commandByte === 0x09) { // PONG received
+              debug('Pong', this.device.ip);
+              return;
+            }
+
+            if (dataRes.commandByte === 0x07) { // Set succeeded
+              debug('Set succeeded.');
+              return;
+            }
+
+            debug(`Undefined data with command byte ${dataRes.commandByte}`);
+          } else { // Message is encrypted
+            data = this.device.cipher.decrypt(data);
+            debug('Decrypted response data:');
+            debug(data);
           }
 
-          debug(`Undefined data with command byte ${dataRes.commandByte}`);
-        } else { // Message is encrypted
-          data = this.device.cipher.decrypt(data);
-          debug('Decrypted response data:');
-          debug(data);
-        }
+          /**
+           * Emitted when data is returned from device.
+           * @event TuyaDevice#data
+           * @property {Object} data received data
+           * @property {Number} commandByte
+           * commandByte of result
+           * (e.g. 7=requested response, 8=proactive update from device)
+           */
+          this.emit('data', data, dataRes.commandByte);
+        });
 
-        /**
-         * Emitted when data is returned from device.
-         * @event TuyaDevice#data
-         * @property {Object} data received data
-         * @property {Number} commandByte
-         * commandByte of result
-         * (e.g. 7=requested response, 8=proactive update from device)
-         */
-        this.emit('data', data, dataRes.commandByte);
-      });
+        // Handle errors
+        this.client.on('error', err => {
+          debug('Error event from socket.', this.device.ip, err);
 
-      // Handle errors
-      this.client.on('error', err => {
-        debug('Error event from socket.', this.device.ip, err);
+          this.emit('error', new Error('Error from socket'));
 
-        this.emit('error', new Error('Error from socket'));
+          this.client.destroy();
+        });
 
-        this.client.destroy();
-      });
+        // Handle socket closure
+        this.client.on('close', () => {
+          debug(`Socket closed: ${this.device.ip}`);
 
-      // Handle socket closure
-      this.client.on('close', () => {
-        debug(`Socket closed: ${this.device.ip}`);
+          this._connected = false;
 
-        this._connected = false;
+          /**
+           * Emitted when a socket is disconnected
+           * from device. Not an exclusive event:
+           * `error` and `disconnected` may be emitted
+           * at the same time if, for example, the device
+           * goes off the network.
+           * @event TuyaDevice#disconnected
+           */
+          this.emit('disconnected');
+          this.client.destroy();
 
-        /**
-         * Emitted when a socket is disconnected
-         * from device. Not an exclusive event:
-         * `error` and `disconnected` may be emitted
-         * at the same time if, for example, the device
-         * goes off the network.
-         * @event TuyaDevice#disconnected
-         */
-        this.emit('disconnected');
-        this.client.destroy();
+          if (this.pingpongTimeout) {
+            clearTimeout(this.pingpongTimeout);
+            this.pingpongTimeout = null;
+          }
+        });
 
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
-      });
-
-      // Return when connected
-      return new Promise(resolve => {
         this.client.on('connect', () => {
           debug('Socket connected.');
 
