@@ -311,18 +311,6 @@ if omitted assumed to be the same as
 
 
               
-                <tr>
-  <td class='break-word'><span class='code bold'>options.persistentConnection</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
-  
-    (default <code>true</code>)
-  </td>
-  <td class='break-word'><span>whether or not to use a persistent socket with
-heartbeat packets (there's really no downside)
-</span></td>
-</tr>
-
-
-              
             </tbody>
           </table>
           
@@ -693,8 +681,7 @@ if device is already connected.</p>
   
 
   <p>Disconnects from the device, use to
-close the socket or exit gracefully
-when using a persistent connection.</p>
+close the socket and exit gracefully.</p>
 
  
   
@@ -869,7 +856,7 @@ you must call this before anything else.</p>
 
  
   
-    <div class='pre p1 fill-light mt0'>find(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
+    <div class='pre p1 fill-light mt0'>find(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>)></div>
    
   
   
@@ -905,6 +892,15 @@ you must call this before anything else.</p>
             <tbody class='mt1'>
               
                 <tr>
+  <td class='break-word'><span class='code bold'>options.all</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>true to return array of all found devices
+</span></td>
+</tr>
+
+
+              
+                <tr>
   <td class='break-word'><span class='code bold'>options.timeout</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
   
     (default <code>10</code>)
@@ -929,7 +925,7 @@ to be resolved before timeout error is thrown
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></code>:
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>)></code>:
         true if ID/IP was found and device is ready to be used
 
       

@@ -26,9 +26,6 @@ const Parser = require('./lib/message-parser');
  * @param {String} options.key encryption key of device (also called `localKey`)
  * @param {String} [options.productKey] product key of device (currently unused)
  * @param {Number} [options.version=3.1] protocol version
- * @param {Boolean} [options.persistentConnection=true]
- * whether or not to use a persistent socket with
- * heartbeat packets (there's really no downside)
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
@@ -66,13 +63,12 @@ class TuyaDevice extends EventEmitter {
       this.device.port = 6668;
     }
 
-    if (this.device.persistentConnection === undefined) {
-      this.device.persistentConnection = true;
-    }
-
     if (this.device.gwID === undefined) {
       this.device.gwID = this.device.id;
     }
+
+    // Contains array of found devices when calling .find()
+    this.foundDevices = [];
 
     // Private instance variables
 
@@ -272,9 +268,6 @@ class TuyaDevice extends EventEmitter {
 
     // Retry up to 5 times
     return pRetry(async () => {
-      // Connect to device
-      await this.connect();
-
       // Send data
       this.client.write(buffer);
 
@@ -457,8 +450,7 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Disconnects from the device, use to
-   * close the socket or exit gracefully
-   * when using a persistent connection.
+   * close the socket and exit gracefully.
    */
   disconnect() {
     debug('Disconnect');
@@ -516,12 +508,14 @@ class TuyaDevice extends EventEmitter {
    * If you didn't pass an ID or IP to the constructor,
    * you must call this before anything else.
    * @param {Object} [options]
+   * @param {Boolean} [options.all]
+   * true to return array of all found devices
    * @param {Number} [options.timeout=10]
    * how long, in seconds, to wait for device
    * to be resolved before timeout error is thrown
    * @example
    * tuya.find().then(() => console.log('ready!'))
-   * @returns {Promise<Boolean>}
+   * @returns {Promise<Boolean|Array>}
    * true if ID/IP was found and device is ready to be used
    */
   find(options) {
@@ -562,9 +556,14 @@ class TuyaDevice extends EventEmitter {
         debug('UDP data:');
         debug(dataRes.data);
 
-        const thisId = dataRes.data.gwId;
-        const thisIp = dataRes.data.ip;
-        if ((this.device.id === thisId || this.device.ip === thisIp) && dataRes.data) {
+        const thisID = dataRes.data.gwId;
+        const thisIP = dataRes.data.ip;
+
+        this.foundDevices.push({id: thisID, ip: thisIP});
+
+        if (!options.all &&
+            (this.device.id === thisID || this.device.ip === thisIP) &&
+            dataRes.data) {
           // Add IP
           this.device.ip = dataRes.data.ip;
 
@@ -597,6 +596,12 @@ class TuyaDevice extends EventEmitter {
       listener.close();
       listener.removeAllListeners();
 
+      // Return all devices
+      if (options.all) {
+        return this.foundDevices;
+      }
+
+      // Otherwise throw error
       // eslint-disable-next-line max-len
       throw new Error('find() timed out. Is the device powered on and the ID or IP correct?');
     });
