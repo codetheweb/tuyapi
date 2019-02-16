@@ -3,219 +3,91 @@ const dgram = require('dgram');
 const net = require('net');
 const {EventEmitter} = require('events');
 const timeout = require('p-timeout');
-const retry = require('retry');
+const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
-function resolveId(device, options) {
-  // Create new listener
-  const listener = dgram.createSocket('udp4');
-  listener.bind(6666);
-
-  debug(`Finding missing IP: ${device.ip} or Device ID: ${device.id}`);
-
-  // Find IP for device
-  return timeout(new Promise((resolve, reject) => { // Timeout
-    listener.on('message', message => {
-      debug('Received UDP message.');
-
-      let dataRes;
-      try {
-        dataRes = Parser.parse(message);
-      } catch (error) {
-        debug(error);
-        return;
-      }
-
-      debug('UDP data:');
-      debug(dataRes.data);
-
-      const thisId = dataRes.data.gwId;
-      const thisIp = dataRes.data.ip;
-      if ((device.id === thisId || device.ip === thisIp) && dataRes.data) {
-        // Add IP
-        device.ip = dataRes.data.ip;
-
-        // Add ID
-        device.id = dataRes.data.gwId;
-
-        // Update gwID if required
-        if (device.gwID === undefined) {
-          device.gwID = dataRes.data.gwId;
-        }
-
-        // Change product key if neccessary
-        device.productKey = dataRes.data.productKey;
-
-        // Change protocol version if necessary
-        device.version = dataRes.data.version;
-
-        // Cleanup
-        listener.close();
-        listener.removeAllListeners();
-        resolve(true);
-      }
-    });
-
-    listener.on('error', err => reject(err));
-  }), options.timeout * 1000, () => {
-    // Have to do this so we exit cleanly
-    listener.close();
-    listener.removeAllListeners();
-    // eslint-disable-next-line max-len
-    return Promise.reject(new Error('resolveIds() timed out. Is the device powered on and the ID correct?'));
-  });
-}
-
-let resolveIdQueue = Promise.resolve();
-
-function serialResolveId(device, options) {
-  const promise = resolveIdQueue.catch(() => {}).then(() => {
-    return resolveId(device, options);
-  });
-
-  resolveIdQueue = promise;
-  return promise;
-}
-
-function checkIfValidString(input) {
-  if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
-    return false;
-  }
-
-  return true;
-}
-
 /**
  * Represents a Tuya device.
+ *
+ * You *must* pass either an IP or an ID. If
+ * you're experiencing problems when only passing
+ * one, try passing both if possible.
  * @class
  * @param {Object} options
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
- * @param {String} options.id ID of device (also called `devId`)
+ * @param {String} [options.id] ID of device (also called `devId`)
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
- * @param {String} options.productKey product key of device
+ * @param {String} [options.productKey] product key of device (currently unused)
  * @param {Number} [options.version=3.1] protocol version
- * @param {Boolean} [options.persistentConnection=false]
- * whether or not to use a persistent socket with heartbeat packets
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
- *                              key: 'xxxxxxxxxxxxxxxx',
- *                              persistentConnection: true})
+ *                              key: 'xxxxxxxxxxxxxxxx'})
  */
 class TuyaDevice extends EventEmitter {
   constructor(options) {
     super();
 
+    // Set device to user-passed options
     this.device = options;
 
-    // Defaults
-    if (!(checkIfValidString(this.device.id) || checkIfValidString(this.device.ip))) {
-      throw new Error('ID and IP are missing from device.');
+    // Default version (necessary for later checks)
+    if (this.device.version === undefined) {
+      this.device.version = 3.1;
     }
 
-    if (!checkIfValidString(this.device.id)) {
-      debug('ID is missing from device. Run resolveID() to get from IP');
-    } else if (this.device.gwID === undefined) {
-      this.device.gwID = this.device.id;
+    // Check arguments
+    if (!(this.checkIfValidString(this.device.id) ||
+          this.checkIfValidString(this.device.ip))) {
+      throw new TypeError('ID and IP are missing from device.');
     }
 
-    if (!checkIfValidString(this.device.ip)) {
-      debug('IP is missing from device. Run resolveID() to get from ID');
-    }
-
-    if (checkIfValidString(this.device.key)) {
+    if (this.checkIfValidString(this.device.key) && this.device.key.length === 16) {
       // Create cipher from key
       this.device.cipher = new Cipher({
         key: this.device.key,
         version: this.device.version
       });
     } else {
-      debug('Encryption key is missing from device. Only get commands will work');
+      throw new TypeError('Key is missing or incorrect.');
     }
 
+    // Defaults
     if (this.device.port === undefined) {
       this.device.port = 6668;
     }
 
-    if (this.device.version === undefined) {
-      this.device.version = 3.1;
+    if (this.device.gwID === undefined) {
+      this.device.gwID = this.device.id;
     }
 
-    if (this.device.persistentConnection === undefined) {
-      this.device.persistentConnection = false;
-    }
+    // Contains array of found devices when calling .find()
+    this.foundDevices = [];
 
-    // Private variables
+    // Private instance variables
 
     // Socket connected state
     this._connected = false;
 
     this._responseTimeout = 5; // Seconds
-    this._connectTimeout = 1; // Seconds
+    this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
-    this._persistentConnectionStopped = true;
-  }
-
-  /**
-   * Resolves ID stored in class to IP. If you didn't
-   * pass an IP to the constructor, you must call
-   * this before doing anything else.
-   * @param {Object} [options]
-   * @param {Number} [options.timeout=10]
-   * how long, in seconds, to wait for device
-   * to be resolved before timeout error is thrown
-   * @example
-   * tuya.resolveIds().then(() => console.log('ready!'))
-   * @returns {Promise<Boolean>}
-   * true if IP was found and device is ready to be used
-   */
-  resolveId(options) {
-    // Set default options
-    options = options ? options : {};
-
-    if (options.timeout === undefined) {
-      options.timeout = 10;
-    }
-
-    if (checkIfValidString(this.device.id) && checkIfValidString(this.device.ip)) {
-      debug('No IPs or IDs to search for');
-      return Promise.resolve(true);
-    }
-
-    return serialResolveId(this.device, options);
-  }
-
-  /**
-   * @deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.
-   */
-  resolveIds(options) {
-    // eslint-disable-next-line max-len
-    console.warn('resolveIds() is deprecated since v3.0.0. Will be removed in v4.0.0. Use resolveId() instead.');
-    return this.resolveId(options);
   }
 
   /**
    * Gets a device's current status.
    * Defaults to returning only the value of the first DPS index.
-   * If `returnAsEvent = true`, all options are ignored and
-   * all data returned from device is emitted as event.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
-   * true to return entire schema of device
+   * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
-   * @param {Boolean} [options.returnAsEvent=false]
-   * true to emit `data` event when result is returned, false
-   * to return Promise
-   * @example
-   * // get all properties and emit event with data
-   * tuya.get({returnAsEvent: true});
    * @example
    * // get first, default property from device
    * tuya.get().then(status => console.log(status))
@@ -225,8 +97,8 @@ class TuyaDevice extends EventEmitter {
    * @example
    * // get all available data from device
    * tuya.get({schema: true}).then(data => console.log(data))
-   * @returns {Promise<Object>}
-   * returns boolean if no options are provided, otherwise returns object of results
+   * @returns {Promise<Boolean|Object>}
+   * returns boolean if single property is requested, otherwise returns object of results
    */
   get(options) {
     // Set empty object as default
@@ -237,7 +109,8 @@ class TuyaDevice extends EventEmitter {
       devId: this.device.id
     };
 
-    debug('Payload: ', payload);
+    debug('GET Payload:');
+    debug(payload);
 
     // Create byte buffer
     const buffer = Parser.encode({
@@ -245,24 +118,34 @@ class TuyaDevice extends EventEmitter {
       commandByte: 10 // 0x0a
     });
 
+    // Send request and parse response
     return new Promise((resolve, reject) => {
-      this._send(buffer, 10, options.returnAsEvent).then(data => {
-        if (options.returnAsEvent) {
-          return resolve();
-        }
+      try {
+        // Send request
+        this._send(buffer).then(() => {
+          // Runs when data event is emitted
+          const resolveGet = data => {
+            // Remove self listener
+            this.removeListener('data', resolveGet);
 
-        if (typeof data === 'string') {
-          reject(data);
-        } else if (options.schema === true) {
-          resolve(data);
-        } else if (options.dps) {
-          resolve(data.dps[options.dps]);
-        } else {
-          resolve(data.dps['1']);
-        }
-      }).catch(error => {
+            if (options.schema === true) {
+              // Return whole response
+              resolve(data);
+            } else if (options.dps) {
+              // Return specific property
+              resolve(data.dps[options.dps]);
+            } else {
+              // Return first property by default
+              resolve(data.dps['1']);
+            }
+          };
+
+          // Add listener
+          this.on('data', resolveGet);
+        });
+      } catch (error) {
         reject(error);
-      });
+      }
     });
   }
 
@@ -276,10 +159,10 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @example
    * // set default property
-   * tuya.set({set: true}).then(() => console.log('device was changed'))
+   * tuya.set({set: true}).then(() => console.log('device was turned on'))
    * @example
    * // set custom property
-   * tuya.set({dps: 2, set: true}).then(() => console.log('device was changed'))
+   * tuya.set({dps: 2, set: false}).then(() => console.log('device was turned off'))
    * @example
    * // set multiple properties
    * tuya.set({
@@ -291,6 +174,12 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean>} - returns `true` if the command succeeded
    */
   set(options) {
+    // Check arguments
+    if (options === undefined || Object.entries(options).length === 0) {
+      throw new TypeError('No arguments were passed.');
+    }
+
+    // Defaults
     let dps = {};
 
     if (options.multiple === true) {
@@ -305,9 +194,11 @@ class TuyaDevice extends EventEmitter {
       };
     }
 
+    // Get time
     const now = new Date();
     const timeStamp = (parseInt(now.getTime() / 1000, 10)).toString();
 
+    // Construct payload
     const payload = {
       devId: this.device.id,
       gwId: this.device.gwID,
@@ -316,7 +207,7 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    debug('Payload:', this.device.ip);
+    debug('SET Payload:');
     debug(payload);
 
     // Encrypt data
@@ -331,260 +222,152 @@ class TuyaDevice extends EventEmitter {
 
     // Create byte buffer from hex data
     const thisData = Buffer.from(this.device.version + md5 + data);
+
+    // Encode into packet
     const buffer = Parser.encode({
       data: thisData,
       commandByte: 7 // 0x07
     });
 
-    // Send request to change status
+    // Send request and wait for response
     return new Promise((resolve, reject) => {
-      this._send(buffer, 7, false).then(() => {
-        resolve(true);
-      }).catch(error => {
+      try {
+        // Send request
+        this._send(buffer).then(() => {
+          // Runs when data event is emitted
+          const resolveSet = _ => {
+            // Remove self listener
+            this.removeListener('data', resolveSet);
+
+            // Return true
+            resolve(true);
+          };
+
+          // Add listener to data event
+          this.on('data', resolveSet);
+        });
+      } catch (error) {
         reject(error);
-      });
+      }
     });
   }
 
   /**
-   * Sends a query to a device. Helper
-   * function that wraps ._sendUnwrapped()
-   * in a retry operation.
+   * Sends a query to a device. Helper function
+   * that connects to a device if necessary and
+   * wraps the entire operation in a retry.
    * @private
-   * @param {String} ip IP of device
    * @param {Buffer} buffer buffer of data
-   * @param {Boolean} returnAsEvent return result as event or as resolved promise
-   * @returns {Promise<string>} returned data
+   * @returns {Promise<Boolean>} `true` if query was successfully sent
    */
-  _send(buffer, expectedResponseCommandByte, returnAsEvent) {
+  _send(buffer) {
+    // Check for IP
     if (typeof this.device.ip === 'undefined') {
       throw new TypeError('Device missing IP address.');
     }
 
-    const operation = retry.operation({
-      retries: 4,
-      factor: 1.5
-    });
+    // Retry up to 5 times
+    return pRetry(async () => {
+      // Send data
+      this.client.write(buffer);
 
-    return new Promise((resolve, reject) => {
-      operation.attempt(currentAttempt => {
-        debug('Send attempt', currentAttempt);
-
-        this._sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent).then(
-          (result, commandByte) => {
-            resolve(result, commandByte);
-          }).catch(error => {
-          if (operation.retry(error)) {
-            return;
-          }
-
-          reject(operation.mainError());
-        });
-      });
-    });
+      return true;
+    }, {retries: 5});
   }
 
   /**
-   * Sends a query to a device.
+   * Sends a heartbeat ping to the device
    * @private
-   * @param {Buffer} buffer buffer of data
-   * @param {Boolean} returnAsEvent return result as event or as resolved promise
-   * @returns {Promise<string>} returned data
    */
-  _sendUnwrapped(buffer, expectedResponseCommandByte, returnAsEvent) {
-    debug('Sending this data:', buffer.toString('hex'));
+  _sendPing() {
+    debug(`Pinging ${this.device.ip}`);
 
-    return new Promise((resolve, reject) => {
-      if (!returnAsEvent) {
-        this.dataResolver = (data, commandByte) => { // Delayed resolving of promise
-          if (expectedResponseCommandByte !== commandByte) {
-            reject(new Error('Returned command byte did not match expected byte.'));
-          }
-
-          if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
-          }
-
-          if (!this.device.persistentConnection) {
-            this.disconnect();
-          }
-
-          resolve(data, commandByte);
-          return true;
-        };
-
-        this.dataRejector = err => {
-          if (this._sendTimeout) {
-            clearTimeout(this._sendTimeout);
-          }
-
-          debug('Error event from socket.');
-
-          // eslint-disable-next-line max-len
-          err.message = 'Error communicating with device. Make sure nothing else is trying to control it or connected to it.';
-          return reject(err);
-        };
-      }
-
-      this.connect().then(() => {
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
-
-        // Transmit data
-        this.client.write(buffer);
-
-        this._sendTimeout = setTimeout(() => {
-          if (this.client) {
-            this.client.destroy();
-          }
-
-          this.dataResolver = null;
-          this.dataRejector = null;
-          return reject(new Error('Timeout waiting for response'));
-        }, this._responseTimeout * 1000);
-        if (returnAsEvent) {
-          resolve();
-        }
-      });
-    });
-  }
-
-  /**
-   * Sends a ping to the device
-   * @private
-   * @returns {Promise<string>} returned data
-   */
-  __sendPing() {
-    debug('PING', this.device.ip, this.client ? this.client.destroyed : true);
     // Create byte buffer
     const buffer = Parser.encode({
       data: Buffer.allocUnsafe(0),
       commandByte: 9 // 0x09
     });
-    debug('PingPong: ' + buffer.toString('hex'));
 
-    this._sendUnwrapped(buffer, 9, true);
+    // Send ping
+    this._send(buffer);
   }
 
   /**
-   * Connects to the device, use to initally
-   * open a socket when using a persistent connection.
-   * @returns {Promise<Boolean>}
+   * Connects to the device. Can be called even
+   * if device is already connected.
+   * @returns {Promise<Boolean>} `true` if connect succeeds
    * @emits TuyaDevice#connected
    * @emits TuyaDevice#disconnected
    * @emits TuyaDevice#data
    * @emits TuyaDevice#error
    */
   connect() {
-    this._persistentConnectionStopped = false;
-    if (!this.client) {
-      this.client = new net.Socket();
+    if (!this.isConnected()) {
+      return new Promise((resolve, reject) => {
+        this.client = new net.Socket();
 
-      // Attempt to connect
-      debug('Connect', this.device.ip);
-      this.client.connect(this.device.port, this.device.ip);
+        // Attempt to connect
+        debug(`Connecting to ${this.device.ip}...`);
+        this.client.connect(this.device.port, this.device.ip);
 
-      // Default connect timeout is ~1 minute,
-      // 10 seconds is a more reasonable default
-      // since `retry` is used.
-      this.client.setTimeout(this._connectTimeout * 1000, () => {
-        /**
-         * Emitted on socket error, usually a
-         * result of a connection timeout.
-         * Also emitted on parsing errors.
-         * @event TuyaDevice#error
-         * @property {Error} error error event
-         */
-        this.client.emit('error', new Error('connection timed out'));
-        this.client.destroy();
-      });
-
-      // Send data when connected
-      this.client.on('connect', () => {
-        debug('Socket connected.');
-
-        this._connected = true;
-
-        // Remove connect timeout
-        this.client.setTimeout(0);
-
-        if (this.device.persistentConnection) {
+        // Default connect timeout is ~1 minute,
+        // 5 seconds is a more reasonable default
+        // since `retry` is used.
+        this.client.setTimeout(this._connectTimeout * 1000, () => {
           /**
-           * Emitted when socket is connected
-           * to device. This event may be emitted
-           * multiple times within the same script,
-           * so don't use this as a trigger for your
-           * initialization code.
-           * @event TuyaDevice#connected
+           * Emitted on socket error, usually a
+           * result of a connection timeout.
+           * Also emitted on parsing errors.
+           * @event TuyaDevice#error
+           * @property {Error} error error event
            */
-          this.emit('connected');
+          // this.emit('error', new Error('connection timed out'));
+          this.client.destroy();
+          reject(new Error('connection timed out'));
+        });
 
-          if (this.pingpongTimeout) {
-            clearTimeout(this.pingpongTimeout);
-            this.pingpongTimeout = null;
-          }
+        // Add event listeners to socket
 
-          this.pingpongTimeout = setTimeout(() => {
-            this.__sendPing();
-          }, this._pingPongPeriod * 1000);
+        // Parse response data
+        this.client.on('data', data => {
+          debug('Received response');
+          debug(data.toString('hex'));
 
-          this.get({returnAsEvent: true});
-        }
-      });
+          // Response was received, so stop waiting
+          clearTimeout(this._sendTimeout);
 
-      // Parse response data
-      this.client.on('data', data => {
-        debug('Received data back:', this.client.remoteAddress);
-        debug(data.toString('hex'));
-
-        clearTimeout(this._sendTimeout);
-
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
-
-        this.pingpongTimeout = setTimeout(() => {
-          this.__sendPing();
-        }, this._pingPongPeriod * 1000);
-
-        let dataRes;
-        try {
-          dataRes = Parser.parse(data);
-        } catch (error) {
-          debug(error);
-          this.emit('error', error);
-          return;
-        }
-
-        data = dataRes.data;
-
-        if (typeof data === 'object') {
-          debug('Data:', this.client.remoteAddress, data, dataRes.commandByte);
-        } else if (typeof data === 'undefined') {
-          if (dataRes.commandByte === 0x09) { // PONG received
-            debug('PONG', this.device.ip, this.client ? this.client.destroyed : true);
+          let dataRes;
+          try {
+            dataRes = Parser.parse(data);
+          } catch (error) {
+            debug(error);
+            this.emit('error', error);
             return;
           }
 
-          debug('undefined', this.client.remoteAddress, data, dataRes.commandByte);
-        } else { // Message is encrypted
-          // eslint-disable-next-line max-len
-          debug('decrypt', this.client.remoteAddress, this.device.cipher.decrypt(data), dataRes.commandByte);
-          data = this.device.cipher.decrypt(data);
-        }
+          data = dataRes.data;
 
-        if (this.dataResolver) {
-          if (this.dataResolver(data, dataRes.commandByte)) {
-            this.dataResolver = null;
-            this.dataRejector = null;
-            return;
+          if (typeof data === 'object') {
+            debug('Parsed response data:');
+            debug(data);
+          } else if (typeof data === 'undefined') {
+            if (dataRes.commandByte === 0x09) { // PONG received
+              debug('Pong', this.device.ip);
+              return;
+            }
+
+            if (dataRes.commandByte === 0x07) { // Set succeeded
+              debug('Set succeeded.');
+              return;
+            }
+
+            debug(`Undefined data with command byte ${dataRes.commandByte}`);
+          } else { // Message is encrypted
+            data = this.device.cipher.decrypt(data);
+            debug('Decrypted response data:');
+            debug(data);
           }
-        }
 
-        if (this.device.persistentConnection && data) {
           /**
            * Emitted when data is returned from device.
            * @event TuyaDevice#data
@@ -594,69 +377,91 @@ class TuyaDevice extends EventEmitter {
            * (e.g. 7=requested response, 8=proactive update from device)
            */
           this.emit('data', data, dataRes.commandByte);
-        } else {
-          debug('Response undelivered.');
-        }
-      });
+        });
 
-      // Handle errors
-      this.client.on('error', err => {
-        debug('Error event from socket.', this.device.ip, err);
-        if (this.dataRejector) {
-          this.dataRejector(err);
-          this.dataRejector = null;
-          this.dataResolver = null;
-        } else if (this.device.persistentConnection) {
+        // Handle errors
+        this.client.on('error', err => {
+          debug('Error event from socket.', this.device.ip, err);
+
           this.emit('error', new Error('Error from socket'));
-        }
 
-        this.client.destroy();
-      });
+          this.client.destroy();
+        });
 
-      // Handle errors
-      this.client.on('close', () => {
-        debug('Socket closed:', this.device.ip);
+        // Handle socket closure
+        this.client.on('close', () => {
+          debug(`Socket closed: ${this.device.ip}`);
 
-        this._connected = false;
+          this._connected = false;
 
-        /**
-         * Emitted when a socket is disconnected
-         * from device. Not an exclusive event:
-         * `error` and `disconnected` may be emitted
-         * at the same time if, for example, the device
-         * goes off the network.
-         * @event TuyaDevice#disconnected
-         */
-        this.emit('disconnected');
-        this.client.destroy();
-        this.client = null;
-        if (this.pingpongTimeout) {
-          clearTimeout(this.pingpongTimeout);
-          this.pingpongTimeout = null;
-        }
+          /**
+           * Emitted when a socket is disconnected
+           * from device. Not an exclusive event:
+           * `error` and `disconnected` may be emitted
+           * at the same time if, for example, the device
+           * goes off the network.
+           * @event TuyaDevice#disconnected
+           */
+          this.emit('disconnected');
+          this.client.destroy();
 
-        if (this.device.persistentConnection && !this._persistentConnectionStopped) {
-          setTimeout(() => {
-            this.connect();
-          }, 1000);
-        }
+          if (this.pingpongTimeout) {
+            clearTimeout(this.pingpongTimeout);
+            this.pingpongTimeout = null;
+          }
+        });
+
+        this.client.on('connect', () => {
+          debug('Socket connected.');
+
+          this._connected = true;
+
+          // Remove connect timeout
+          this.client.setTimeout(0);
+
+          /**
+          * Emitted when socket is connected
+          * to device. This event may be emitted
+          * multiple times within the same script,
+          * so don't use this as a trigger for your
+          * initialization code.
+          * @event TuyaDevice#connected
+          */
+          this.emit('connected');
+
+          // Periodically send heartbeat ping
+          this.pingpongTimeout = setTimeout(() => {
+            this._sendPing();
+          }, this._pingPongPeriod * 1000);
+
+          // Automatically ask for current state so we
+          // can emit a `data` event as soon as possible
+          this.get();
+
+          // Return
+          resolve(true);
+        });
       });
     }
 
+    // Return if already connected
     return Promise.resolve(true);
   }
 
   /**
    * Disconnects from the device, use to
-   * close the socket or exit gracefully
-   * when using a persistent connection.
-   * @returns {Promise<Boolean>}
+   * close the socket and exit gracefully.
    */
   disconnect() {
     debug('Disconnect');
 
-    this._persistentConnectionStopped = true;
     this._connected = false;
+
+    // Clear timeouts
+    clearTimeout(this._sendTimeout);
+    clearTimeout(this._connectTimeout);
+    clearTimeout(this._responseTimeout);
+    clearTimeout(this.pingpongTimeout);
 
     if (!this.client) {
       return;
@@ -667,11 +472,164 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Returns current connection status to device.
-   * (`true` if connected, `false` otherwise.)
    * @returns {Boolean}
+   * (`true` if connected, `false` otherwise.)
    */
   isConnected() {
     return this._connected;
+  }
+
+  /**
+   * Checks a given input string.
+   * @private
+   * @param {String} input input string
+   * @returns {Boolean}
+   * `true` if is string and length != 0, `false` otherwise.
+   */
+  checkIfValidString(input) {
+    if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
+   */
+  resolveId(options) {
+    // eslint-disable-next-line max-len
+    console.warn('resolveId() is deprecated since v4.0.0. Will be removed in v5.0.0. Use find() instead.');
+    return this.find(options);
+  }
+
+  /**
+   * Finds an ID or IP, depending on what's missing.
+   * If you didn't pass an ID or IP to the constructor,
+   * you must call this before anything else.
+   * @param {Object} [options]
+   * @param {Boolean} [options.all]
+   * true to return array of all found devices
+   * @param {Number} [options.timeout=10]
+   * how long, in seconds, to wait for device
+   * to be resolved before timeout error is thrown
+   * @example
+   * tuya.find().then(() => console.log('ready!'))
+   * @returns {Promise<Boolean|Array>}
+   * true if ID/IP was found and device is ready to be used
+   */
+  find(options) {
+    // Set default options
+    options = options ? options : {};
+
+    // Default timeout of 10 seconds
+    if (options.timeout === undefined) {
+      options.timeout = 10;
+    }
+
+    if (this.checkIfValidString(this.device.id) &&
+        this.checkIfValidString(this.device.ip)) {
+      // Don't need to do anything
+      debug('IP and ID are already both resolved.');
+      return Promise.resolve(true);
+    }
+
+    // Create new listener
+    const listener = dgram.createSocket('udp4');
+    listener.bind(6666);
+
+    debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
+
+    // Find IP for device
+    return timeout(new Promise((resolve, reject) => { // Timeout
+      listener.on('message', message => {
+        debug('Received UDP message.');
+
+        let dataRes;
+        try {
+          dataRes = Parser.parse(message);
+        } catch (error) {
+          debug(error);
+          reject(error);
+        }
+
+        debug('UDP data:');
+        debug(dataRes.data);
+
+        const thisID = dataRes.data.gwId;
+        const thisIP = dataRes.data.ip;
+
+        // Add to array if it doesn't exist
+        if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
+          this.foundDevices.push({id: thisID, ip: thisIP});
+        }
+
+        if (!options.all &&
+            (this.device.id === thisID || this.device.ip === thisIP) &&
+            dataRes.data) {
+          // Add IP
+          this.device.ip = dataRes.data.ip;
+
+          // Add ID
+          this.device.id = dataRes.data.gwId;
+
+          // Update gwID if required
+          if (this.device.gwID === undefined) {
+            this.device.gwID = dataRes.data.gwId;
+          }
+
+          // Change product key if neccessary
+          this.device.productKey = dataRes.data.productKey;
+
+          // Change protocol version if necessary
+          this.device.version = dataRes.data.version;
+
+          // Cleanup
+          listener.close();
+          listener.removeAllListeners();
+          resolve(true);
+        }
+      });
+
+      listener.on('error', err => {
+        reject(err);
+      });
+    }), options.timeout * 1000, () => {
+      // Have to do this so we exit cleanly
+      listener.close();
+      listener.removeAllListeners();
+
+      // Return all devices
+      if (options.all) {
+        return this.foundDevices;
+      }
+
+      // Otherwise throw error
+      // eslint-disable-next-line max-len
+      throw new Error('find() timed out. Is the device powered on and the ID or IP correct?');
+    });
+  }
+
+  /**
+   * Toggles a boolean property.
+   * @param {Number} [property=1] property to toggle
+   * @returns {Promise<Boolean>} the resulting state
+   */
+  async toggle(property) {
+    property = property === undefined ? '1' : property.toString();
+
+    try {
+      // Get status
+      const status = await this.get({dps: property});
+
+      // Set to opposite
+      await this.set({set: !status, dps: property});
+
+      // Return new status
+      return await this.get({dps: property});
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

@@ -3,11 +3,16 @@
   "version": "3.2.3",
   "description": "An easy-to-use API for devices that use Tuya's cloud services",
   "main": "index.js",
+  "files": [
+    "lib/**/*",
+    "index.js"
+  ],
   "scripts": {
     "test": "xo --quiet && ava",
     "cover": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
     "document": "documentation build index.js -f html -o docs --config documentation.yml",
-    "pushtags": "git push origin master --tags"
+    "prepublishOnly": "npm test",
+    "preversion": "npm test"
   },
   "repository": {
     "type": "git",
@@ -33,8 +38,8 @@
     "crc": "^3.5.0",
     "debug": "^4.0.0",
     "node-forge": "^0.8.0",
-    "p-timeout": "^2.0.1",
-    "retry": "^0.10.1"
+    "p-retry": "^3.0.1",
+    "p-timeout": "^2.0.1"
   },
   "devDependencies": {
     "ava": "1.2.1",
