@@ -559,7 +559,10 @@ class TuyaDevice extends EventEmitter {
         const thisID = dataRes.data.gwId;
         const thisIP = dataRes.data.ip;
 
-        this.foundDevices.push({id: thisID, ip: thisIP});
+        // Add to array if it doesn't exist
+        if (!this.foundDevices.includes({id: thisID, ip: thisIP})) {
+          this.foundDevices.push({id: thisID, ip: thisIP});
+        }
 
         if (!options.all &&
             (this.device.id === thisID || this.device.ip === thisIP) &&
