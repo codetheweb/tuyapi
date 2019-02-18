@@ -77,6 +77,8 @@ const device = new TuyAPI({
 (async () => {
   await device.find();
 
+  await device.connect();
+
   let status = await device.get();
 
   console.log(`Current status: ${status}.`);
