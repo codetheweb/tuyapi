@@ -133,6 +133,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
 ### Ports
 - [python-tuya](https://github.com/clach04/python-tuya) a Python port by [clach04](https://github.com/clach04)
+- [aiotuya](https://github.com/frawau/aiotuya) a Python port by [frawau](https://github.com/frawau)
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
 
