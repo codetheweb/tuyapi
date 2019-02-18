@@ -136,6 +136,9 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
 
+### Clients for Tuya's Cloud
+- [cloudtuya](https://github.com/unparagoned/cloudtuya) by [unparagoned](https://github.com/unparagoned/)
+
 ### Projects built with TuyAPI
 - [tuya-cli](https://github.com/TuyaAPI/cli): a CLI interface for Tuya devices
 - [homebridge-tuya](https://github.com/codetheweb/homebridge-tuya-outlet): a [Homebridge](https://github.com/nfarina/homebridge) plugin for Tuya devices
