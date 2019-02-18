@@ -261,6 +261,11 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean>} `true` if query was successfully sent
    */
   _send(buffer) {
+    // Make sure we're connected
+    if (!this.isConnected()) {
+      throw new Error('No connection has been made to the device.');
+    }
+
     // Check for IP
     if (typeof this.device.ip === 'undefined') {
       throw new TypeError('Device missing IP address.');
@@ -279,7 +284,7 @@ class TuyaDevice extends EventEmitter {
    * Sends a heartbeat ping to the device
    * @private
    */
-  _sendPing() {
+  async _sendPing() {
     debug(`Pinging ${this.device.ip}`);
 
     // Create byte buffer
@@ -289,7 +294,7 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send ping
-    this._send(buffer);
+    await this._send(buffer);
   }
 
   /**
@@ -430,8 +435,8 @@ class TuyaDevice extends EventEmitter {
           this.emit('connected');
 
           // Periodically send heartbeat ping
-          this.pingpongTimeout = setTimeout(() => {
-            this._sendPing();
+          this.pingpongTimeout = setInterval(async () => {
+            await this._sendPing();
           }, this._pingPongPeriod * 1000);
 
           // Automatically ask for current state so we
@@ -535,7 +540,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Create new listener
-    const listener = dgram.createSocket('udp4');
+    const listener = dgram.createSocket({type: 'udp4', reuseAddr: true});
     listener.bind(6666);
 
     debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
