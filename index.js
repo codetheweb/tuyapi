@@ -411,7 +411,7 @@ class TuyaDevice extends EventEmitter {
           }
         });
 
-        this.client.on('connect', () => {
+        this.client.on('connect', async () => {
           debug('Socket connected.');
 
           this._connected = true;
@@ -436,7 +436,7 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          this.get();
+          await this.get();
 
           // Return
           resolve(true);
