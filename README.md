@@ -3,7 +3,7 @@
 [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 [![Build Status](https://travis-ci.org/codetheweb/tuyapi.svg?branch=master)](https://travis-ci.org/codetheweb/tuyapi)
 [![Coverage Status](https://coveralls.io/repos/github/codetheweb/tuyapi/badge.svg?branch=master)](https://coveralls.io/github/codetheweb/tuyapi?branch=master)
-![Node Version](https://img.shields.io/badge/node-%3E=6-blue.svg)
+![Node Version](https://img.shields.io/badge/node-%3E=8-blue.svg)
 
 A library for communicating with devices that use the [Tuya](http://tuya.com) cloud network. These devices are branded under many different names, but if your device works with the TuyaSmart app or port 6668 is open on your device chances are this library will work.
 
