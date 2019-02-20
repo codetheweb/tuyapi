@@ -8,8 +8,10 @@
     "index.js"
   ],
   "scripts": {
-    "test": "xo --quiet && ava",
-    "cover": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "test": "xo --quiet && npm run ava",
+    "ava": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
+    "coverage": "nyc npm test && nyc report --reporter=html",
+    "travis": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
     "document": "documentation build index.js -f html -o docs --config documentation.yml",
     "prepublishOnly": "npm test",
     "preversion": "npm test"
@@ -35,13 +37,15 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
-    "crc": "^3.5.0",
-    "debug": "^4.0.0",
-    "node-forge": "^0.8.0",
-    "p-retry": "^3.0.1",
-    "p-timeout": "^2.0.1"
+    "clone": "2.1.2",
+    "crc": "3.8.0",
+    "debug": "4.1.1",
+    "node-forge": "0.8.0",
+    "p-retry": "3.0.1",
+    "p-timeout": "2.0.1"
   },
   "devDependencies": {
+    "@tuyapi/stub": "0.1.2",
     "ava": "1.2.1",
     "coveralls": "3.0.2",
     "documentation": "9.1.1",

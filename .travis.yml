@@ -10,4 +10,4 @@ install:
 - npm install
 
 script:
-- npm run cover
+- npm run travis
