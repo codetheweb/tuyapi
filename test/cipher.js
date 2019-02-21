@@ -46,3 +46,14 @@ test('encrypt message without header and not base64 encoded', t => {
 
   t.deepEqual(message, encoded);
 });
+
+test('decrypt message where payload is not a JSON object', t => {
+  // eslint-disable-next-line max-len
+  const message = '3.133ed3d4a21effe90rt1hJFzMJPF3x9UhPTCiXw==';
+  const equals = 'gw id invalid';
+  const cipher = new Cipher({key: 'bbe88b3f4106d354', version: 3.1});
+
+  const result = cipher.decrypt(message);
+
+  t.deepEqual(result, equals);
+});
