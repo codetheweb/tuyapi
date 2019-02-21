@@ -89,3 +89,19 @@ test.serial('find throws timeout error', async t => {
     });
   });
 });
+
+test.serial('find with option all', async t => {
+  const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
+                                 key: '4226aa407d5c1e2b'});
+  const thisStub = clone(stub);
+  thisStub.startServer();
+
+  thisStub.startUDPBroadcast({interval: 1});
+
+  const foundDevices = await stubDevice.find({all: true});
+
+  stubDevice.disconnect();
+  thisStub.shutdown();
+
+  t.truthy(foundDevices.length);
+});
