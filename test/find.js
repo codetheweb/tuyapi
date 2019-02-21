@@ -8,7 +8,23 @@ const stub = new TuyaStub({id: '22325186db4a2217dc8e',
                            key: '4226aa407d5c1e2b',
                            state: {1: false, 2: true}});
 
-test.serial('find device on network by id', async t => {
+test.serial('find device on network using deprecated resolveId', async t => {
+  const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
+                                 key: '4226aa407d5c1e2b'});
+  const thisStub = clone(stub);
+  thisStub.startServer();
+
+  thisStub.startUDPBroadcast({interval: 1});
+
+  await stubDevice.resolveId();
+
+  stubDevice.disconnect();
+  thisStub.shutdown();
+
+  t.not(stubDevice.device.ip, undefined);
+});
+
+test.serial('find device on network by ID', async t => {
   const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
                                  key: '4226aa407d5c1e2b'});
   const thisStub = clone(stub);
@@ -24,7 +40,7 @@ test.serial('find device on network by id', async t => {
   t.not(stubDevice.device.ip, undefined);
 });
 
-test.serial('find device on network by ip', async t => {
+test.serial('find device on network by IP', async t => {
   const stubDevice = new TuyAPI({ip: 'localhost',
                                  key: '4226aa407d5c1e2b'});
   const thisStub = clone(stub);
