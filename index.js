@@ -2,7 +2,7 @@
 const dgram = require('dgram');
 const net = require('net');
 const {EventEmitter} = require('events');
-const timeout = require('p-timeout');
+const pTimeout = require('p-timeout');
 const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
@@ -513,7 +513,7 @@ class TuyaDevice extends EventEmitter {
     debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
 
     // Find IP for device
-    return timeout(new Promise((resolve, reject) => { // Timeout
+    return pTimeout(new Promise((resolve, reject) => { // Timeout
       listener.on('message', message => {
         debug('Received UDP message.');
 
