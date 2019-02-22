@@ -47,7 +47,7 @@
   "devDependencies": {
     "@tuyapi/stub": "0.1.2",
     "ava": "1.2.1",
-    "coveralls": "3.0.2",
+    "coveralls": "3.0.3",
     "documentation": "9.2.0",
     "nyc": "13.3.0",
     "xo": "0.24.0"
