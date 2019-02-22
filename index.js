@@ -175,7 +175,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Get time
-    const timeStamp = parseInt(new Date / 1000);
+    const timeStamp = parseInt(new Date() / 1000, 10);
 
     // Construct payload
     const payload = {
@@ -543,7 +543,8 @@ class TuyaDevice extends EventEmitter {
           this.device.ip = dataRes.data.ip;
 
           // Add ID and gwID
-          this.device.id = this.device.gwID = dataRes.data.gwId;
+          this.device.id = dataRes.data.gwId;
+          this.device.gwID = dataRes.data.gwId;
 
           // Change product key if neccessary
           this.device.productKey = dataRes.data.productKey;
