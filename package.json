@@ -48,7 +48,7 @@
     "@tuyapi/stub": "0.1.2",
     "ava": "1.2.1",
     "coveralls": "3.0.2",
-    "documentation": "9.1.1",
+    "documentation": "9.2.0",
     "nyc": "13.3.0",
     "xo": "0.24.0"
   },
