@@ -37,7 +37,6 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
-    "clone": "2.1.2",
     "debug": "4.1.1",
     "p-retry": "3.0.1",
     "p-timeout": "2.0.1"
@@ -45,6 +44,7 @@
   "devDependencies": {
     "@tuyapi/stub": "0.1.2",
     "ava": "1.2.1",
+    "clone": "^2.1.2",
     "coveralls": "3.0.3",
     "documentation": "9.2.0",
     "nyc": "13.3.0",
