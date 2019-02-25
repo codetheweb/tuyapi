@@ -38,7 +38,6 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "clone": "2.1.2",
-    "crc": "3.8.0",
     "debug": "4.1.1",
     "p-retry": "3.0.1",
     "p-timeout": "2.0.1"
