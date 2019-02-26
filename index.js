@@ -2,7 +2,7 @@
 const dgram = require('dgram');
 const net = require('net');
 const {EventEmitter} = require('events');
-const timeout = require('p-timeout');
+const pTimeout = require('p-timeout');
 const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
@@ -31,41 +31,24 @@ const Parser = require('./lib/message-parser');
  *                              key: 'xxxxxxxxxxxxxxxx'})
  */
 class TuyaDevice extends EventEmitter {
-  constructor(options) {
+  constructor({ip, port = 6668, id, gwID = id, key, productKey, version = 3.1} = {}) {
     super();
 
     // Set device to user-passed options
-    this.device = options;
-
-    // Default version (necessary for later checks)
-    if (this.device.version === undefined) {
-      this.device.version = 3.1;
-    }
+    this.device = {ip, port, id, gwID, key, productKey, version};
 
     // Check arguments
-    if (!(this.checkIfValidString(this.device.id) ||
-          this.checkIfValidString(this.device.ip))) {
+    if (!(this.checkIfValidString(id) ||
+          this.checkIfValidString(ip))) {
       throw new TypeError('ID and IP are missing from device.');
     }
 
-    if (this.checkIfValidString(this.device.key) && this.device.key.length === 16) {
-      // Create cipher from key
-      this.device.cipher = new Cipher({
-        key: this.device.key,
-        version: this.device.version
-      });
-    } else {
+    if (!this.checkIfValidString(key) || key.length !== 16) {
       throw new TypeError('Key is missing or incorrect.');
     }
 
-    // Defaults
-    if (this.device.port === undefined) {
-      this.device.port = 6668;
-    }
-
-    if (this.device.gwID === undefined) {
-      this.device.gwID = this.device.id;
-    }
+    // Create cipher from key
+    this.device.cipher = new Cipher({key, version});
 
     // Contains array of found devices when calling .find()
     this.foundDevices = [];
@@ -100,10 +83,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
-  get(options) {
-    // Set empty object as default
-    options = options ? options : {};
-
+  get(options = {}) {
     const payload = {
       gwId: this.device.gwID,
       devId: this.device.id
@@ -195,8 +175,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Get time
-    const now = new Date();
-    const timeStamp = (parseInt(now.getTime() / 1000, 10)).toString();
+    const timeStamp = parseInt(new Date() / 1000, 10);
 
     // Construct payload
     const payload = {
@@ -264,11 +243,6 @@ class TuyaDevice extends EventEmitter {
     // Make sure we're connected
     if (!this.isConnected()) {
       throw new Error('No connection has been made to the device.');
-    }
-
-    // Check for IP
-    if (typeof this.device.ip === 'undefined') {
-      throw new TypeError('Device missing IP address.');
     }
 
     // Retry up to 5 times
@@ -492,11 +466,7 @@ class TuyaDevice extends EventEmitter {
    * `true` if is string and length != 0, `false` otherwise.
    */
   checkIfValidString(input) {
-    if (input === undefined || typeof input !== typeof 'string' || input.length === 0) {
-      return false;
-    }
-
-    return true;
+    return typeof input === 'string' && input.length > 0;
   }
 
   /**
@@ -523,15 +493,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean|Array>}
    * true if ID/IP was found and device is ready to be used
    */
-  find(options) {
-    // Set default options
-    options = options ? options : {};
-
-    // Default timeout of 10 seconds
-    if (options.timeout === undefined) {
-      options.timeout = 10;
-    }
-
+  find({timeout = 10, all = false} = {}) {
     if (this.checkIfValidString(this.device.id) &&
         this.checkIfValidString(this.device.ip)) {
       // Don't need to do anything
@@ -546,7 +508,7 @@ class TuyaDevice extends EventEmitter {
     debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
 
     // Find IP for device
-    return timeout(new Promise((resolve, reject) => { // Timeout
+    return pTimeout(new Promise((resolve, reject) => { // Timeout
       listener.on('message', message => {
         debug('Received UDP message.');
 
@@ -569,19 +531,15 @@ class TuyaDevice extends EventEmitter {
           this.foundDevices.push({id: thisID, ip: thisIP});
         }
 
-        if (!options.all &&
+        if (!all &&
             (this.device.id === thisID || this.device.ip === thisIP) &&
             dataRes.data) {
           // Add IP
           this.device.ip = dataRes.data.ip;
 
-          // Add ID
+          // Add ID and gwID
           this.device.id = dataRes.data.gwId;
-
-          // Update gwID if required
-          if (this.device.gwID === undefined) {
-            this.device.gwID = dataRes.data.gwId;
-          }
+          this.device.gwID = dataRes.data.gwId;
 
           // Change product key if neccessary
           this.device.productKey = dataRes.data.productKey;
@@ -599,13 +557,13 @@ class TuyaDevice extends EventEmitter {
       listener.on('error', err => {
         reject(err);
       });
-    }), options.timeout * 1000, () => {
+    }), timeout * 1000, () => {
       // Have to do this so we exit cleanly
       listener.close();
       listener.removeAllListeners();
 
       // Return all devices
-      if (options.all) {
+      if (all) {
         return this.foundDevices;
       }
 
@@ -620,8 +578,8 @@ class TuyaDevice extends EventEmitter {
    * @param {Number} [property=1] property to toggle
    * @returns {Promise<Boolean>} the resulting state
    */
-  async toggle(property) {
-    property = property === undefined ? '1' : property.toString();
+  async toggle(property = '1') {
+    property = property.toString();
 
     try {
       // Get status
