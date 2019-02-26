@@ -245,11 +245,6 @@ class TuyaDevice extends EventEmitter {
       throw new Error('No connection has been made to the device.');
     }
 
-    // Check for IP
-    if (typeof this.device.ip === 'undefined') {
-      throw new TypeError('Device missing IP address.');
-    }
-
     // Retry up to 5 times
     return pRetry(async () => {
       // Send data
