@@ -7,6 +7,9 @@ const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
+const {checkIfValidString, areKeysPresent, standardizeSchema} = require('./lib/helpers');
+
+// Message/Packet related functionality
 const Cipher = require('./lib/cipher');
 const Parser = require('./lib/message-parser');
 
@@ -31,19 +34,28 @@ const Parser = require('./lib/message-parser');
  *                              key: 'xxxxxxxxxxxxxxxx'})
  */
 class TuyaDevice extends EventEmitter {
-  constructor({ip, port = 6668, id, gwID = id, key, productKey, version = 3.1} = {}) {
+  constructor({ip,
+               port = 6668,
+               id,
+               gwID = id,
+               key,
+               schema,
+               productKey,
+               version = 3.1} = {}) {
     super();
 
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
 
+    this.schema = schema ? standardizeSchema(schema) : undefined;
+
     // Check arguments
-    if (!(this.checkIfValidString(id) ||
-          this.checkIfValidString(ip))) {
+    if (!(checkIfValidString(id) ||
+          checkIfValidString(ip))) {
       throw new TypeError('ID and IP are missing from device.');
     }
 
-    if (!this.checkIfValidString(key) || key.length !== 16) {
+    if (!checkIfValidString(key) || key.length !== 16) {
       throw new TypeError('Key is missing or incorrect.');
     }
 
@@ -84,6 +96,13 @@ class TuyaDevice extends EventEmitter {
    * returns boolean if single property is requested, otherwise returns object of results
    */
   get(options = {}) {
+    // Handle schema-style get argument
+    if (typeof options === 'string' && !this.schema) {
+      throw new TypeError('Missing schema.');
+    } else if (typeof options === 'string' && this.schema && !this.schema[options]) {
+      throw new TypeError(`Property ${options} not found in schema.`);
+    }
+
     const payload = {
       gwId: this.device.gwID,
       devId: this.device.id
@@ -108,7 +127,19 @@ class TuyaDevice extends EventEmitter {
             // Remove self listener
             this.removeListener('data', resolveGet);
 
-            if (options.schema === true) {
+            if (typeof options === 'string') {
+              // Get property specified by schema
+              const propertyIndex = this.schema[options].property;
+
+              // Get value of property
+              let value = data.dps[propertyIndex];
+
+              // Apply transform
+              value = this.schema[options].transform(value);
+
+              // Resolve
+              resolve(value);
+            } else if (options.schema === true) {
               // Return whole response
               resolve(data);
             } else if (options.dps) {
@@ -162,7 +193,17 @@ class TuyaDevice extends EventEmitter {
     // Defaults
     let dps = {};
 
-    if (options.multiple === true) {
+    // Schema mode
+    if (this.schema && areKeysPresent(options, this.schema)) {
+      // TODO: a transform for .set() may be useful as well
+
+      Object.keys(options).forEach(property => {
+        // Get property specified by schema
+        const propertyIndex = this.schema[property].property;
+
+        dps[propertyIndex] = options[property];
+      });
+    } else if (options.multiple === true) {
       dps = options.data;
     } else if (options.dps === undefined) {
       dps = {
@@ -459,17 +500,6 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Checks a given input string.
-   * @private
-   * @param {String} input input string
-   * @returns {Boolean}
-   * `true` if is string and length != 0, `false` otherwise.
-   */
-  checkIfValidString(input) {
-    return typeof input === 'string' && input.length > 0;
-  }
-
-  /**
    * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
    */
   resolveId(options) {
@@ -494,8 +524,8 @@ class TuyaDevice extends EventEmitter {
    * true if ID/IP was found and device is ready to be used
    */
   find({timeout = 10, all = false} = {}) {
-    if (this.checkIfValidString(this.device.id) &&
-        this.checkIfValidString(this.device.ip)) {
+    if (checkIfValidString(this.device.id) &&
+        checkIfValidString(this.device.ip)) {
       // Don't need to do anything
       debug('IP and ID are already both resolved.');
       return Promise.resolve(true);
