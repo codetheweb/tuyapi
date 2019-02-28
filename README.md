@@ -108,6 +108,10 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 1. Document details of protocol
 2. Figure out correct CRC algorithm
 
+## Contributing
+
+See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING.md).
+
 ## Contributors
 
 - [codetheweb](https://github.com/codetheweb)
@@ -123,6 +127,7 @@ See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 - [jpillora](https://github.com/jpillora)
 - [neojski](https://github.com/neojski)
 - [unparagoned](https://github.com/unparagoned)
+- [kueblc](https://github.com/kueblc)
 
 (If you're not on the above list, open a PR.)
 
