@@ -127,6 +127,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [jpillora](https://github.com/jpillora)
 - [neojski](https://github.com/neojski)
 - [unparagoned](https://github.com/unparagoned)
+- [kueblc](https://github.com/kueblc)
 
 (If you're not on the above list, open a PR.)
 
