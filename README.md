@@ -141,6 +141,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [aiotuya](https://github.com/frawau/aiotuya) a Python port by [frawau](https://github.com/frawau)
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
+- [py60800/tuya](https://github.com/py60800/tuya) a Go port by [py60800](https://github.com/py60800)
 
 ### Clients for Tuya's Cloud
 - [cloudtuya](https://github.com/unparagoned/cloudtuya) by [unparagoned](https://github.com/unparagoned/)
@@ -153,6 +154,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [magichome-led-controller](https://github.com/cajonKA/magichome-led-controller-node): a node to use magichome led RGB controller in [node-red](https://github.com/node-red/node-red)
 - [ioBroker.tuya](https://github.com/Apollon77/ioBroker.tuya): an ioBroker (http://iobroker.net/) adapter to get data and control devices incl. schema parsing
 - [node-red-contrib-tuya-smart](https://github.com/hgross/node-red-contrib-tuya-smart): A NodeRED input node utilizing tuyapi to connect the smart home
+- [tuyadump](https://github.com/py60800/tuyadump) a Go project to decode device traffic in real time
 
 
 To add your project to either of the above lists, please open a pull request.
