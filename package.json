@@ -46,7 +46,7 @@
     "ava": "1.3.1",
     "clone": "2.1.2",
     "coveralls": "3.0.3",
-    "documentation": "9.2.0",
+    "documentation": "9.3.1",
     "nyc": "13.3.0",
     "xo": "0.24.0"
   },
