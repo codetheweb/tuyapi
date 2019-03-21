@@ -78,6 +78,9 @@ class TuyaDevice extends EventEmitter {
     this._responseTimeout = 5; // Seconds
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
+
+    this._queue = []; // Queue of commands
+    this._waitingForResponse = false;
   }
 
   /**
@@ -108,6 +111,15 @@ class TuyaDevice extends EventEmitter {
       gwId: this.device.gwID,
       devId: this.device.id
     };
+
+    if (this._waitingForResponse) {
+      const queuedFunction = this.wrapFunction(this.get, this, options);
+      if (!this.arrayDeepInclude(this._queue, queuedFunction)) {
+        this._queue.push(queuedFunction);
+      }
+
+      return;
+    }
 
     debug('GET Payload:');
     debug(payload);
@@ -207,6 +219,15 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
+    if (this._waitingForResponse) {
+      const queuedFunction = this.wrapFunction(this.set, this, options);
+      if (!this.arrayDeepInclude(this._queue, queuedFunction)) {
+        this._queue.push(queuedFunction);
+      }
+
+      return;
+    }
+
     debug('SET Payload:');
     debug(payload);
 
@@ -270,6 +291,8 @@ class TuyaDevice extends EventEmitter {
     if (typeof this.device.ip === 'undefined') {
       throw new TypeError('Device missing IP address.');
     }
+
+    this._waitingForResponse = true;
 
     // Retry up to 5 times
     return pRetry(async () => {
@@ -335,6 +358,15 @@ class TuyaDevice extends EventEmitter {
 
         // Parse response data
         this.client.on('data', data => {
+          debug(this._waitingForResponse, this._queue);
+          this._waitingForResponse = false;
+
+          if (this._queue.length > 0) {
+            debug('Pulling from queue...');
+            this._queue[0]();
+            this._queue.shift();
+          }
+
           debug('Received response');
           debug(data.toString('hex'));
 
@@ -371,6 +403,11 @@ class TuyaDevice extends EventEmitter {
             data = this.device.cipher.decrypt(data);
             debug('Decrypted response data:');
             debug(data);
+          }
+
+          // Data should be an object by now
+          if (typeof data !== 'object') {
+            return reject(new Error('Bad response.'));
           }
 
           /**
@@ -497,6 +534,24 @@ class TuyaDevice extends EventEmitter {
     }
 
     return true;
+  }
+
+  arrayDeepInclude(arr, obj) {
+    const result = arr.every(item => {
+      if (JSON.stringify(item) === JSON.stringify(obj)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return !result;
+  }
+
+  wrapFunction(fn, context, params) {
+    return function () {
+      fn.apply(context, params);
+    };
   }
 
   /**

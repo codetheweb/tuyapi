@@ -3,12 +3,12 @@
 <head>
   <meta charset='utf-8' />
   <title>tuyapi 4.0.3 | Documentation</title>
-  <meta name='viewport' content='width=device-width,initial-scale=1'>
-  <link href='assets/bass.css' type='text/css' rel='stylesheet' />
-  <link href='assets/style.css' type='text/css' rel='stylesheet' />
-  <link href='assets/github.css' type='text/css' rel='stylesheet' />
-  <link href='assets/split.css' type='text/css' rel='stylesheet' />
   <meta name='description' content='An easy-to-use API for devices that use Tuya&#39;s cloud services'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <link href='assets/bass.css' rel='stylesheet' />
+  <link href='assets/style.css' rel='stylesheet' />
+  <link href='assets/github.css' rel='stylesheet' />
+  <link href='assets/split.css' rel='stylesheet' />
 </head>
 <body class='documentation m0'>
     <div class='flex'>
@@ -192,10 +192,7 @@
 you're experiencing problems when only passing
 one, try passing both if possible.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>new TuyaDevice(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
-   
   
   
     <p>
@@ -355,10 +352,7 @@ if omitted assumed to be the same as
   <p>Gets a device's current status.
 Defaults to returning only the value of the first DPS index.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>get(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)></div>
-   
   
   
 
@@ -456,6 +450,8 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
   
 
   
+
+  
 </section>
 
       </div>
@@ -475,10 +471,7 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
 
   <p>Sets a property on a device.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>set(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
-   
   
   
 
@@ -605,6 +598,8 @@ tuya.set({
   
 
   
+
+  
 </section>
 
       </div>
@@ -625,10 +620,7 @@ tuya.set({
   <p>Connects to the device. Can be called even
 if device is already connected.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>connect(): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
-   
   
   
 
@@ -663,6 +655,8 @@ if device is already connected.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -683,10 +677,7 @@ if device is already connected.</p>
   <p>Disconnects from the device, use to
 close the socket and exit gracefully.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>disconnect()</div>
-   
   
   
 
@@ -695,6 +686,8 @@ close the socket and exit gracefully.</p>
   
   
   
+  
+
   
 
   
@@ -731,10 +724,7 @@ close the socket and exit gracefully.</p>
 
   <p>Returns current connection status to device.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>isConnected(): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></div>
-   
   
   
 
@@ -772,6 +762,8 @@ close the socket and exit gracefully.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -790,10 +782,7 @@ close the socket and exit gracefully.</p>
   
 
   
- 
-  
     <div class='pre p1 fill-light mt0'>resolveId(options: any)</div>
-   
   
   
 
@@ -833,6 +822,8 @@ close the socket and exit gracefully.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -854,10 +845,7 @@ close the socket and exit gracefully.</p>
 If you didn't pass an ID or IP to the constructor,
 you must call this before anything else.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>find(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>)></div>
-   
   
   
 
@@ -947,6 +935,8 @@ to be resolved before timeout error is thrown
   
 
   
+
+  
 </section>
 
       </div>
@@ -966,10 +956,7 @@ to be resolved before timeout error is thrown
 
   <p>Toggles a boolean property.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>toggle(property: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>></div>
-   
   
   
 
@@ -1018,6 +1005,8 @@ to be resolved before timeout error is thrown
   
 
   
+
+  
 </section>
 
       </div>
@@ -1028,8 +1017,11 @@ to be resolved before timeout error is thrown
   
 
   
+
+  
 </section>
 
+          
         
           
             <div class='keyline-top-not py2'>
@@ -1046,50 +1038,6 @@ to be resolved before timeout error is thrown
   </section>
 </div>
           
-          <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-  <div class='clearfix'>
-    
-    <h3 class='fl m0' id='events'>
-      Events
-    </h3>
-    
-    
-  </div>
-  
-
-  <p>Events that TuyAPI emits.</p>
-
- 
-   
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1109,10 +1057,7 @@ to be resolved before timeout error is thrown
 result of a connection timeout.
 Also emitted on parsing errors.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>TuyaDevice#error</div>
-   
   
   
 
@@ -1150,8 +1095,11 @@ Also emitted on parsing errors.</p>
   
 
   
+
+  
 </section>
 
+          
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1169,10 +1117,7 @@ Also emitted on parsing errors.</p>
 
   <p>Emitted when data is returned from device.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>TuyaDevice#data</div>
-   
   
   
 
@@ -1218,8 +1163,11 @@ Also emitted on parsing errors.</p>
   
 
   
+
+  
 </section>
 
+          
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1241,10 +1189,7 @@ from device. Not an exclusive event:
 at the same time if, for example, the device
 goes off the network.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>TuyaDevice#disconnected</div>
-   
   
   
 
@@ -1253,6 +1198,8 @@ goes off the network.</p>
   
   
   
+  
+
   
 
   
@@ -1272,6 +1219,7 @@ goes off the network.</p>
   
 </section>
 
+          
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1293,10 +1241,7 @@ multiple times within the same script,
 so don't use this as a trigger for your
 initialization code.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>TuyaDevice#connected</div>
-   
   
   
 
@@ -1305,6 +1250,8 @@ initialization code.</p>
   
   
   
+  
+
   
 
   
@@ -1324,6 +1271,7 @@ initialization code.</p>
   
 </section>
 
+          
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1342,10 +1290,7 @@ initialization code.</p>
   <p>Static wrapper for lower-level MessageParser
 functions to easily parse packets.</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>parse(data: <a href="https://nodejs.org/api/buffer.html">Buffer</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></div>
-   
   
   
 
@@ -1405,8 +1350,11 @@ functions to easily parse packets.</p>
   
 
   
+
+  
 </section>
 
+          
         
           
           <section class='p2 mb2 clearfix bg-white minishadow'>
@@ -1425,10 +1373,7 @@ functions to easily parse packets.</p>
   <p>Static wrapper for lower-level MessageParser
 functions to easily encode packets</p>
 
- 
-  
     <div class='pre p1 fill-light mt0'>encode(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): <a href="https://nodejs.org/api/buffer.html">Buffer</a></div>
-   
   
   
 
@@ -1509,8 +1454,11 @@ functions to easily encode packets</p>
   
 
   
+
+  
 </section>
 
+          
         
       </div>
     </div>
