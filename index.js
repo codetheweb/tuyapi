@@ -79,8 +79,8 @@ class TuyaDevice extends EventEmitter {
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
 
-    this._queue = []; // Queue of commands
-    this._waitingForResponse = false;
+    this._currentSequenceN = 0;
+    this._resolvers = {};
   }
 
   /**
@@ -112,15 +112,6 @@ class TuyaDevice extends EventEmitter {
       devId: this.device.id
     };
 
-    if (this._waitingForResponse) {
-      const queuedFunction = this.wrapFunction(this.get, this, options);
-      if (!this.arrayDeepInclude(this._queue, queuedFunction)) {
-        this._queue.push(queuedFunction);
-      }
-
-      return;
-    }
-
     debug('GET Payload:');
     debug(payload);
 
@@ -134,26 +125,17 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(() => {
-          // Runs when data event is emitted
-          const resolveGet = data => {
-            // Remove self listener
-            this.removeListener('data', resolveGet);
-
-            if (options.schema === true) {
-              // Return whole response
-              resolve(data);
-            } else if (options.dps) {
-              // Return specific property
-              resolve(data.dps[options.dps]);
-            } else {
-              // Return first property by default
-              resolve(data.dps['1']);
-            }
-          };
-
-          // Add listener
-          this.on('data', resolveGet);
+        this._send(buffer).then(data => {
+          if (options.schema === true) {
+            // Return whole response
+            resolve(data);
+          } else if (options.dps) {
+            // Return specific property
+            resolve(data.dps[options.dps]);
+          } else {
+            // Return first property by default
+            resolve(data.dps['1']);
+          }
         });
       } catch (error) {
         reject(error);
@@ -219,15 +201,6 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    if (this._waitingForResponse) {
-      const queuedFunction = this.wrapFunction(this.set, this, options);
-      if (!this.arrayDeepInclude(this._queue, queuedFunction)) {
-        this._queue.push(queuedFunction);
-      }
-
-      return;
-    }
-
     debug('SET Payload:');
     debug(payload);
 
@@ -255,17 +228,8 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer).then(() => {
-          // Runs when data event is emitted
-          const resolveSet = _ => {
-            // Remove self listener
-            this.removeListener('data', resolveSet);
-
-            // Return true
-            resolve(true);
-          };
-
-          // Add listener to data event
-          this.on('data', resolveSet);
+          // Return true
+          resolve(true);
         });
       } catch (error) {
         reject(error);
@@ -279,7 +243,7 @@ class TuyaDevice extends EventEmitter {
    * wraps the entire operation in a retry.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @returns {Promise<Boolean>} `true` if query was successfully sent
+   * @returns {Promise<Any>} returned data for request
    */
   _send(buffer) {
     // Make sure we're connected
@@ -292,14 +256,21 @@ class TuyaDevice extends EventEmitter {
       throw new TypeError('Device missing IP address.');
     }
 
-    this._waitingForResponse = true;
+    // Add sequence number to buffer
+    buffer.writeUInt32BE(++this._currentSequenceN, 4);
 
     // Retry up to 5 times
-    return pRetry(async () => {
-      // Send data
-      this.client.write(buffer);
+    return pRetry(() => {
+      return new Promise((resolve, reject) => {
+        try {
+          // Send data
+          this.client.write(buffer);
 
-      return true;
+          this._resolvers[this._currentSequenceN] = data => resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      });
     }, {retries: 5});
   }
 
@@ -357,69 +328,7 @@ class TuyaDevice extends EventEmitter {
         // Add event listeners to socket
 
         // Parse response data
-        this.client.on('data', data => {
-          debug(this._waitingForResponse, this._queue);
-          this._waitingForResponse = false;
-
-          if (this._queue.length > 0) {
-            debug('Pulling from queue...');
-            this._queue[0]();
-            this._queue.shift();
-          }
-
-          debug('Received response');
-          debug(data.toString('hex'));
-
-          // Response was received, so stop waiting
-          clearTimeout(this._sendTimeout);
-
-          let dataRes;
-          try {
-            dataRes = Parser.parse(data);
-          } catch (error) {
-            debug(error);
-            this.emit('error', error);
-            return;
-          }
-
-          data = dataRes.data;
-
-          if (typeof data === 'object') {
-            debug('Parsed response data:');
-            debug(data);
-          } else if (typeof data === 'undefined') {
-            if (dataRes.commandByte === 0x09) { // PONG received
-              debug('Pong', this.device.ip);
-              return;
-            }
-
-            if (dataRes.commandByte === 0x07) { // Set succeeded
-              debug('Set succeeded.');
-              return;
-            }
-
-            debug(`Undefined data with command byte ${dataRes.commandByte}`);
-          } else { // Message is encrypted
-            data = this.device.cipher.decrypt(data);
-            debug('Decrypted response data:');
-            debug(data);
-          }
-
-          // Data should be an object by now
-          if (typeof data !== 'object') {
-            return reject(new Error('Bad response.'));
-          }
-
-          /**
-           * Emitted when data is returned from device.
-           * @event TuyaDevice#data
-           * @property {Object} data received data
-           * @property {Number} commandByte
-           * commandByte of result
-           * (e.g. 7=requested response, 8=proactive update from device)
-           */
-          this.emit('data', data, dataRes.commandByte);
-        });
+        this.client.on('data', this._dataHandler.bind(this));
 
         // Handle errors
         this.client.on('error', err => {
@@ -488,6 +397,74 @@ class TuyaDevice extends EventEmitter {
 
     // Return if already connected
     return Promise.resolve(true);
+  }
+
+  _dataHandler(data) {
+    debug('Received response');
+    debug(data.toString('hex'));
+
+    // Response was received, so stop waiting
+    clearTimeout(this._sendTimeout);
+
+    let dataRes;
+    try {
+      dataRes = Parser.parse(data);
+    } catch (error) {
+      debug(error);
+      this.emit('error', error);
+      return;
+    }
+
+    data = dataRes.data;
+
+    if (typeof data === 'object') {
+      debug('Parsed response data:');
+      debug(data);
+    } else if (typeof data === 'undefined') {
+      if (dataRes.commandByte === 0x09) { // PONG received
+        debug('Pong', this.device.ip);
+        return;
+      }
+
+      if (dataRes.commandByte === 0x07) { // Set succeeded
+        debug('Set succeeded.');
+        return;
+      }
+
+      debug(`Undefined data with command byte ${dataRes.commandByte}`);
+    } else { // Message is encrypted
+      data = this.device.cipher.decrypt(data);
+      debug('Decrypted response data:');
+      debug(data);
+    }
+
+    // Data should be an object by now
+    if (typeof data !== 'object') {
+      throw new TypeError('Bad response.');
+    }
+
+    /**
+     * Emitted when data is returned from device.
+     * @event TuyaDevice#data
+     * @property {Object} data received data
+     * @property {Number} commandByte
+     * commandByte of result
+     * (e.g. 7=requested response, 8=proactive update from device)
+     * @property {Number} sequenceN the packet sequence number
+     */
+    this.emit('data', data, dataRes.commandByte, dataRes.sequenceN);
+
+    // Call data resolver for sequence number
+    if (this._resolvers[dataRes.sequenceN]) {
+      this._resolvers[dataRes.sequenceN](data);
+
+      // Remove resolver
+      delete this._resolvers[dataRes.sequenceN];
+    } else if (dataRes.sequenceN === 0) {
+      this._resolvers[Object.keys(this._resolvers)[0]](data);
+
+      delete this._resolvers[dataRes.sequenceN];
+    }
   }
 
   /**
