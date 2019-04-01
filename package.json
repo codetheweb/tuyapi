@@ -37,18 +37,16 @@
   },
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
-    "clone": "2.1.2",
-    "crc": "3.8.0",
     "debug": "4.1.1",
-    "node-forge": "0.8.0",
-    "p-retry": "3.0.1",
-    "p-timeout": "2.0.1"
+    "p-retry": "4.1.0",
+    "p-timeout": "3.0.0"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.2",
-    "ava": "1.2.1",
+    "ava": "1.4.1",
+    "clone": "2.1.2",
     "coveralls": "3.0.3",
-    "documentation": "9.3.0",
+    "documentation": "9.3.1",
     "nyc": "13.3.0",
     "xo": "0.24.0"
   },

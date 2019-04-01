@@ -31,20 +31,19 @@ test('decrypt message without header and not base64 encoded', t => {
   t.deepEqual(result, data);
 });
 
-test('encrypt message without header and not base64 encoded', t => {
+test('encrypt message as a buffer', t => {
   // eslint-disable-next-line max-len
   const message = 'zrA8OK3r3JMiUXpXDWauNppY4Am2c8rZ6sb4Yf15MjM8n5ByDx+QWeCZtcrPqddxLrhm906bSKbQAFtT1uCp+zP5AxlqJf5d0Pp2OxyXyjg=';
+  const buffer = Buffer.from(message, 'base64');
+
   const data = {devId: '002004265ccf7fb1b659',
                 dps: {1: false, 2: 0},
                 t: 1529442366,
                 s: 8};
   const cipher = new Cipher({key: 'bbe88b3f4106d354', version: 3.1});
-
   const result = cipher.encrypt({data: JSON.stringify(data), base64: false});
 
-  const encoded = Buffer.from(result, 'ascii').toString('base64');
-
-  t.deepEqual(message, encoded);
+  t.deepEqual(buffer, result);
 });
 
 test('decrypt message where payload is not a JSON object', t => {
