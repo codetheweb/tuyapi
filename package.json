@@ -45,7 +45,7 @@
     "p-timeout": "2.0.1"
   },
   "devDependencies": {
-    "@tuyapi/stub": "^0.1.2",
+    "@tuyapi/stub": "file:../stub",
     "ava": "1.2.1",
     "coveralls": "3.0.3",
     "documentation": "9.3.0",

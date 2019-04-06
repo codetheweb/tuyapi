@@ -8,7 +8,7 @@ const debug = require('debug')('TuyAPI');
 
 // Helpers
 const Cipher = require('./lib/cipher');
-const Parser = require('./lib/message-parser');
+const MessageParser = require('./lib/message-parser');
 
 /**
  * Represents a Tuya device.
@@ -33,7 +33,6 @@ const Parser = require('./lib/message-parser');
 class TuyaDevice extends EventEmitter {
   constructor(options) {
     super();
-
     // Set device to user-passed options
     this.device = options;
 
@@ -54,6 +53,10 @@ class TuyaDevice extends EventEmitter {
         key: this.device.key,
         version: this.device.version
       });
+
+      this.device.parser = new MessageParser({
+        key: this.device.key,
+        version: this.device.version});
     } else {
       throw new TypeError('Key is missing or incorrect.');
     }
@@ -116,7 +119,7 @@ class TuyaDevice extends EventEmitter {
     debug(payload);
 
     // Create byte buffer
-    const buffer = Parser.encode({
+    const buffer = this.device.parser.encode({
       data: payload,
       commandByte: 10 // 0x0a
     });
@@ -165,7 +168,7 @@ class TuyaDevice extends EventEmitter {
    *             '1': true,
    *             '2': 'white'
    *          }}).then(() => console.log('device was changed'))
-   * @returns {Promise<Boolean>} - returns `true` if the command succeeded
+   * @returns {Promise<Object>} - returns response from device
    */
   set(options) {
     // Check arguments
@@ -218,7 +221,7 @@ class TuyaDevice extends EventEmitter {
     const thisData = Buffer.from(this.device.version + md5 + data);
 
     // Encode into packet
-    const buffer = Parser.encode({
+    const buffer = this.device.parser.encode({
       data: thisData,
       commandByte: 7 // 0x07
     });
@@ -227,9 +230,8 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(() => {
-          // Return true
-          resolve(true);
+        this._send(buffer).then(data => {
+          resolve(data);
         });
       } catch (error) {
         reject(error);
@@ -256,16 +258,15 @@ class TuyaDevice extends EventEmitter {
       throw new TypeError('Device missing IP address.');
     }
 
-    // Add sequence number to buffer
-    buffer.writeUInt32BE(++this._currentSequenceN, 4);
-
     // Retry up to 5 times
     return pRetry(() => {
       return new Promise((resolve, reject) => {
         try {
+          // Incremement sequence number
+          buffer = this.device.parser.writeSequenceN(buffer, ++this._currentSequenceN);
+
           // Send data
           this.client.write(buffer);
-
           this._resolvers[this._currentSequenceN] = data => resolve(data);
         } catch (error) {
           reject(error);
@@ -282,7 +283,7 @@ class TuyaDevice extends EventEmitter {
     debug(`Pinging ${this.device.ip}`);
 
     // Create byte buffer
-    const buffer = Parser.encode({
+    const buffer = this.device.parser.encode({
       data: Buffer.allocUnsafe(0),
       commandByte: 9 // 0x09
     });
@@ -328,7 +329,26 @@ class TuyaDevice extends EventEmitter {
         // Add event listeners to socket
 
         // Parse response data
-        this.client.on('data', this._dataHandler.bind(this));
+        this.client.on('data', data => {
+          debug(`Received data: ${data.toString('hex')}`);
+
+          let packets;
+
+          try {
+            packets = this.device.parser.parse(data);
+          } catch (error) {
+            debug(error);
+            this.emit('error', error);
+            return;
+          }
+
+          packets.forEach(packet => {
+            debug('Parsed:');
+            debug(packet);
+
+            this._packetHandler.bind(this)(packet);
+          });
+        });
 
         // Handle errors
         this.client.on('error', err => {
@@ -399,48 +419,18 @@ class TuyaDevice extends EventEmitter {
     return Promise.resolve(true);
   }
 
-  _dataHandler(data) {
-    debug('Received response');
-    debug(data.toString('hex'));
-
+  _packetHandler(packet) {
     // Response was received, so stop waiting
     clearTimeout(this._sendTimeout);
 
-    let dataRes;
-    try {
-      dataRes = Parser.parse(data);
-    } catch (error) {
-      debug(error);
-      this.emit('error', error);
+    if (packet.commandByte === 0x09) {
+      debug(`Pong from ${this.device.ip}`);
       return;
     }
 
-    data = dataRes.data;
-
-    if (typeof data === 'object') {
-      debug('Parsed response data:');
-      debug(data);
-    } else if (typeof data === 'undefined') {
-      if (dataRes.commandByte === 0x09) { // PONG received
-        debug('Pong', this.device.ip);
-        return;
-      }
-
-      if (dataRes.commandByte === 0x07) { // Set succeeded
-        debug('Set succeeded.');
-        return;
-      }
-
-      debug(`Undefined data with command byte ${dataRes.commandByte}`);
-    } else { // Message is encrypted
-      data = this.device.cipher.decrypt(data);
-      debug('Decrypted response data:');
-      debug(data);
-    }
-
-    // Data should be an object by now
-    if (typeof data !== 'object') {
-      throw new TypeError('Bad response.');
+    if (packet.commandByte === 0x07) {
+      debug('Set succeeded.');
+      return;
     }
 
     /**
@@ -452,18 +442,18 @@ class TuyaDevice extends EventEmitter {
      * (e.g. 7=requested response, 8=proactive update from device)
      * @property {Number} sequenceN the packet sequence number
      */
-    this.emit('data', data, dataRes.commandByte, dataRes.sequenceN);
+    this.emit('data', packet.data, packet.commandByte, packet.sequenceN);
 
     // Call data resolver for sequence number
-    if (this._resolvers[dataRes.sequenceN]) {
-      this._resolvers[dataRes.sequenceN](data);
+    if (this._resolvers[packet.sequenceN]) {
+      this._resolvers[packet.sequenceN](packet.data);
 
       // Remove resolver
-      delete this._resolvers[dataRes.sequenceN];
-    } else if (dataRes.sequenceN === 0) {
-      this._resolvers[Object.keys(this._resolvers)[0]](data);
+      delete this._resolvers[packet.sequenceN];
+    } else if (packet.sequenceN === 0) {
+      this._resolvers[Object.keys(this._resolvers)[0]](packet.data);
 
-      delete this._resolvers[dataRes.sequenceN];
+      delete this._resolvers[packet.sequenceN];
     }
   }
 
@@ -584,14 +574,14 @@ class TuyaDevice extends EventEmitter {
 
         let dataRes;
         try {
-          dataRes = Parser.parse(message);
+          dataRes = this.device.parser.parse(message)[0];
         } catch (error) {
           debug(error);
           reject(error);
         }
 
         debug('UDP data:');
-        debug(dataRes.data);
+        debug(dataRes);
 
         const thisID = dataRes.data.gwId;
         const thisIP = dataRes.data.ip;

@@ -1,13 +1,15 @@
 import test from 'ava';
 
-const Parser = require('../lib/message-parser');
+const MessageParser = require('../lib/message-parser');
 
 test('encode and decode message', t => {
   const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
 
-  const encoded = Parser.encode({data: payload, commandByte: '0a'});
+  const parser = new MessageParser();
+  const encoded = parser.encode({data: payload, commandByte: '0a'});
 
-  const parsed = Parser.parse(encoded);
+  const parsed = parser.parse(encoded)[0];
+
   t.deepEqual(parsed.data, payload);
   t.deepEqual(parsed.commandByte, 10);
 });
@@ -15,18 +17,20 @@ test('encode and decode message', t => {
 test('decode empty message', t => {
   const payload = '';
 
-  const encoded = Parser.encode({data: payload, commandByte: '0a'});
+  const parser = new MessageParser();
+  const encoded = parser.encode({data: payload, commandByte: '0a'});
 
-  const parsed = Parser.parse(encoded);
+  const parsed = parser.parse(encoded)[0];
   t.falsy(parsed.data);
 });
 
 test('decode corrupt (shortened) message', t => {
   const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
 
-  const encoded = Parser.encode({data: payload, commandByte: '0a'});
+  const parser = new MessageParser();
+  const encoded = parser.encode({data: payload, commandByte: '0a'});
 
   t.throws(() => {
-    Parser.parse(encoded.slice(0, -10));
+    parser.parse(encoded.slice(0, -10));
   });
 });
