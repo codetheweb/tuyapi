@@ -155,6 +155,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [ioBroker.tuya](https://github.com/Apollon77/ioBroker.tuya): an ioBroker (http://iobroker.net/) adapter to get data and control devices incl. schema parsing
 - [node-red-contrib-tuya-smart](https://github.com/hgross/node-red-contrib-tuya-smart): A NodeRED input node utilizing tuyapi to connect the smart home
 - [tuyadump](https://github.com/py60800/tuyadump) a Go project to decode device traffic in real time
+- [tuya-mqtt](https://github.com/TheAgentK/tuya-mqtt) a simple MQTT interface for TuyAPI
 
 
 To add your project to either of the above lists, please open a pull request.
