@@ -187,22 +187,10 @@ class TuyaDevice extends EventEmitter {
     debug('SET Payload:');
     debug(payload);
 
-    // Encrypt data
-    const data = this.device.cipher.encrypt({
-      data: JSON.stringify(payload)
-    });
-
-    // Create MD5 signature
-    const md5 = this.device.cipher.md5('data=' + data +
-      '||lpv=' + this.device.version +
-      '||' + this.device.key);
-
-    // Create byte buffer from hex data
-    const thisData = Buffer.from(this.device.version + md5 + data);
-
     // Encode into packet
     const buffer = this.device.parser.encode({
-      data: thisData,
+      data: payload,
+      encrypted: true, // Set commands must be encrypted
       commandByte: 7 // 0x07
     });
 
