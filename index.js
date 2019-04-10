@@ -534,8 +534,10 @@ class TuyaDevice extends EventEmitter {
         debug('UDP data:');
         debug(dataRes);
 
-        const thisID = dataRes.data.gwId;
-        const thisIP = dataRes.data.ip;
+        const thisID = dataRes.payload.gwId;
+        const thisIP = dataRes.payload.ip;
+
+        console.log(this.foundDevices);
 
         // Add to array if it doesn't exist
         if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
@@ -544,19 +546,19 @@ class TuyaDevice extends EventEmitter {
 
         if (!all &&
             (this.device.id === thisID || this.device.ip === thisIP) &&
-            dataRes.data) {
+            dataRes.payload) {
           // Add IP
-          this.device.ip = dataRes.data.ip;
+          this.device.ip = dataRes.payload.ip;
 
           // Add ID and gwID
-          this.device.id = dataRes.data.gwId;
-          this.device.gwID = dataRes.data.gwId;
+          this.device.id = dataRes.payload.gwId;
+          this.device.gwID = dataRes.payload.gwId;
 
           // Change product key if neccessary
-          this.device.productKey = dataRes.data.productKey;
+          this.device.productKey = dataRes.payload.productKey;
 
           // Change protocol version if necessary
-          this.device.version = dataRes.data.version;
+          this.device.version = dataRes.payload.version;
 
           // Cleanup
           listener.close();
