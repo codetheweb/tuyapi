@@ -103,11 +103,6 @@ const device = new TuyAPI({
 
 See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
-## TODO
-
-1. Document details of protocol
-2. Figure out correct CRC algorithm
-
 ## Contributing
 
 See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING.md).
