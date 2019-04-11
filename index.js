@@ -102,7 +102,8 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: payload,
-      commandByte: 10 // 0x0a
+      commandByte: 10, // 0x0a
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send request and parse response
@@ -191,7 +192,8 @@ class TuyaDevice extends EventEmitter {
     const buffer = this.device.parser.encode({
       data: payload,
       encrypted: true, // Set commands must be encrypted
-      commandByte: 7 // 0x07
+      commandByte: 7, // 0x07
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send request and wait for response
@@ -225,11 +227,10 @@ class TuyaDevice extends EventEmitter {
     return pRetry(() => {
       return new Promise((resolve, reject) => {
         try {
-          // Incremement sequence number
-          buffer = this.device.parser.writeSequenceN(buffer, ++this._currentSequenceN);
-
           // Send data
           this.client.write(buffer);
+
+          // Add resolver function
           this._resolvers[this._currentSequenceN] = data => resolve(data);
         } catch (error) {
           reject(error);
