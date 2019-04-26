@@ -413,8 +413,12 @@ class TuyaDevice extends EventEmitter {
       // Remove resolver
       delete this._resolvers[packet.sequenceN];
     } else if (packet.sequenceN === 0) {
+      // Returned sequence number is 0, probably a response to a set command
+
+      // Call the first resolver in the queue
       this._resolvers[Object.keys(this._resolvers)[0]](packet.payload);
 
+      // Remove resolver
       delete this._resolvers[packet.sequenceN];
     }
   }
