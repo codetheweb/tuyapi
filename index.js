@@ -7,7 +7,7 @@ const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
-const Cipher = require('./lib/cipher');
+const {isValidString} = require('./lib/utils');
 const MessageParser = require('./lib/message-parser');
 
 /**
@@ -37,13 +37,13 @@ class TuyaDevice extends EventEmitter {
     this.device = {ip, port, id, gwID, key, productKey, version};
 
     // Check arguments
-    if (!(this.checkIfValidString(id) ||
-          this.checkIfValidString(ip))) {
+    if (!(isValidString(id) ||
+          isValidString(ip))) {
       throw new TypeError('ID and IP are missing from device.');
     }
 
     // Check key
-    if (!this.checkIfValidString(this.device.key) || this.device.key.length !== 16) {
+    if (!isValidString(this.device.key) || this.device.key.length !== 16) {
       throw new TypeError('Key is missing or incorrect.');
     }
 
@@ -451,35 +451,6 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Checks a given input string.
-   * @private
-   * @param {String} input input string
-   * @returns {Boolean}
-   * `true` if is string and length != 0, `false` otherwise.
-   */
-  checkIfValidString(input) {
-    return typeof input === 'string' && input.length > 0;
-  }
-
-  arrayDeepInclude(arr, obj) {
-    const result = arr.every(item => {
-      if (JSON.stringify(item) === JSON.stringify(obj)) {
-        return false;
-      }
-
-      return true;
-    });
-
-    return !result;
-  }
-
-  wrapFunction(fn, context, params) {
-    return function () {
-      fn.apply(context, params);
-    };
-  }
-
-  /**
    * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
    */
   resolveId(options) {
@@ -504,8 +475,8 @@ class TuyaDevice extends EventEmitter {
    * true if ID/IP was found and device is ready to be used
    */
   find({timeout = 10, all = false} = {}) {
-    if (this.checkIfValidString(this.device.id) &&
-        this.checkIfValidString(this.device.ip)) {
+    if (isValidString(this.device.id) &&
+        isValidString(this.device.ip)) {
       // Don't need to do anything
       debug('IP and ID are already both resolved.');
       return Promise.resolve(true);
