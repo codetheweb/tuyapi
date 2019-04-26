@@ -47,12 +47,10 @@ class TuyaDevice extends EventEmitter {
       throw new TypeError('Key is missing or incorrect.');
     }
 
+    // Handles encoding/decoding, encrypting/decrypting messages
     this.device.parser = new MessageParser({
       key: this.device.key,
       version: this.device.version});
-
-    // Create cipher from key
-    this.device.cipher = new Cipher({key, version});
 
     // Contains array of found devices when calling .find()
     this.foundDevices = [];
