@@ -8,7 +8,7 @@ const debug = require('debug')('TuyAPI');
 
 // Helpers
 const {isValidString} = require('./lib/utils');
-const MessageParser = require('./lib/message-parser');
+const {MessageParser, CommandType} = require('./lib/message-parser');
 
 /**
  * Represents a Tuya device.
@@ -100,7 +100,7 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: payload,
-      commandByte: 10, // 0x0a
+      commandByte: CommandType.DP_QUERY,
       sequenceN: ++this._currentSequenceN
     });
 
@@ -190,7 +190,7 @@ class TuyaDevice extends EventEmitter {
     const buffer = this.device.parser.encode({
       data: payload,
       encrypted: true, // Set commands must be encrypted
-      commandByte: 7, // 0x07
+      commandByte: CommandType.CONTROL,
       sequenceN: ++this._currentSequenceN
     });
 
@@ -247,7 +247,7 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: Buffer.allocUnsafe(0),
-      commandByte: 9 // 0x09
+      commandByte: CommandType.HEART_BEAT
     });
 
     // Send ping
@@ -385,13 +385,8 @@ class TuyaDevice extends EventEmitter {
     // Response was received, so stop waiting
     clearTimeout(this._sendTimeout);
 
-    if (packet.commandByte === 0x09) {
+    if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
-      return;
-    }
-
-    if (packet.commandByte === 0x07) {
-      debug('Set succeeded.');
       return;
     }
 
