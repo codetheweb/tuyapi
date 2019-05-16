@@ -247,7 +247,8 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: Buffer.allocUnsafe(0),
-      commandByte: CommandType.HEART_BEAT
+      commandByte: CommandType.HEART_BEAT,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send ping
@@ -385,6 +386,14 @@ class TuyaDevice extends EventEmitter {
     // Response was received, so stop waiting
     clearTimeout(this._sendTimeout);
 
+    // Call data resolver for sequence number
+    if (packet.sequenceN in this._resolvers) {
+      this._resolvers[packet.sequenceN](packet.payload);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
+    }
+
     if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
       return;
@@ -400,22 +409,6 @@ class TuyaDevice extends EventEmitter {
      * @property {Number} sequenceN the packet sequence number
      */
     this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
-
-    // Call data resolver for sequence number
-    if (this._resolvers[packet.sequenceN]) {
-      this._resolvers[packet.sequenceN](packet.payload);
-
-      // Remove resolver
-      delete this._resolvers[packet.sequenceN];
-    } else if (packet.sequenceN === 0) {
-      // Returned sequence number is 0, probably a response to a set command
-
-      // Call the first resolver in the queue
-      this._resolvers[Object.keys(this._resolvers)[0]](packet.payload);
-
-      // Remove resolver
-      delete this._resolvers[packet.sequenceN];
-    }
   }
 
   /**
