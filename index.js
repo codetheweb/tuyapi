@@ -387,6 +387,9 @@ class TuyaDevice extends EventEmitter {
 
     if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
       return;
     }
 
@@ -404,14 +407,6 @@ class TuyaDevice extends EventEmitter {
     // Call data resolver for sequence number
     if (this._resolvers[packet.sequenceN]) {
       this._resolvers[packet.sequenceN](packet.payload);
-
-      // Remove resolver
-      delete this._resolvers[packet.sequenceN];
-    } else if (packet.sequenceN === 0) {
-      // Returned sequence number is 0, probably a response to a set command
-
-      // Call the first resolver in the queue
-      this._resolvers[Object.keys(this._resolvers)[0]](packet.payload);
 
       // Remove resolver
       delete this._resolvers[packet.sequenceN];
@@ -505,8 +500,6 @@ class TuyaDevice extends EventEmitter {
 
         const thisID = dataRes.payload.gwId;
         const thisIP = dataRes.payload.ip;
-
-        console.log(this.foundDevices);
 
         // Add to array if it doesn't exist
         if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
