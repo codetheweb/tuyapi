@@ -247,7 +247,8 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: Buffer.allocUnsafe(0),
-      commandByte: CommandType.HEART_BEAT
+      commandByte: CommandType.HEART_BEAT,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send ping
@@ -405,7 +406,7 @@ class TuyaDevice extends EventEmitter {
     this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
 
     // Call data resolver for sequence number
-    if (this._resolvers[packet.sequenceN]) {
+    if (packet.sequenceN in this._resolvers) {
       this._resolvers[packet.sequenceN](packet.payload);
 
       // Remove resolver
