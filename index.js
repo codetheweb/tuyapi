@@ -61,6 +61,11 @@ class TuyaDevice extends EventEmitter {
     this._responseTimeout = 5; // Seconds
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
+
+    this._currentSequenceN = 0;
+    this._resolvers = {};
+
+    this._waitingForSetToResolve = false;
   }
 
   /**
@@ -209,22 +214,13 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send request and wait for response
+    this._waitingForSetToResolve = true;
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(() => {
-          // Runs when data event is emitted
-          const resolveSet = _ => {
-            // Remove self listener
-            this.removeListener('data', resolveSet);
+        this._send(buffer);
 
-            // Return true
-            resolve(true);
-          };
-
-          // Add listener to data event
-          this.on('data', resolveSet);
-        });
+        this._setResolver = resolve;
       } catch (error) {
         reject(error);
       }
@@ -264,7 +260,8 @@ class TuyaDevice extends EventEmitter {
     // Create byte buffer
     const buffer = Parser.encode({
       data: Buffer.allocUnsafe(0),
-      commandByte: 9 // 0x09
+      commandByte: CommandType.HEART_BEAT,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send ping
@@ -425,6 +422,49 @@ class TuyaDevice extends EventEmitter {
 
     // Return if already connected
     return Promise.resolve(true);
+  }
+
+  _packetHandler(packet) {
+    // Response was received, so stop waiting
+    clearTimeout(this._sendTimeout);
+
+    if (packet.commandByte === CommandType.HEART_BEAT) {
+      debug(`Pong from ${this.device.ip}`);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
+      return;
+    }
+
+    /**
+     * Emitted when data is returned from device.
+     * @event TuyaDevice#data
+     * @property {Object} data received data
+     * @property {Number} commandByte
+     * commandByte of result
+     * (e.g. 7=requested response, 8=proactive update from device)
+     * @property {Number} sequenceN the packet sequence number
+     */
+    this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
+
+    // Status response to SET command
+    if (packet.sequenceN === 0 &&
+        packet.commandByte === CommandType.STATUS &&
+        this._waitingForSetToResolve) {
+      this._setResolver(packet.payload);
+
+      // Remove resolver
+      this._setResolver = undefined;
+      return;
+    }
+
+    // Call data resolver for sequence number
+    if (packet.sequenceN in this._resolvers) {
+      this._resolvers[packet.sequenceN](packet.payload);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
+    }
   }
 
   /**
