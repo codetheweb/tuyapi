@@ -66,6 +66,8 @@ class TuyaDevice extends EventEmitter {
 
     this._currentSequenceN = 0;
     this._resolvers = {};
+
+    this._waitingForSetToResolve = false;
   }
 
   /**
@@ -195,12 +197,13 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send request and wait for response
+    this._waitingForSetToResolve = true;
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(data => {
-          resolve(data);
-        });
+        this._send(buffer);
+
+        this._setResolver = resolve;
       } catch (error) {
         reject(error);
       }
@@ -404,6 +407,17 @@ class TuyaDevice extends EventEmitter {
      * @property {Number} sequenceN the packet sequence number
      */
     this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
+
+    // Status response to SET command
+    if (packet.sequenceN === 0 &&
+        packet.commandByte === CommandType.STATUS &&
+        this._waitingForSetToResolve) {
+      this._setResolver(packet.payload);
+
+      // Remove resolver
+      this._setResolver = undefined;
+      return;
+    }
 
     // Call data resolver for sequence number
     if (packet.sequenceN in this._resolvers) {
