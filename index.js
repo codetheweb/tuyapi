@@ -7,8 +7,8 @@ const pRetry = require('p-retry');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
-const Cipher = require('./lib/cipher');
-const Parser = require('./lib/message-parser');
+const {isValidString} = require('./lib/utils');
+const {MessageParser, CommandType} = require('./lib/message-parser');
 
 /**
  * Represents a Tuya device.
@@ -33,22 +33,24 @@ const Parser = require('./lib/message-parser');
 class TuyaDevice extends EventEmitter {
   constructor({ip, port = 6668, id, gwID = id, key, productKey, version = 3.1} = {}) {
     super();
-
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
 
     // Check arguments
-    if (!(this.checkIfValidString(id) ||
-          this.checkIfValidString(ip))) {
+    if (!(isValidString(id) ||
+          isValidString(ip))) {
       throw new TypeError('ID and IP are missing from device.');
     }
 
-    if (!this.checkIfValidString(key) || key.length !== 16) {
+    // Check key
+    if (!isValidString(this.device.key) || this.device.key.length !== 16) {
       throw new TypeError('Key is missing or incorrect.');
     }
 
-    // Create cipher from key
-    this.device.cipher = new Cipher({key, version});
+    // Handles encoding/decoding, encrypting/decrypting messages
+    this.device.parser = new MessageParser({
+      key: this.device.key,
+      version: this.device.version});
 
     // Contains array of found devices when calling .find()
     this.foundDevices = [];
@@ -61,6 +63,11 @@ class TuyaDevice extends EventEmitter {
     this._responseTimeout = 5; // Seconds
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
+
+    this._currentSequenceN = 0;
+    this._resolvers = {};
+
+    this._waitingForSetToResolve = false;
   }
 
   /**
@@ -93,35 +100,27 @@ class TuyaDevice extends EventEmitter {
     debug(payload);
 
     // Create byte buffer
-    const buffer = Parser.encode({
+    const buffer = this.device.parser.encode({
       data: payload,
-      commandByte: 10 // 0x0a
+      commandByte: CommandType.DP_QUERY,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send request and parse response
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(() => {
-          // Runs when data event is emitted
-          const resolveGet = data => {
-            // Remove self listener
-            this.removeListener('data', resolveGet);
-
-            if (options.schema === true) {
-              // Return whole response
-              resolve(data);
-            } else if (options.dps) {
-              // Return specific property
-              resolve(data.dps[options.dps]);
-            } else {
-              // Return first property by default
-              resolve(data.dps['1']);
-            }
-          };
-
-          // Add listener
-          this.on('data', resolveGet);
+        this._send(buffer).then(data => {
+          if (options.schema === true) {
+            // Return whole response
+            resolve(data);
+          } else if (options.dps) {
+            // Return specific property
+            resolve(data.dps[options.dps]);
+          } else {
+            // Return first property by default
+            resolve(data.dps['1']);
+          }
         });
       } catch (error) {
         reject(error);
@@ -151,7 +150,7 @@ class TuyaDevice extends EventEmitter {
    *             '1': true,
    *             '2': 'white'
    *          }}).then(() => console.log('device was changed'))
-   * @returns {Promise<Boolean>} - returns `true` if the command succeeded
+   * @returns {Promise<Object>} - returns response from device
    */
   set(options) {
     // Check arguments
@@ -189,42 +188,22 @@ class TuyaDevice extends EventEmitter {
     debug('SET Payload:');
     debug(payload);
 
-    // Encrypt data
-    const data = this.device.cipher.encrypt({
-      data: JSON.stringify(payload)
-    });
-
-    // Create MD5 signature
-    const md5 = this.device.cipher.md5('data=' + data +
-      '||lpv=' + this.device.version +
-      '||' + this.device.key);
-
-    // Create byte buffer from hex data
-    const thisData = Buffer.from(this.device.version + md5 + data);
-
     // Encode into packet
-    const buffer = Parser.encode({
-      data: thisData,
-      commandByte: 7 // 0x07
+    const buffer = this.device.parser.encode({
+      data: payload,
+      encrypted: true, // Set commands must be encrypted
+      commandByte: CommandType.CONTROL,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send request and wait for response
+    this._waitingForSetToResolve = true;
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(() => {
-          // Runs when data event is emitted
-          const resolveSet = _ => {
-            // Remove self listener
-            this.removeListener('data', resolveSet);
+        this._send(buffer);
 
-            // Return true
-            resolve(true);
-          };
-
-          // Add listener to data event
-          this.on('data', resolveSet);
-        });
+        this._setResolver = resolve;
       } catch (error) {
         reject(error);
       }
@@ -237,7 +216,7 @@ class TuyaDevice extends EventEmitter {
    * wraps the entire operation in a retry.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @returns {Promise<Boolean>} `true` if query was successfully sent
+   * @returns {Promise<Any>} returned data for request
    */
   _send(buffer) {
     // Make sure we're connected
@@ -246,11 +225,18 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Retry up to 5 times
-    return pRetry(async () => {
-      // Send data
-      this.client.write(buffer);
+    return pRetry(() => {
+      return new Promise((resolve, reject) => {
+        try {
+          // Send data
+          this.client.write(buffer);
 
-      return true;
+          // Add resolver function
+          this._resolvers[this._currentSequenceN] = data => resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      });
     }, {retries: 5});
   }
 
@@ -262,9 +248,10 @@ class TuyaDevice extends EventEmitter {
     debug(`Pinging ${this.device.ip}`);
 
     // Create byte buffer
-    const buffer = Parser.encode({
+    const buffer = this.device.parser.encode({
       data: Buffer.allocUnsafe(0),
-      commandByte: 9 // 0x09
+      commandByte: CommandType.HEART_BEAT,
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send ping
@@ -309,53 +296,24 @@ class TuyaDevice extends EventEmitter {
 
         // Parse response data
         this.client.on('data', data => {
-          debug('Received response');
-          debug(data.toString('hex'));
+          debug(`Received data: ${data.toString('hex')}`);
 
-          // Response was received, so stop waiting
-          clearTimeout(this._sendTimeout);
+          let packets;
 
-          let dataRes;
           try {
-            dataRes = Parser.parse(data);
+            packets = this.device.parser.parse(data);
           } catch (error) {
             debug(error);
             this.emit('error', error);
             return;
           }
 
-          data = dataRes.data;
+          packets.forEach(packet => {
+            debug('Parsed:');
+            debug(packet);
 
-          if (typeof data === 'object') {
-            debug('Parsed response data:');
-            debug(data);
-          } else if (typeof data === 'undefined') {
-            if (dataRes.commandByte === 0x09) { // PONG received
-              debug('Pong', this.device.ip);
-              return;
-            }
-
-            if (dataRes.commandByte === 0x07) { // Set succeeded
-              debug('Set succeeded.');
-              return;
-            }
-
-            debug(`Undefined data with command byte ${dataRes.commandByte}`);
-          } else { // Message is encrypted
-            data = this.device.cipher.decrypt(data);
-            debug('Decrypted response data:');
-            debug(data);
-          }
-
-          /**
-           * Emitted when data is returned from device.
-           * @event TuyaDevice#data
-           * @property {Object} data received data
-           * @property {Number} commandByte
-           * commandByte of result
-           * (e.g. 7=requested response, 8=proactive update from device)
-           */
-          this.emit('data', data, dataRes.commandByte);
+            this._packetHandler.bind(this)(packet);
+          });
         });
 
         // Handle errors
@@ -427,6 +385,49 @@ class TuyaDevice extends EventEmitter {
     return Promise.resolve(true);
   }
 
+  _packetHandler(packet) {
+    // Response was received, so stop waiting
+    clearTimeout(this._sendTimeout);
+
+    if (packet.commandByte === CommandType.HEART_BEAT) {
+      debug(`Pong from ${this.device.ip}`);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
+      return;
+    }
+
+    /**
+     * Emitted when data is returned from device.
+     * @event TuyaDevice#data
+     * @property {Object} data received data
+     * @property {Number} commandByte
+     * commandByte of result
+     * (e.g. 7=requested response, 8=proactive update from device)
+     * @property {Number} sequenceN the packet sequence number
+     */
+    this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
+
+    // Status response to SET command
+    if (packet.sequenceN === 0 &&
+        packet.commandByte === CommandType.STATUS &&
+        this._waitingForSetToResolve) {
+      this._setResolver(packet.payload);
+
+      // Remove resolver
+      this._setResolver = undefined;
+      return;
+    }
+
+    // Call data resolver for sequence number
+    if (packet.sequenceN in this._resolvers) {
+      this._resolvers[packet.sequenceN](packet.payload);
+
+      // Remove resolver
+      delete this._resolvers[packet.sequenceN];
+    }
+  }
+
   /**
    * Disconnects from the device, use to
    * close the socket and exit gracefully.
@@ -459,17 +460,6 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Checks a given input string.
-   * @private
-   * @param {String} input input string
-   * @returns {Boolean}
-   * `true` if is string and length != 0, `false` otherwise.
-   */
-  checkIfValidString(input) {
-    return typeof input === 'string' && input.length > 0;
-  }
-
-  /**
    * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
    */
   resolveId(options) {
@@ -494,8 +484,8 @@ class TuyaDevice extends EventEmitter {
    * true if ID/IP was found and device is ready to be used
    */
   find({timeout = 10, all = false} = {}) {
-    if (this.checkIfValidString(this.device.id) &&
-        this.checkIfValidString(this.device.ip)) {
+    if (isValidString(this.device.id) &&
+        isValidString(this.device.ip)) {
       // Don't need to do anything
       debug('IP and ID are already both resolved.');
       return Promise.resolve(true);
@@ -514,17 +504,17 @@ class TuyaDevice extends EventEmitter {
 
         let dataRes;
         try {
-          dataRes = Parser.parse(message);
+          dataRes = this.device.parser.parse(message)[0];
         } catch (error) {
           debug(error);
           reject(error);
         }
 
         debug('UDP data:');
-        debug(dataRes.data);
+        debug(dataRes);
 
-        const thisID = dataRes.data.gwId;
-        const thisIP = dataRes.data.ip;
+        const thisID = dataRes.payload.gwId;
+        const thisIP = dataRes.payload.ip;
 
         // Add to array if it doesn't exist
         if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
@@ -533,19 +523,19 @@ class TuyaDevice extends EventEmitter {
 
         if (!all &&
             (this.device.id === thisID || this.device.ip === thisIP) &&
-            dataRes.data) {
+            dataRes.payload) {
           // Add IP
-          this.device.ip = dataRes.data.ip;
+          this.device.ip = dataRes.payload.ip;
 
           // Add ID and gwID
-          this.device.id = dataRes.data.gwId;
-          this.device.gwID = dataRes.data.gwId;
+          this.device.id = dataRes.payload.gwId;
+          this.device.gwID = dataRes.payload.gwId;
 
           // Change product key if neccessary
-          this.device.productKey = dataRes.data.productKey;
+          this.device.productKey = dataRes.payload.productKey;
 
           // Change protocol version if necessary
-          this.device.version = dataRes.data.version;
+          this.device.version = dataRes.payload.version;
 
           // Cleanup
           listener.close();
