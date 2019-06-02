@@ -68,8 +68,6 @@ test.serial('set multiple properties at once', async t => {
 });
 
 test.serial('catch data event when property changes', async t => {
-  t.plan(2);
-
   const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
                                  key: '4226aa407d5c1e2b',
                                  ip: 'localhost'});
