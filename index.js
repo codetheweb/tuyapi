@@ -411,7 +411,8 @@ class TuyaDevice extends EventEmitter {
     // Status response to SET command
     if (packet.sequenceN === 0 &&
         packet.commandByte === CommandType.STATUS &&
-        this._waitingForSetToResolve) {
+        this._waitingForSetToResolve &&
+        typeof this._setResolver === 'function') {
       this._setResolver(packet.payload);
 
       // Remove resolver
