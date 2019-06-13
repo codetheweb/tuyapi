@@ -11,7 +11,7 @@ test('decrypt message with header and base64 encoding', t => {
                   s: 8};
   const cipher = new Cipher({key: 'bbe88b3f4106d354', version: 3.1});
 
-  const result = JSON.parse(cipher.decrypt(message));
+  const result = cipher.decrypt(message);
 
   t.deepEqual(result, equals);
 });
@@ -26,7 +26,7 @@ test('decrypt message without header and not base64 encoded', t => {
                 s: 8};
   const cipher = new Cipher({key: 'bbe88b3f4106d354', version: 3.1});
 
-  const result = JSON.parse(cipher.decrypt(decoded));
+  const result = cipher.decrypt(decoded);
 
   t.deepEqual(result, data);
 });
