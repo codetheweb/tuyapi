@@ -397,6 +397,11 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
+    if (packet.commandByte === CommandType.CONTROL && packet.payload === false) {
+      debug('Got SET ack.');
+      return;
+    }
+
     /**
      * Emitted when data is returned from device.
      * @event TuyaDevice#data
