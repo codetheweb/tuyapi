@@ -594,18 +594,14 @@ class TuyaDevice extends EventEmitter {
   async toggle(property = '1') {
     property = property.toString();
 
-    try {
-      // Get status
-      const status = await this.get({dps: property});
+    // Get status
+    const status = await this.get({dps: property});
 
-      // Set to opposite
-      await this.set({set: !status, dps: property});
+    // Set to opposite
+    await this.set({set: !status, dps: property});
 
-      // Return new status
-      return await this.get({dps: property});
-    } catch (error) {
-      throw error;
-    }
+    // Return new status
+    return this.get({dps: property});
   }
 }
 
