@@ -5,7 +5,7 @@ const TuyAPI = require('..');
 test('constructor throws error if both ID and IP are missing from device', t => {
   t.throws(() => {
     // eslint-disable-next-line no-new
-    new TuyAPI({key: '4226aa407d5c1e2b'});
+    new TuyAPI();
   });
 });
 
