@@ -105,7 +105,6 @@ class TuyaDevice extends EventEmitter {
       commandByte: CommandType.DP_QUERY,
       sequenceN: ++this._currentSequenceN
     });
-    debug('sending', buffer.toString('hex'));
 
     // Send request and parse response
     return new Promise((resolve, reject) => {
