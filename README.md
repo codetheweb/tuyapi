@@ -97,6 +97,7 @@ const device = new TuyAPI({
 ## 📝 Notes
 - Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
 - Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the official app.
+- Newer firmware may use protocol 3.3. If you are not using `find()`, you will need to manually pass `version: 3.3` to the constructor.
 
 
 ## 📓 Documentation
