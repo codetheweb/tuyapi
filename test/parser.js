@@ -6,12 +6,53 @@ test('encode and decode message', t => {
   const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
 
   const parser = new MessageParser();
-  const encoded = parser.encode({data: payload, commandByte: CommandType.DP_QUERY});
+  const encoded = parser.encode({
+    data: payload,
+    commandByte: CommandType.DP_QUERY,
+    sequenceN: 2
+  });
 
   const parsed = parser.parse(encoded)[0];
 
   t.deepEqual(parsed.payload, payload);
-  t.deepEqual(parsed.commandByte, 10);
+  t.deepEqual(parsed.commandByte, CommandType.DP_QUERY);
+  t.deepEqual(parsed.sequenceN, 2);
+});
+
+test('encode and decode get message with protocol 3.3', t => {
+  const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
+
+  const parser = new MessageParser({key: 'bbe88b3f4106d354', version: '3.3'});
+  const encoded = parser.encode({
+    data: payload,
+    commandByte: CommandType.DP_QUERY,
+    sequenceN: 2
+  });
+
+  const parsed = parser.parse(encoded)[0];
+
+  t.deepEqual(parsed.payload, payload);
+  t.deepEqual(parsed.commandByte, CommandType.DP_QUERY);
+  t.deepEqual(parsed.sequenceN, 2);
+});
+
+test('encode and decode set message with protocol 3.3', t => {
+  const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
+
+  const parser = new MessageParser({key: 'bbe88b3f4106d354', version: '3.3'});
+  const encoded = parser.encode({data: payload, commandByte: CommandType.CONTROL});
+
+  const parsed = parser.parse(encoded)[0];
+
+  t.deepEqual(parsed.payload, payload);
+  t.deepEqual(parsed.commandByte, CommandType.CONTROL);
+});
+
+test('constructor throws with incorrect key length', t => {
+  t.throws(() => {
+    // eslint-disable-next-line no-new
+    new MessageParser({key: 'bbe88b3f4106d35'});
+  });
 });
 
 test('decode empty message', t => {
@@ -85,6 +126,18 @@ test('decode corrupt (suffix mismatch) message', t => {
   const parser = new MessageParser();
   const encoded = parser.encode({data: payload, commandByte: CommandType.DP_QUERY});
   encoded.writeUInt32BE(0xDEADBEEF, encoded.length - 4);
+
+  t.throws(() => {
+    parser.parse(encoded);
+  });
+});
+
+test('decode corrupt (crc mismatch) message', t => {
+  const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
+
+  const parser = new MessageParser();
+  const encoded = parser.encode({data: payload, commandByte: CommandType.DP_QUERY});
+  encoded.writeUInt32BE(0xDEADBEEF, encoded.length - 8);
 
   t.throws(() => {
     parser.parse(encoded);
