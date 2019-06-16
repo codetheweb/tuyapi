@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "5.0.3",
+  "version": "5.1.0",
   "description": "An easy-to-use API for devices that use Tuya's cloud services",
   "main": "index.js",
   "files": [
@@ -43,11 +43,11 @@
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
-    "ava": "2.0.0",
+    "ava": "2.1.0",
     "clone": "2.1.2",
-    "coveralls": "3.0.3",
-    "delay": "4.2.0",
-    "documentation": "11.0.0",
+    "coveralls": "3.0.4",
+    "delay": "4.3.0",
+    "documentation": "11.0.1",
     "nyc": "14.1.1",
     "xo": "0.24.0"
   },

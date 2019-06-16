@@ -497,66 +497,88 @@ class TuyaDevice extends EventEmitter {
       return Promise.resolve(true);
     }
 
-    // Create new listener
+    // Create new listeners
     const listener = dgram.createSocket({type: 'udp4', reuseAddr: true});
     listener.bind(6666);
+
+    const listenerEncrypted = dgram.createSocket({type: 'udp4', reuseAddr: true});
+    listenerEncrypted.bind(6667);
+
+    const broadcastHandler = (resolve, reject) => message => {
+      debug('Received UDP message.');
+
+      let dataRes;
+      try {
+        dataRes = this.device.parser.parse(message)[0];
+      } catch (error) {
+        debug(error);
+        reject(error);
+      }
+
+      debug('UDP data:');
+      debug(dataRes);
+
+      const thisID = dataRes.payload.gwId;
+      const thisIP = dataRes.payload.ip;
+
+      // Add to array if it doesn't exist
+      if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
+        this.foundDevices.push({id: thisID, ip: thisIP});
+      }
+
+      if (!all &&
+          (this.device.id === thisID || this.device.ip === thisIP) &&
+          dataRes.payload) {
+        // Add IP
+        this.device.ip = dataRes.payload.ip;
+
+        // Add ID and gwID
+        this.device.id = dataRes.payload.gwId;
+        this.device.gwID = dataRes.payload.gwId;
+
+        // Change product key if neccessary
+        this.device.productKey = dataRes.payload.productKey;
+
+        // Change protocol version if necessary
+        if (this.device.version !== dataRes.payload.version) {
+          this.device.version = dataRes.payload.version;
+
+          // Update the parser
+          this.device.parser = new MessageParser({
+            key: this.device.key,
+            version: this.device.version});
+        }
+
+        // Cleanup
+        listener.close();
+        listener.removeAllListeners();
+        listenerEncrypted.close();
+        listenerEncrypted.removeAllListeners();
+        resolve(true);
+      }
+    };
 
     debug(`Finding missing IP ${this.device.ip} or ID ${this.device.id}`);
 
     // Find IP for device
     return pTimeout(new Promise((resolve, reject) => { // Timeout
-      listener.on('message', message => {
-        debug('Received UDP message.');
-
-        let dataRes;
-        try {
-          dataRes = this.device.parser.parse(message)[0];
-        } catch (error) {
-          debug(error);
-          reject(error);
-        }
-
-        debug('UDP data:');
-        debug(dataRes);
-
-        const thisID = dataRes.payload.gwId;
-        const thisIP = dataRes.payload.ip;
-
-        // Add to array if it doesn't exist
-        if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
-          this.foundDevices.push({id: thisID, ip: thisIP});
-        }
-
-        if (!all &&
-            (this.device.id === thisID || this.device.ip === thisIP) &&
-            dataRes.payload) {
-          // Add IP
-          this.device.ip = dataRes.payload.ip;
-
-          // Add ID and gwID
-          this.device.id = dataRes.payload.gwId;
-          this.device.gwID = dataRes.payload.gwId;
-
-          // Change product key if neccessary
-          this.device.productKey = dataRes.payload.productKey;
-
-          // Change protocol version if necessary
-          this.device.version = dataRes.payload.version;
-
-          // Cleanup
-          listener.close();
-          listener.removeAllListeners();
-          resolve(true);
-        }
-      });
+      listener.on('message', broadcastHandler(resolve, reject));
 
       listener.on('error', err => {
+        reject(err);
+      });
+
+      listenerEncrypted.on('message', broadcastHandler(resolve, reject));
+
+      listenerEncrypted.on('error', err => {
         reject(err);
       });
     }), timeout * 1000, () => {
       // Have to do this so we exit cleanly
       listener.close();
       listener.removeAllListeners();
+      listenerEncrypted.close();
+      listenerEncrypted.removeAllListeners();
 
       // Return all devices
       if (all) {
@@ -577,18 +599,14 @@ class TuyaDevice extends EventEmitter {
   async toggle(property = '1') {
     property = property.toString();
 
-    try {
-      // Get status
-      const status = await this.get({dps: property});
+    // Get status
+    const status = await this.get({dps: property});
 
-      // Set to opposite
-      await this.set({set: !status, dps: property});
+    // Set to opposite
+    await this.set({set: !status, dps: property});
 
-      // Return new status
-      return await this.get({dps: property});
-    } catch (error) {
-      throw error;
-    }
+    // Return new status
+    return this.get({dps: property});
   }
 }
 
