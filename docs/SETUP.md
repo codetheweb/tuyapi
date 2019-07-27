@@ -1,5 +1,7 @@
 ## Linking a Tuya Device
 
+**requires npm@5.2 or greater**
+
 1. Add any devices you want to use with `tuyapi` to the Tuya Smart app.
 
 2. Install the CLI tool by running `npm i @tuyapi/cli`. If it returns an error, you may need to prefix the command with `sudo`. (Tip: using `sudo` to install global packages is not considered best practice. See [this NPM article](https://docs.npmjs.com/getting-started/fixing-npm-permissions) for some help.)
