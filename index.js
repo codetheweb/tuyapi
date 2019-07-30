@@ -255,7 +255,7 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send ping
-    await this._send(buffer);
+    await this.client.write(buffer);
   }
 
   /**
@@ -391,9 +391,6 @@ class TuyaDevice extends EventEmitter {
 
     if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
-
-      // Remove resolver
-      delete this._resolvers[packet.sequenceN];
       return;
     }
 
