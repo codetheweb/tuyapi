@@ -47,7 +47,7 @@
     "clone": "2.1.2",
     "coveralls": "3.0.5",
     "delay": "4.3.0",
-    "documentation": "12.0.3",
+    "documentation": "12.1.0",
     "nyc": "14.1.1",
     "xo": "0.24.0"
   },
