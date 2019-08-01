@@ -43,11 +43,11 @@
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
-    "ava": "2.1.0",
+    "ava": "2.2.0",
     "clone": "2.1.2",
-    "coveralls": "3.0.4",
+    "coveralls": "3.0.5",
     "delay": "4.3.0",
-    "documentation": "11.0.1",
+    "documentation": "12.1.0",
     "nyc": "14.1.1",
     "xo": "0.24.0"
   },
