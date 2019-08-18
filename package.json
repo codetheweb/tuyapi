@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
-    "ava": "2.2.0",
+    "ava": "2.3.0",
     "clone": "2.1.2",
     "coveralls": "3.0.6",
     "delay": "4.3.0",
