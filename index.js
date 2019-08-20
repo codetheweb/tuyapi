@@ -111,7 +111,7 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer).then(data => {
-          if (options.schema === true) {
+          if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
           } else if (options.dps) {
