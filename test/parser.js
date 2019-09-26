@@ -16,7 +16,7 @@ test('encode and decode message', t => {
 
   t.deepEqual(parsed.payload, payload);
   t.deepEqual(parsed.commandByte, CommandType.DP_QUERY);
-  t.deepEqual(parsed.sequenceN, 2);
+  t.is(parsed.sequenceN, 2);
 });
 
 test('encode and decode get message with protocol 3.3', t => {
@@ -33,7 +33,7 @@ test('encode and decode get message with protocol 3.3', t => {
 
   t.deepEqual(parsed.payload, payload);
   t.deepEqual(parsed.commandByte, CommandType.DP_QUERY);
-  t.deepEqual(parsed.sequenceN, 2);
+  t.is(parsed.sequenceN, 2);
 });
 
 test('encode and decode set message with protocol 3.3', t => {
@@ -153,7 +153,7 @@ test('decode message with two packets', t => {
   const parsed = parser.parse(Buffer.concat([encoded, encoded]))[0];
 
   t.deepEqual(parsed.payload, payload);
-  t.deepEqual(parsed.commandByte, 10);
+  t.is(parsed.commandByte, 10);
 });
 
 test('throw when called with invalid command byte', t => {
@@ -207,5 +207,5 @@ test('decode message with two packets 2', t => {
 
   const parsed = parser.parse(Buffer.concat([encoded, encoded]))[0];
   t.deepEqual(parsed.payload, payload);
-  t.deepEqual(parsed.commandByte, 10);
+  t.is(parsed.commandByte, 10);
 });
