@@ -45,7 +45,7 @@
     "@tuyapi/stub": "0.1.4",
     "ava": "2.4.0",
     "clone": "2.1.2",
-    "coveralls": "3.0.6",
+    "coveralls": "3.0.7",
     "delay": "4.3.0",
     "documentation": "12.1.2",
     "nyc": "14.1.1",
