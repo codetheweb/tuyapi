@@ -99,6 +99,7 @@ const device = new TuyAPI({
 - Some devices ship with older firmware that may not work with `tuyapi`.  If you're experiencing issues, please try updating the device's firmware in the official app.
 - Newer firmware may use protocol 3.3. If you are not using `find()`, you will need to manually pass `version: 3.3` to the constructor.
 - TuyAPI does not support sensors due to the fact that they only connect to the network when their state changes. There are no plans to add support as it's out of scope to intercept network requests.
+- The key parameter for devices changes every time a device is removed and re-added to the TuyaSmart app.  If you're getting decrypt errors, try getting the key again - it might have changed.
 
 
 ## 📓 Documentation
