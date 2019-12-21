@@ -15,3 +15,7 @@
 7. A list of ID and key pairs should appear in the console.
 
 8. It's recommended to untrust the root certificate after you're done for security reasons.
+
+**Notes**:
+
+If you're on Android, you may need to restart your phone after installing the certificate.
