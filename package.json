@@ -38,16 +38,16 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "debug": "4.1.1",
-    "p-retry": "4.1.0",
+    "p-retry": "4.2.0",
     "p-timeout": "3.2.0"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
     "ava": "2.4.0",
     "clone": "2.1.2",
-    "coveralls": "3.0.7",
+    "coveralls": "3.0.9",
     "delay": "4.3.0",
-    "documentation": "12.1.2",
+    "documentation": "12.1.4",
     "nyc": "14.1.1",
     "xo": "0.25.3"
   },
