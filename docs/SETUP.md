@@ -10,7 +10,7 @@ This method requires you to create a developer account on [iot.tuya.com](https:/
 2. Go to App Service > App SDK.  Click on "Obtain SDK", select the WiFi option, and enter whatever you want for the package names and channel ID (for the Android package name, you must enter a string begining with `com.`).
 3. Take note of the **Channel ID** after saving.  This is equivalent to the `schema` value needed.
 4. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
-5. On the command line, run something similar to `node cli.js link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password>`.
+5. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password>`.
 6. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
 
 
