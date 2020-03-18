@@ -1,8 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset='utf-8'>
-  <title>tuyapi 5.1.2 | Documentation</title>
+  <title>tuyapi 5.2.0 | Documentation</title>
   <meta name='description' content='An easy-to-use API for devices that use Tuya&#39;s cloud services'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' rel='stylesheet'>
@@ -15,7 +15,7 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>tuyapi</h3>
-          <div class='mb1'><code>5.1.2</code></div>
+          <div class='mb1'><code>5.2.0</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -676,6 +676,14 @@ tuya.set({
             <span class="hljs-string">'1'</span>: <span class="hljs-literal">true</span>,
             <span class="hljs-string">'2'</span>: <span class="hljs-string">'white'</span>
          }}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set custom property for a specific (virtual) deviceId</span>
+tuya.set({
+          <span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>,
+          <span class="hljs-attr">set</span>: <span class="hljs-literal">false</span>,
+          <span class="hljs-attr">devId</span>: <span class="hljs-string">'04314116cc50e346566e'</span>
+         }).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned off'</span>))</pre>
     
   
 
