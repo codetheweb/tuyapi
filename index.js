@@ -150,6 +150,13 @@ class TuyaDevice extends EventEmitter {
    *             '1': true,
    *             '2': 'white'
    *          }}).then(() => console.log('device was changed'))
+   * @example
+   * // set custom property for a specific (virtual) deviceId
+   * tuya.set({
+   *           dps: 2,
+   *           set: false,
+   *           devId: '04314116cc50e346566e'
+   *          }).then(() => console.log('device was turned off'))
    * @returns {Promise<Object>} - returns response from device
    */
   set(options) {
@@ -178,7 +185,7 @@ class TuyaDevice extends EventEmitter {
 
     // Construct payload
     const payload = {
-      devId: this.device.id,
+      devId: options.devId || this.device.id,
       gwId: this.device.gwID,
       uid: '',
       t: timeStamp,
