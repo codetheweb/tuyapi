@@ -8,12 +8,13 @@ This method requires you to create a developer account on [iot.tuya.com](https:/
 
 It doesn't matter if the device(s) are currently registered in the Tuya app or not.
 
-1. After you've created a new account, hover over the user icon in the top right and select "Cloud API Authorization".  Apply for authorization, it may take a few days for your account to be approved.  (The access ID and access key are equivalent to the API key and API secret values need.)
+1. After you've created a new account, click "SaaS Development" in the top nav bar and click "Create".  After you've created a new application, click into it.  The access ID and access key are equivalent to the API key and API secret values need.)
 2. Go to App Service > App SDK.  Click on "Obtain SDK", select the WiFi option, and enter whatever you want for the package names and channel ID (for the Android package name, you must enter a string begining with `com.`).
 3. Take note of the **Channel ID** after saving.  This is equivalent to the `schema` value needed.  Ignore the app key and app secret values.
-4. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
-5. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us` (the device you're running this on can be connected to a different network than the one you want the Tuya device to join, **as long as** the connected network has at least one access point that will broadcast packets and the target network has a 2.4Ghz band).  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
-6. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
+4. Go back to SaaS Development -> the application you created earlier, and select "Linked Device" on the left. Then click on the "Linked Devices added through app distribution" tab, and select "Add Apps".  Add the app you just created, and click "Ok".
+5. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
+6. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us` (the device you're running this on can be connected to a different network than the one you want the Tuya device to join, **as long as** the connected network has at least one access point that will broadcast packets and the target network has a 2.4Ghz band).  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
+7. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
 
 
 ## Linking a Tuya Device with MITM (deprecated)
