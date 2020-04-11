@@ -8,7 +8,7 @@ This method requires you to create a developer account on [iot.tuya.com](https:/
 
 It doesn't matter if the device(s) are currently registered in the Tuya app or not.
 
-1. After you've created a new account, click "SaaS Development" in the top nav bar and click "Create".  After you've created a new application, click into it.  The access ID and access key are equivalent to the API key and API secret values need.)
+1. After you've created a new account, click "Cloud Development" in the top nav bar and click "Create".  After you've created a new application, click into it.  The access ID and access key are equivalent to the API key and API secret values need.)
 2. Go to App Service > App SDK.  Click on "Obtain SDK", select the WiFi option, and enter whatever you want for the package names and channel ID (for the Android package name, you must enter a string begining with `com.`).
 3. Take note of the **Channel ID** after saving.  This is equivalent to the `schema` value needed.  Ignore the app key and app secret values.
 4. Go back to SaaS Development -> the application you created earlier, and select "Linked Device" on the left. Then click on the "Linked Devices added through app distribution" tab, and select "Add Apps".  Add the app you just created, and click "Ok".
