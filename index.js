@@ -386,7 +386,7 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          await this.get();
+          this.get();
 
           // Return
           resolve(true);
