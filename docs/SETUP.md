@@ -13,9 +13,25 @@ It doesn't matter if the device(s) are currently registered in the Tuya app or n
 3. Take note of the **Channel ID** after saving.  This is equivalent to the `schema` value needed.  Ignore the app key and app secret values.
 4. Go back to Cloud Development -> the application you created earlier, and select "Linked Device" on the left. Then click on the "Linked Devices added through app distribution" tab, and select "Add Apps".  Add the app you just created, and click "Ok".
 5. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
-6. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us` (the device you're running this on can be connected to a different network than the one you want the Tuya device to join, **as long as** the connected network has at least one access point that will broadcast packets and the target network has a 2.4Ghz band).  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
+6. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us`.  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
 7. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
 
+### Troubleshooting
+
+**`Error: sign invalid`**
+
+This means that one of the parameters you're passing in (`api-key`, `api-secret`, `schema`) is incorrect. Double check the values.
+
+**`Device(s) failed to be registered! Error: Timed out waiting for devices to connect.`**
+
+This can happen for a number of reasons. It means that the device never authenticated against Tuya's API (although it *does not* necessarily mean that the device could not connect to WiFi).
+
+Try
+
+- Making sure that your computer is connected to your network via WiFi **only** (unplug ethernet if necessary)
+- Making sure that your network is 2.4 Ghz (devices will also connect if you have both 2.4 Ghz and 5 Ghz bands under the same SSID)
+- Using a different OS
+- Removing special characters from your network's SSID
 
 ## Linking a Tuya Device with MITM (deprecated)
 
