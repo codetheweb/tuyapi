@@ -402,7 +402,7 @@ class TuyaDevice extends EventEmitter {
        * Emitted when a heartbeat ping is returned.
        * @event TuyaDevice#heartbeat
        */
-      this.emit('ping');
+      this.emit('heartbeat');
       return;
     }
 
