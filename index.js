@@ -398,6 +398,11 @@ class TuyaDevice extends EventEmitter {
 
     if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
+      /**
+       * Emitted when a heartbeat ping is returned.
+       * @event TuyaDevice#heartbeat
+       */
+      this.emit('ping');
       return;
     }
 
