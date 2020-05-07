@@ -97,7 +97,7 @@ test.serial('find throws timeout error', async t => {
   thisStub.startServer();
 
   await t.throwsAsync(() => {
-    return stubDevice.find({timeout: 1}).catch(async error => {
+    return stubDevice.find({timeout: 0.1}).catch(async error => {
       stubDevice.disconnect();
       thisStub.shutdown();
 
