@@ -111,3 +111,31 @@ test.serial('toggle property of device', async t => {
 
   t.is(true, thisStub.getProperty('1'));
 });
+
+test.serial('heartbeat event is fired', async t => {
+  const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
+                                 key: '4226aa407d5c1e2b',
+                                 ip: 'localhost'});
+
+  const thisStub = clone(stub);
+  thisStub.startServer();
+
+  await new Promise((resolve, reject) => {
+    // One heartbeat must be in 20s as each one has 10s between
+    const toleranceTimeout = setTimeout(() => reject(), 20000);
+
+    stubDevice.on('heartbeat', () => {
+      clearTimeout(toleranceTimeout);
+      resolve();
+    });
+
+    stubDevice.on('error', error => reject(error));
+
+    stubDevice.connect();
+  });
+
+  stubDevice.disconnect();
+  thisStub.shutdown();
+
+  t.pass();
+});
