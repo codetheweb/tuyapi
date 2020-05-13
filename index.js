@@ -93,7 +93,10 @@ class TuyaDevice extends EventEmitter {
   get(options = {}) {
     const payload = {
       gwId: this.device.gwID,
-      devId: this.device.id
+      devId: this.device.id,
+      t: Math.round(new Date().getTime() / 1000).toString(),
+      dps: {},
+      uid: this.device.id
     };
 
     debug('GET Payload:');
@@ -103,14 +106,14 @@ class TuyaDevice extends EventEmitter {
     const buffer = this.device.parser.encode({
       data: payload,
       commandByte: CommandType.DP_QUERY,
-      sequenceN: ++this._currentSequenceN
+      sequenceN: this._currentSequenceN++
     });
 
     // Send request and parse response
     return new Promise((resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(data => {
+        this._send(buffer).then(async data => {
           if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
@@ -309,6 +312,23 @@ class TuyaDevice extends EventEmitter {
 
           try {
             packets = this.device.parser.parse(data);
+
+            for (const packet of packets) {
+              if (packet.payload && packet.payload === 'json obj data unvalid') {
+                this.emit('error', packet.payload);
+
+                packet.payload = {
+                  dps: {
+                    1: null,
+                    2: null,
+                    3: null,
+                    101: null,
+                    102: null,
+                    103: null
+                  }
+                };
+              }
+            }
           } catch (error) {
             debug(error);
             this.emit('error', error);
@@ -380,7 +400,7 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          await this.get();
+          this.get();
 
           // Return
           resolve(true);
