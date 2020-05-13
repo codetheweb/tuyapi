@@ -114,10 +114,7 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer).then(async data => {
-          if (data === 'json obj data unvalid') {
-            // Try again
-            resolve(await this.get(options));
-          } else if (typeof data !== 'object' || options.schema === true) {
+          if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
           } else if (options.dps) {
@@ -318,6 +315,8 @@ class TuyaDevice extends EventEmitter {
 
             for (const packet of packets) {
               if (packet.payload && packet.payload === 'json obj data unvalid') {
+                this.emit('error', packet.payload);
+
                 packet.payload = {
                   dps: {
                     1: null,
@@ -328,8 +327,6 @@ class TuyaDevice extends EventEmitter {
                     103: null
                   }
                 };
-
-                this.emit('error', packet.payload);
               }
             }
           } catch (error) {
