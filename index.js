@@ -106,7 +106,7 @@ class TuyaDevice extends EventEmitter {
     const buffer = this.device.parser.encode({
       data: payload,
       commandByte: CommandType.DP_QUERY,
-      sequenceN: this._currentSequenceN++
+      sequenceN: ++this._currentSequenceN
     });
 
     // Send request and parse response
