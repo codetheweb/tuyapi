@@ -90,7 +90,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
-  get(options = {}) {
+get(options = {}) {
     const payload = {
       gwId: this.device.gwID,
       devId: this.device.id,
@@ -110,23 +110,23 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Send request and parse response
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         // Send request
-        this._send(buffer).then(async data => {
-          if (typeof data !== 'object' || options.schema === true) {
-            // Return whole response
-            resolve(data);
-          } else if (options.dps) {
-            // Return specific property
-            resolve(data.dps[options.dps]);
-          } else {
-            // Return first property by default
-            resolve(data.dps['1']);
-          }
-        });
+        let data = await this._send(buffer);
+        if (typeof data !== 'object' || options.schema === true) {
+          // Return whole response
+          resolve(data);
+        } else if (options.dps) {
+          // Return specific property
+          resolve(data.dps[options.dps]);
+        } else {
+          // Return first property by default
+          resolve(data.dps['1']);
+        }
       } catch (error) {
-        reject(error);
+        debug(`Èrror from GET ${error}`);
+        reject(new Error(`Error calling device.get ${error}`));
       }
     });
   }
@@ -228,26 +228,38 @@ class TuyaDevice extends EventEmitter {
    * @param {Buffer} buffer buffer of data
    * @returns {Promise<Any>} returned data for request
    */
-  _send(buffer) {
+ _send(buffer) {
     // Make sure we're connected
     if (!this.isConnected()) {
       throw new Error('No connection has been made to the device.');
     }
 
     // Retry up to 5 times
-    return pRetry(() => {
+  //  return pRetry(() => {
       return new Promise((resolve, reject) => {
+        const errorHandler =  (err) => {
+          debug('Error event from socket during _send.', this.device.ip, err);
+
+          this.emit('error', new Error(`Error during _send from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
+          this.client.destroy();
+          reject(new Error(`Error during _send from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
+          this.client.removeListener('error', errorHandler);
+        }
         try {
           // Send data
           this.client.write(buffer);
+          this.client.on('error', errorHandler);
 
           // Add resolver function
-          this._resolvers[this._currentSequenceN] = data => resolve(data);
+          this._resolvers[this._currentSequenceN] = {
+            fn: (data => resolve(data)), 
+            errorFN: errorHandler
+          }
         } catch (error) {
           reject(error);
         }
       });
-    }, {retries: 5});
+  //  }, {retries: 5});
   }
 
   /**
@@ -332,6 +344,7 @@ class TuyaDevice extends EventEmitter {
           } catch (error) {
             debug(error);
             this.emit('error', error);
+            reject(new Error(`tuyapi on data, data ${data} error ${error}`));
             return;
           }
 
@@ -344,15 +357,15 @@ class TuyaDevice extends EventEmitter {
         });
 
         // Handle errors
-        this.client.on('error', err => {
+        const errorHandler =  (err) => {
           debug('Error event from socket.', this.device.ip, err);
 
-          this.emit('error', new Error(`Error from socket ${err}`));
-
+          this.emit('error', new Error(`Error from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
           this.client.destroy();
-          
-          reject(new Error(`Error from socket ${err}`));
-        });
+          reject(new Error(`Error from socket ${err} IP ${this.device.ip} device ${this.device}`));
+          this.client.removeListener('error', errorHandler )
+        }
+        this.client.on('error', errorHandler);
 
         // Handle socket closure
         this.client.on('close', () => {
@@ -379,6 +392,7 @@ class TuyaDevice extends EventEmitter {
 
         this.client.on('connect', async () => {
           debug('Socket connected.');
+          this.client.removeListener('error', errorHandler )
 
           this._connected = true;
 
@@ -402,7 +416,7 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          this.get();
+          //this.get();
 
           // Return
           resolve(true);
@@ -458,7 +472,8 @@ class TuyaDevice extends EventEmitter {
 
     // Call data resolver for sequence number
     if (packet.sequenceN in this._resolvers) {
-      this._resolvers[packet.sequenceN](packet.payload);
+      this._resolvers[packet.sequenceN].fn(packet.payload);
+      this.client.removeListener('error', this._resolvers[packet.sequenceN].errorFN);
 
       // Remove resolver
       delete this._resolvers[packet.sequenceN];
