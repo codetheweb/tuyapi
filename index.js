@@ -237,23 +237,23 @@ get(options = {}) {
     // Retry up to 5 times
   //  return pRetry(() => {
       return new Promise((resolve, reject) => {
-        const errorHandler =  (err) => {
+        const sendErrorHandler =  (err) => {
           debug('Error event from socket during _send.', this.device.ip, err);
 
           this.emit('error', new Error(`Error during _send from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
           this.client.destroy();
           reject(new Error(`Error during _send from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
-          this.client.removeListener('error', errorHandler);
+          this.client.removeListener('error', sendErrorHandler);
         }
         try {
           // Send data
           this.client.write(buffer);
-          this.client.on('error', errorHandler);
+          this.client.on('error', sendErrorHandler);
 
           // Add resolver function
           this._resolvers[this._currentSequenceN] = {
             fn: (data => resolve(data)), 
-            errorFN: errorHandler
+            errorFN: sendErrorHandler
           }
         } catch (error) {
           reject(error);
@@ -357,19 +357,20 @@ get(options = {}) {
         });
 
         // Handle errors
-        const errorHandler =  (err) => {
+        const connectErrorHandler =  (err) => {
           debug('Error event from socket.', this.device.ip, err);
 
           this.emit('error', new Error(`Error from socket ${err} IP ${this.device.ip} device ${JSON.stringify(this.device)}`));
           this.client.destroy();
           reject(new Error(`Error from socket ${err} IP ${this.device.ip} device ${this.device}`));
-          this.client.removeListener('error', errorHandler )
+          this.client.removeListener('error', connectErrorHandler )
         }
-        this.client.on('error', errorHandler);
+        this.client.on('error', connectErrorHandler);
 
         // Handle socket closure
         this.client.on('close', () => {
           debug(`Socket closed: ${this.device.ip}`);
+          
 
           this._connected = false;
 
@@ -392,7 +393,7 @@ get(options = {}) {
 
         this.client.on('connect', async () => {
           debug('Socket connected.');
-          this.client.removeListener('error', errorHandler )
+          this.client.removeListener('error', connectErrorHandler )
 
           this._connected = true;
 
