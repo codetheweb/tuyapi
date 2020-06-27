@@ -1,6 +1,15 @@
-Both methods below require you to install the CLI tool before proceeding.
+All methods below require you to install the CLI tool before proceeding.
 
 Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may need to prefix the command with `sudo`. (Tip: using `sudo` to install global packages is not considered best practice. See [this NPM article](https://docs.npmjs.com/getting-started/fixing-npm-permissions) for some help.)
+
+## Listing Tuya devices from the app (recommended)
+
+This method is fast and easy. If you're having trouble manually linking your device with the below method, we recommend you try this. All devices that you want to use **must** be registered in the Tuya Smart app.
+
+1. Follow the below method from steps 1 through 4.
+2. Go to Cloud Development -> select your application -> Project Overview -> Linked Device -> Link devices by App Account.
+3. Click 'Add App Account' and scan the QR code from your app.
+4. Once your account has been linked, run `tuya-cli wizard`. It will prompt you for required information, and will then list out all your device names, IDs, and keys for use with TuyAPI.
 
 ## Linking a Tuya device with Smart Link
 
