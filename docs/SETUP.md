@@ -8,7 +8,7 @@ This method is fast and easy. If you're having trouble manually linking your dev
 
 1. Follow the below method from steps 1 through 4.
 2. Go to Cloud Development -> select your application -> Project Overview -> Linked Device -> Link devices by App Account.
-3. Click 'Add App Account' and scan the QR code from your app.
+3. Click 'Add App Account' and scan the QR code from your app (go to the 'Me' tab, and there's a QR code button in the upper right).
 4. Once your account has been linked, run `tuya-cli wizard`. It will prompt you for required information, and will then list out all your device names, IDs, and keys for use with TuyAPI.
 
 ## Linking a Tuya device with Smart Link
