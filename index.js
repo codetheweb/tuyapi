@@ -9,6 +9,7 @@ const debug = require('debug')('TuyAPI');
 // Helpers
 const {isValidString} = require('./lib/utils');
 const {MessageParser, CommandType} = require('./lib/message-parser');
+const {UDP_KEY} = require('./lib/config');
 
 /**
  * Represents a Tuya device.
@@ -536,9 +537,11 @@ class TuyaDevice extends EventEmitter {
     const broadcastHandler = (resolve, reject) => message => {
       debug('Received UDP message.');
 
+      const parser = new MessageParser({key: UDP_KEY, version: this.device.version});
+
       let dataRes;
       try {
-        dataRes = this.device.parser.parse(message)[0];
+        dataRes = parser.parse(message)[0];
       } catch (error) {
         debug(error);
         reject(error);
