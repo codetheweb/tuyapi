@@ -6,7 +6,7 @@ Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may ne
 
 This method is fast and easy. If you're having trouble manually linking your device with the below method, we recommend you try this. All devices that you want to use **must** be registered in the Tuya Smart app.
 
-1. Follow the below method from steps 1 through 4.
+1. Follow the below method from steps 1 through 5.
 2. Go to Cloud Development -> select your application -> Project Overview -> Linked Device -> Link devices by App Account.
 3. Click 'Add App Account' and scan the QR code from your app (go to the 'Me' tab, and there's a QR code button in the upper right).
 4. Once your account has been linked, run `tuya-cli wizard`. It will prompt you for required information, and will then list out all your device names, IDs, and keys for use with TuyAPI.
@@ -21,9 +21,10 @@ It doesn't matter if the device(s) are currently registered in the Tuya app or n
 2. Go to App Service > App SDK.  Click on "Obtain SDK", select the WiFi option, and enter whatever you want for the package names and channel ID (for the Android package name, you must enter a string begining with `com.`).
 3. Take note of the **Channel ID** after saving.  This is equivalent to the `schema` value needed.  Ignore the app key and app secret values.
 4. Go back to Cloud Development -> the application you created earlier, and select "Linked Device" on the left. Then click on the "Linked Devices added through app distribution" tab, and select "Add Apps".  Add the app you just created, and click "Ok".
-5. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
-6. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us`.  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
-7. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
+5. On the same page, click "API Group" on the left. Then make sure both "Authorization Management & Device Control" and "Device Management" are "Open". Click the apply link to open them if they are not already open.
+6. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
+7. On the command line, run something similar to `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your-schema/channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us`.  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
+8. Your devices should link in under a minute and the parameters required to control them will be printed out to the console.
 
 ### Troubleshooting
 
