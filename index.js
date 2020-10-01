@@ -27,15 +27,28 @@ const {UDP_KEY} = require('./lib/config');
  * @param {String} options.key encryption key of device (also called `localKey`)
  * @param {String} [options.productKey] product key of device (currently unused)
  * @param {Number} [options.version=3.1] protocol version
+ * @param {Boolean} [options.nullPayloadOnJSONError=false] if true, emits a data event
+ * containing a payload of null values for on-device JSON parsing errors
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
  */
 class TuyaDevice extends EventEmitter {
-  constructor({ip, port = 6668, id, gwID = id, key, productKey, version = 3.1} = {}) {
+  constructor({
+    ip,
+    port = 6668,
+    id,
+    gwID = id,
+    key,
+    productKey,
+    version = 3.1,
+    nullPayloadOnJSONError = false
+  } = {}) {
     super();
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
+
+    this.nullPayloadOnJSONError = nullPayloadOnJSONError;
 
     // Check arguments
     if (!(isValidString(id) ||
@@ -314,20 +327,22 @@ class TuyaDevice extends EventEmitter {
           try {
             packets = this.device.parser.parse(data);
 
-            for (const packet of packets) {
-              if (packet.payload && packet.payload === 'json obj data unvalid') {
-                this.emit('error', packet.payload);
+            if (this.this.nullPayloadOnJSONError) {
+              for (const packet of packets) {
+                if (packet.payload && packet.payload === 'json obj data unvalid') {
+                  this.emit('error', packet.payload);
 
-                packet.payload = {
-                  dps: {
-                    1: null,
-                    2: null,
-                    3: null,
-                    101: null,
-                    102: null,
-                    103: null
-                  }
-                };
+                  packet.payload = {
+                    dps: {
+                      1: null,
+                      2: null,
+                      3: null,
+                      101: null,
+                      102: null,
+                      103: null
+                    }
+                  };
+                }
               }
             }
           } catch (error) {
