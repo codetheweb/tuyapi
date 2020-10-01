@@ -327,7 +327,7 @@ class TuyaDevice extends EventEmitter {
           try {
             packets = this.device.parser.parse(data);
 
-            if (this.this.nullPayloadOnJSONError) {
+            if (this.nullPayloadOnJSONError) {
               for (const packet of packets) {
                 if (packet.payload && packet.payload === 'json obj data unvalid') {
                   this.emit('error', packet.payload);
