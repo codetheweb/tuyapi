@@ -74,7 +74,7 @@ class TuyaDevice extends EventEmitter {
     this._pingPongPeriod = 10; // Seconds
 
     this._currentSequenceN = 0;
-    this._resolvers = {};  
+    this._resolvers = {};
   }
 
   /**
@@ -96,7 +96,7 @@ class TuyaDevice extends EventEmitter {
    * tuya.get({schema: true}).then(data => console.log(data))
    * @returns {Promise<Boolean|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
-   * or error message, 
+   * or error message
    */
   get(options = {}) {
     const payload = {
@@ -123,22 +123,23 @@ class TuyaDevice extends EventEmitter {
         // Send request
         this._send(buffer).then(async data => {
           if (data === 'json obj data unvalid') {
-             // Some devices don't respond to DP_QUERY so, for DPS get commands, fall back
-             // to using SEND with null value (so far, this appears to always work)
-             // For schema there's currently no fallback so provide a more clear data response
-            if (options.schema == true ) {
-              data = 'Schema for device not available'
+            // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
+            // back to using SEND with null value (so far, this appears to always work)
+            // For schema there's currently no fallback so provide a clear response
+            if (options.schema === true) {
+              data = 'Schema for device not available';
             } else {
               const setOptions = {
                 dps: options.dps ? options.dps : 1,
                 set: null
-              }
-              data = await this.set(setOptions)
-              if (data = "No response to set request" ) {
-                data = "No response to get request"
+              };
+              data = await this.set(setOptions);
+              if (data === 'No response to set request') {
+                data = 'No response to get request';
               }
             }
           }
+
           if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
@@ -185,7 +186,8 @@ class TuyaDevice extends EventEmitter {
    *           set: false,
    *           devId: '04314116cc50e346566e'
    *          }).then(() => console.log('device was turned off'))
-   * @returns {Promise<Object>} - returns response from device or timeout message on no response
+   * @returns {Promise<Object>} - returns response from device or timeout message
+   *  on no response
    */
   set(options) {
     // Check arguments
@@ -238,12 +240,12 @@ class TuyaDevice extends EventEmitter {
         this._send(buffer);
         this._setResolver = resolve;
         // Wait _responseTimeout seconds for _packetHandler to resolve set request
-        setTimeout(() => { 
+        setTimeout(() => {
           // If not resolved by packet handler resolve with timeout message
           if (typeof this._setResolver === 'function') {
             this._setResolver('No response to set request');
             this._setResolver = undefined;
-          }  
+          }
         }, this._responseTimeout * 2000);
       } catch (error) {
         reject(error);
@@ -446,7 +448,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     /**
-     * Emitted when data is returned from device unless it's a bad response to DP_QUERY 
+     * Emitted when data is returned from device unless it's a bad response to DP_QUERY
      * @event TuyaDevice#data
      * @property {Object} data received data
      * @property {Number} commandByte
@@ -454,7 +456,8 @@ class TuyaDevice extends EventEmitter {
      * (e.g. 7=requested response, 8=proactive update from device)
      * @property {Number} sequenceN the packet sequence number
      */
-    if (!(packet.commandByte === CommandType.DP_QUERY && packet.payload === 'json obj data unvalid')) {
+    if (!(packet.commandByte === CommandType.DP_QUERY &&
+          packet.payload === 'json obj data unvalid')) {
       this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
     }
 
