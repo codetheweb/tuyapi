@@ -137,6 +137,7 @@ class TuyaDevice extends EventEmitter {
             };
             data = await this.set(setOptions);
           }
+
           if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
