@@ -239,10 +239,7 @@ class TuyaDevice extends EventEmitter {
         // Wait _responseTimeout seconds for _packetHandler to resolve set request
         setTimeout(() => {
           // If not resolved by packet handler timeout with no response
-          if (typeof this._setResolver === 'function') {
-            this._setResolver();
-            this._setResolver = undefined;
-          }
+          resolve();
         }, this._responseTimeout * 1000);
       } catch (error) {
         reject(error);
