@@ -37,7 +37,7 @@ This can happen for a number of reasons. It means that the device never authenti
 - Using a different OS
 - Removing special characters from your network's SSID
 
-## **DEPREICATED** - Linking a Tuya Device with MITM
+## **DEPRECATED** - Linking a Tuya Device with MITM
 
 This method is deprecated because Tuya-branded apps have started to encrypt their traffic in an effort to prevent MITM attacks like this one.  If this method doesn't work, try the above.
 
