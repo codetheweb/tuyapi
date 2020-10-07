@@ -4,6 +4,7 @@ const net = require('net');
 const {EventEmitter} = require('events');
 const pTimeout = require('p-timeout');
 const pRetry = require('p-retry');
+const {default: PQueue} = require('p-queue');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
@@ -80,6 +81,10 @@ class TuyaDevice extends EventEmitter {
 
     this._currentSequenceN = 0;
     this._resolvers = {};
+    this._setQueue = new PQueue({
+      concurrency: 1,
+      timeout: this._responseTimeout * 1000
+    });
   }
 
   /**
@@ -187,63 +192,62 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Object>} - returns response from device
    */
   set(options) {
-    // Check arguments
-    if (options === undefined || Object.entries(options).length === 0) {
-      throw new TypeError('No arguments were passed.');
-    }
-
-    // Defaults
-    let dps = {};
-
-    if (options.multiple === true) {
-      dps = options.data;
-    } else if (options.dps === undefined) {
-      dps = {
-        1: options.set
-      };
-    } else {
-      dps = {
-        [options.dps.toString()]: options.set
-      };
-    }
-
-    // Get time
-    const timeStamp = parseInt(new Date() / 1000, 10);
-
-    // Construct payload
-    const payload = {
-      devId: options.devId || this.device.id,
-      gwId: this.device.gwID,
-      uid: '',
-      t: timeStamp,
-      dps
-    };
-
-    debug('SET Payload:');
-    debug(payload);
-
-    // Encode into packet
-    const buffer = this.device.parser.encode({
-      data: payload,
-      encrypted: true, // Set commands must be encrypted
-      commandByte: CommandType.CONTROL,
-      sequenceN: ++this._currentSequenceN
-    });
-
-    // Send request and wait for response
-    return new Promise((resolve, reject) => {
-      try {
-        // Send request
-        this._send(buffer);
-        this._setResolver = resolve;
-        // Wait _responseTimeout seconds for _packetHandler to resolve set request
-        setTimeout(() => {
-          // If not resolved by packet handler timeout with no response
-          resolve();
-        }, this._responseTimeout * 1000);
-      } catch (error) {
-        reject(error);
+    this._setQueue.add(() => {
+      // Check arguments
+      if (options === undefined || Object.entries(options).length === 0) {
+        throw new TypeError('No arguments were passed.');
       }
+
+      // Defaults
+      let dps = {};
+
+      if (options.multiple === true) {
+        dps = options.data;
+      } else if (options.dps === undefined) {
+        dps = {
+          1: options.set
+        };
+      } else {
+        dps = {
+          [options.dps.toString()]: options.set
+        };
+      }
+
+      // Get time
+      const timeStamp = parseInt(new Date() / 1000, 10);
+
+      // Construct payload
+      const payload = {
+        devId: options.devId || this.device.id,
+        gwId: this.device.gwID,
+        uid: '',
+        t: timeStamp,
+        dps
+      };
+
+      debug('SET Payload:');
+      debug(payload);
+
+      // Encode into packet
+      const buffer = this.device.parser.encode({
+        data: payload,
+        encrypted: true, // Set commands must be encrypted
+        commandByte: CommandType.CONTROL,
+        sequenceN: ++this._currentSequenceN
+      });
+
+      // Send request and wait for response
+      return new Promise((resolve, reject) => {
+        try {
+          // Send request
+          this._send(buffer);
+          this._setResolver = resolve;
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }).then(data => {
+      return data;
     });
   }
 
