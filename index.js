@@ -247,9 +247,14 @@ class TuyaDevice extends EventEmitter {
         }
       });
     }).then(data => {
-      if (typeof this._setResolver === 'function') {
-        this._setResolver === undefined;
+      // Clear the resolver function
+      this._setResolver === undefined;
+
+      // Emit an error if null response
+      if (!data) {
+        this.emit('error', 'No response received from device');
       }
+
       return data;
     });
   }
