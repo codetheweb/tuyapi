@@ -247,6 +247,9 @@ class TuyaDevice extends EventEmitter {
         }
       });
     }).then(data => {
+      if (typeof this._setResolver === 'function') {
+        this._setResolver === undefined;
+      }
       return data;
     });
   }
