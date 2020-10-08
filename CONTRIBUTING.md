@@ -33,7 +33,7 @@ You're ready to start programming?  Great, here's what you should do:
 3. Run `npm i` to install dependencies.
 4. Make a new branch with `git branch`. If you're adding a new feature, use a `feature-*` prefix (ex. `feature-contributing`). If you're fixing a bug, use a `bugfix-*` prefix. Use your best judgement on anything else.
 5. Make your changes. (Tip: you can use a file named `dev.js` as a local playground to test your new code in, since the file is ignored by Git.)
-6. Ensure test pass with `npm test`. If you get a lot of style-related errors, consider running `npx xo --fix` to automatically fix most of them.
+6. Ensure all tests pass with `npm test`. If you get a lot of style-related errors, consider running `npx xo --fix` to automatically fix most of them.
 7. Commit your changes with `git commit -a`. Be sure to describe the changes you've made in a clear and concise way.
 8. Push the changes to your repo with `git push origin master`.
 9. Open a [Pull Request](https://github.com/codetheweb/tuyapi/compare) to the **base: master** branch. Click **"compare across forks"** and select the master branch of your fork.
