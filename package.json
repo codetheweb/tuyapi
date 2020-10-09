@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "An easy-to-use API for devices that use Tuya's cloud services",
   "main": "index.js",
   "files": [
@@ -39,7 +39,8 @@
   "dependencies": {
     "debug": "4.1.1",
     "p-retry": "4.2.0",
-    "p-timeout": "3.2.0"
+    "p-timeout": "3.2.0",
+    "p-queue": "6.6.1"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",

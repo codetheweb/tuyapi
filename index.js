@@ -4,6 +4,7 @@ const net = require('net');
 const {EventEmitter} = require('events');
 const pTimeout = require('p-timeout');
 const pRetry = require('p-retry');
+const {default: PQueue} = require('p-queue');
 const debug = require('debug')('TuyAPI');
 
 // Helpers
@@ -74,14 +75,15 @@ class TuyaDevice extends EventEmitter {
     // Socket connected state
     this._connected = false;
 
-    this._responseTimeout = 5; // Seconds
+    this._responseTimeout = 2; // Seconds
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
 
     this._currentSequenceN = 0;
     this._resolvers = {};
-
-    this._waitingForSetToResolve = false;
+    this._setQueue = new PQueue({
+      concurrency: 1
+    });
   }
 
   /**
@@ -128,6 +130,18 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer).then(async data => {
+          if (data === 'json obj data unvalid' && options.schema !== true) {
+            // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
+            // back to using SEND with null value. This appears to always work as
+            // long as the DPS key exist on the device.
+            // For schema there's currently no fallback options
+            const setOptions = {
+              dps: options.dps ? options.dps : 1,
+              set: null
+            };
+            data = await this.set(setOptions);
+          }
+
           if (typeof data !== 'object' || options.schema === true) {
             // Return whole response
             resolve(data);
@@ -220,18 +234,25 @@ class TuyaDevice extends EventEmitter {
       sequenceN: ++this._currentSequenceN
     });
 
-    // Send request and wait for response
-    this._waitingForSetToResolve = true;
-    return new Promise((resolve, reject) => {
+    // Queue this request and limit concurrent set requests to one
+    return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
+      // Send request and wait for response
       try {
         // Send request
         this._send(buffer);
-
         this._setResolver = resolve;
       } catch (error) {
         reject(error);
       }
-    });
+    }), this._responseTimeout * 1000, () => {
+      // Only gets here on timeout so clear resolver function and emit error
+      this._setResolver = undefined;
+
+      this.emit(
+        'error',
+        'Timeout waiting for status response from device id: ' + this.device.id
+      );
+    }));
   }
 
   /**
@@ -461,7 +482,6 @@ class TuyaDevice extends EventEmitter {
     // Status response to SET command
     if (packet.sequenceN === 0 &&
         packet.commandByte === CommandType.STATUS &&
-        this._waitingForSetToResolve &&
         typeof this._setResolver === 'function') {
       this._setResolver(packet.payload);
 
