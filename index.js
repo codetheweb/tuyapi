@@ -82,8 +82,7 @@ class TuyaDevice extends EventEmitter {
     this._currentSequenceN = 0;
     this._resolvers = {};
     this._setQueue = new PQueue({
-      concurrency: 1,
-      timeout: this._responseTimeout * 1000
+      concurrency: 1
     });
   }
 
@@ -192,71 +191,71 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Object>} - returns response from device
    */
   set(options) {
-    this._setQueue.add(() => {
-      // Check arguments
-      if (options === undefined || Object.entries(options).length === 0) {
-        throw new TypeError('No arguments were passed.');
-      }
+    // Check arguments
+    if (options === undefined || Object.entries(options).length === 0) {
+      throw new TypeError('No arguments were passed.');
+    }
 
-      // Defaults
-      let dps = {};
+    // Defaults
+    let dps = {};
 
-      if (options.multiple === true) {
-        dps = options.data;
-      } else if (options.dps === undefined) {
-        dps = {
-          1: options.set
-        };
-      } else {
-        dps = {
-          [options.dps.toString()]: options.set
-        };
-      }
-
-      // Get time
-      const timeStamp = parseInt(new Date() / 1000, 10);
-
-      // Construct payload
-      const payload = {
-        devId: options.devId || this.device.id,
-        gwId: this.device.gwID,
-        uid: '',
-        t: timeStamp,
-        dps
+    if (options.multiple === true) {
+      dps = options.data;
+    } else if (options.dps === undefined) {
+      dps = {
+        1: options.set
       };
+    } else {
+      dps = {
+        [options.dps.toString()]: options.set
+      };
+    }
 
-      debug('SET Payload:');
-      debug(payload);
+    // Get time
+    const timeStamp = parseInt(new Date() / 1000, 10);
 
-      // Encode into packet
-      const buffer = this.device.parser.encode({
-        data: payload,
-        encrypted: true, // Set commands must be encrypted
-        commandByte: CommandType.CONTROL,
-        sequenceN: ++this._currentSequenceN
-      });
+    // Construct payload
+    const payload = {
+      devId: options.devId || this.device.id,
+      gwId: this.device.gwID,
+      uid: '',
+      t: timeStamp,
+      dps
+    };
 
-      // Send request and wait for response
-      return new Promise((resolve, reject) => {
-        try {
-          // Send request
-          this._send(buffer);
-          this._setResolver = resolve;
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }).then(data => {
-      // Clear the resolver function
-      this._setResolver === undefined;
+    debug('SET Payload:');
+    debug(payload);
 
-      // Emit an error if null response
-      if (!data) {
-        this.emit('error', 'No response received from device');
-      }
-
-      return data;
+    // Encode into packet
+    const buffer = this.device.parser.encode({
+      data: payload,
+      encrypted: true, // Set commands must be encrypted
+      commandByte: CommandType.CONTROL,
+      sequenceN: ++this._currentSequenceN
     });
+
+    // Queue this request and limit concurrent set requests to one
+    return this._setQueue.add(() => new Promise((resolve, reject) => {
+      try {
+        const data = pTimeout(new Promise((resolve, reject) => {
+          // Send request and wait for response
+          try {
+            // Send request
+            this._send(buffer);
+            this._setResolver = resolve;
+          } catch (error) {
+            reject(error);
+          }
+        }), this._responseTimeout * 1000, () => {
+          // Only gets here on timeout so clear resolver function and emit error
+          this._setResolver = undefined;
+          this.emit('error', 'Timeout waiting for status response from device id: ' + this.device.id);
+        });
+        resolve(data);
+      } catch (error) {
+        reject(error);
+      }
+    }));
   }
 
   /**

@@ -1,60 +1,25 @@
 {
-  "_from": "github:tsightler/tuyapi#bugfix-queue-set",
-  "_id": "tuyapi@6.0.1",
-  "_inBundle": false,
-  "_integrity": "",
-  "_location": "/tuyapi",
-  "_phantomChildren": {
-    "ms": "2.1.2"
-  },
-  "_requested": {
-    "type": "git",
-    "raw": "tuyapi@github:tsightler/tuyapi#bugfix-queue-set",
-    "name": "tuyapi",
-    "escapedName": "tuyapi",
-    "rawSpec": "github:tsightler/tuyapi#bugfix-queue-set",
-    "saveSpec": "github:tsightler/tuyapi#bugfix-queue-set",
-    "fetchSpec": null,
-    "gitCommittish": "bugfix-queue-set"
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": "github:tsightler/tuyapi#1ed6be22ccce139d05f103e68d11e4e3037f0a9b",
-  "_spec": "tuyapi@github:tsightler/tuyapi#bugfix-queue-set",
-  "_where": "/opt/tuya-mqtt",
-  "author": {
-    "name": "Max Isom",
-    "email": "codetheweb@icloud.com",
-    "url": "https://maxisom.me"
-  },
-  "bugs": {
-    "url": "https://github.com/codetheweb/tuyapi/issues"
-  },
-  "bundleDependencies": false,
-  "dependencies": {
-    "debug": "4.1.1",
-    "p-queue": "6.6.1",
-    "p-retry": "4.2.0",
-    "p-timeout": "3.2.0"
-  },
-  "deprecated": false,
+  "name": "tuyapi",
+  "version": "6.0.1",
   "description": "An easy-to-use API for devices that use Tuya's cloud services",
-  "devDependencies": {
-    "@tuyapi/stub": "0.1.4",
-    "ava": "2.4.0",
-    "clone": "2.1.2",
-    "coveralls": "3.0.9",
-    "delay": "4.3.0",
-    "documentation": "12.1.4",
-    "nyc": "15.0.0",
-    "xo": "0.25.4"
-  },
+  "main": "index.js",
   "files": [
     "lib/**/*",
     "index.js"
   ],
-  "homepage": "https://github.com/codetheweb/tuyapi#readme",
+  "scripts": {
+    "test": "xo --quiet && npm run ava",
+    "ava": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
+    "coverage": "nyc npm test && nyc report --reporter=html",
+    "travis": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "document": "documentation build index.js -f html -o docs --config documentation.yml",
+    "prepublishOnly": "npm test",
+    "preversion": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codetheweb/tuyapi.git"
+  },
   "keywords": [
     "tuya",
     "iot",
@@ -65,23 +30,28 @@
     "socket",
     "protocol"
   ],
+  "author": "Max Isom <codetheweb@icloud.com> (https://maxisom.me)",
   "license": "MIT",
-  "main": "index.js",
-  "name": "tuyapi",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/codetheweb/tuyapi.git"
+  "bugs": {
+    "url": "https://github.com/codetheweb/tuyapi/issues"
   },
-  "scripts": {
-    "ava": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
-    "coverage": "nyc npm test && nyc report --reporter=html",
-    "document": "documentation build index.js -f html -o docs --config documentation.yml",
-    "prepublishOnly": "npm test",
-    "preversion": "npm test",
-    "test": "xo --quiet && npm run ava",
-    "travis": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
+  "homepage": "https://github.com/codetheweb/tuyapi#readme",
+  "dependencies": {
+    "debug": "4.1.1",
+    "p-retry": "4.2.0",
+    "p-timeout": "3.2.0",
+    "p-queue": "6.6.1"
   },
-  "version": "6.0.1",
+  "devDependencies": {
+    "@tuyapi/stub": "0.1.4",
+    "ava": "2.4.0",
+    "clone": "2.1.2",
+    "coveralls": "3.0.9",
+    "delay": "4.3.0",
+    "documentation": "12.1.4",
+    "nyc": "15.0.0",
+    "xo": "0.25.4"
+  },
   "xo": {
     "space": true,
     "ignores": [
