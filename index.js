@@ -235,22 +235,24 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Queue this request and limit concurrent set requests to one
-    return this._setQueue.add(() => {
-      return pTimeout(new Promise((resolve, reject) => {
-        // Send request and wait for response
-        try {
-          // Send request
-          this._send(buffer);
-          this._setResolver = resolve;
-        } catch (error) {
-          reject(error);
-        }
-      }), this._responseTimeout * 1000, () => {
-        // Only gets here on timeout so clear resolver function and emit error
-        this._setResolver = undefined;
-        this.emit('error', 'Timeout waiting for status response from device id: ' + this.device.id);
-      });
-    });
+    return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
+      // Send request and wait for response
+      try {
+        // Send request
+        this._send(buffer);
+        this._setResolver = resolve;
+      } catch (error) {
+        reject(error);
+      }
+    }), this._responseTimeout * 1000, () => {
+      // Only gets here on timeout so clear resolver function and emit error
+      this._setResolver = undefined;
+
+      this.emit(
+        'error',
+        'Timeout waiting for status response from device id: ' + this.device.id
+      );
+    }));
   }
 
   /**
