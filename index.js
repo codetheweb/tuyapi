@@ -52,8 +52,8 @@ class TuyaDevice extends EventEmitter {
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
-      issueGetOnConnect: issueGetOnConnect
-    }
+      issueGetOnConnect
+    };
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
 
