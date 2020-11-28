@@ -30,6 +30,8 @@ const {UDP_KEY} = require('./lib/config');
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.nullPayloadOnJSONError=false] if true, emits a data event
  * containing a payload of null values for on-device JSON parsing errors
+ * @param {Boolean} [options.issueGetOnConnect=true] if true, sends GET request after
+ * connection is established. This should probably be `false` in synchronous usage.
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})

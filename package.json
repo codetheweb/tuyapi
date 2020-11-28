@@ -38,9 +38,9 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "debug": "4.1.1",
+    "p-queue": "6.6.1",
     "p-retry": "4.2.0",
-    "p-timeout": "3.2.0",
-    "p-queue": "6.6.1"
+    "p-timeout": "3.2.0"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
@@ -48,7 +48,7 @@
     "clone": "2.1.2",
     "coveralls": "3.0.9",
     "delay": "4.3.0",
-    "documentation": "12.1.4",
+    "documentation": "^12.1.4",
     "nyc": "15.0.0",
     "xo": "0.25.4"
   },
