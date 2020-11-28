@@ -43,11 +43,15 @@ class TuyaDevice extends EventEmitter {
     key,
     productKey,
     version = 3.1,
-    nullPayloadOnJSONError = false
+    nullPayloadOnJSONError = false,
+    issueGetOnConnect = true
   } = {}) {
     super();
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
+    this.globalOptions = {
+      issueGetOnConnect: issueGetOnConnect
+    }
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
 
@@ -437,7 +441,9 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          this.get();
+          if (this.globalOptions.issueGetOnConnect) {
+            this.get();
+          }
 
           // Return
           resolve(true);
