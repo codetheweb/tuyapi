@@ -72,7 +72,8 @@ const TuyAPI = require('tuyapi');
 
 const device = new TuyAPI({
   id: 'xxxxxxxxxxxxxxxxxxxx',
-  key: 'xxxxxxxxxxxxxxxx'});
+  key: 'xxxxxxxxxxxxxxxx',
+  issueGetOnConnect: false});
 
 (async () => {
   await device.find();

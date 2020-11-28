@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset='utf-8'>
-  <title>tuyapi 6.0.0 | Documentation</title>
+  <title>tuyapi 6.0.1 | Documentation</title>
   <meta name='description' content='An easy-to-use API for devices that use Tuya&#39;s cloud services'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' rel='stylesheet'>
@@ -15,11 +15,14 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>tuyapi</h3>
-          <div class='mb1'><code>6.0.0</code></div>
+          <div class='mb1'><code>6.0.1</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
             class='col12 block input'
+            spellcheck='false'
+            autocapitalize='off'
+            autocorrect='off'
             type='text' />
           <div id='toc'>
             <ul class='list-reset h5 py1-ul'>
@@ -417,12 +420,28 @@ containing a payload of null values for on-device JSON parsing errors
 
 
               
+                <tr>
+  <td class='break-word'><span class='code bold'>options.issueGetOnConnect</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>
+  
+    (default <code>true</code>)
+  </td>
+  <td class='break-word'><span>if true, sends GET request after
+connection is established. This should probably be 
+<code>false</code>
+ in synchronous usage.
+</span></td>
+</tr>
+
+
+              
             </tbody>
           </table>
           
         </div>
       
     </div>
+  
+
   
 
   
@@ -534,6 +553,8 @@ Defaults to returning only the value of the first DPS index.</p>
 
       
     
+  
+
   
 
   
@@ -680,6 +701,8 @@ tuya.get({<span class="hljs-attr">schema</span>: <span class="hljs-literal">true
   
 
   
+
+  
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
@@ -773,6 +796,8 @@ if device is already connected.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -802,6 +827,8 @@ close the socket and exit gracefully.</p>
   
   
   
+  
+
   
 
   
@@ -880,6 +907,8 @@ close the socket and exit gracefully.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -923,6 +952,8 @@ close the socket and exit gracefully.</p>
         </div>
       
     </div>
+  
+
   
 
   
@@ -1042,6 +1073,8 @@ to be resolved before timeout error is thrown
   
 
   
+
+  
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
@@ -1113,6 +1146,8 @@ to be resolved before timeout error is thrown
 
       
     
+  
+
   
 
   
@@ -1214,6 +1249,8 @@ Also emitted on parsing errors.</p>
   
 
   
+
+  
 </section>
 
           
@@ -1247,6 +1284,8 @@ goes off the network.</p>
   
   
   
+  
+
   
 
   
@@ -1318,6 +1357,8 @@ initialization code.</p>
   
 
   
+
+  
 </section>
 
           
@@ -1347,6 +1388,8 @@ initialization code.</p>
   
   
   
+  
+
   
 
   
@@ -1441,6 +1484,8 @@ initialization code.</p>
   
 
   
+
+  
 </section>
 
           
@@ -1511,6 +1556,8 @@ string if it has been
         </div>
       
     </div>
+  
+
   
 
   
@@ -1616,6 +1663,8 @@ string if it has been
   
 
   
+
+  
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
@@ -1682,6 +1731,8 @@ Will return multiple packets if necessary.</p>
 
       
     
+  
+
   
 
   
@@ -1765,6 +1816,8 @@ an object or string.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -1823,6 +1876,8 @@ all of them.</p>
 
       
     
+  
+
   
 
   
@@ -1957,6 +2012,8 @@ Tuya-protocol-complient packet.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -2047,6 +2104,8 @@ Tuya-protocol-complient packet.</p>
         </div>
       
     </div>
+  
+
   
 
   
@@ -2161,6 +2220,8 @@ Tuya-protocol-complient packet.</p>
   
 
   
+
+  
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
@@ -2244,6 +2305,8 @@ Tuya-protocol-complient packet.</p>
   
 
   
+
+  
 </section>
 
       </div>
@@ -2300,6 +2363,8 @@ Tuya-protocol-complient packet.</p>
 
       
     
+  
+
   
 
   
@@ -2381,6 +2446,8 @@ Tuya-protocol-complient packet.</p>
 
       
     
+  
+
   
 
   

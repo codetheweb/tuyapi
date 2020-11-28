@@ -30,6 +30,8 @@ const {UDP_KEY} = require('./lib/config');
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.nullPayloadOnJSONError=false] if true, emits a data event
  * containing a payload of null values for on-device JSON parsing errors
+ * @param {Boolean} [options.issueGetOnConnect=true] if true, sends GET request after
+ * connection is established. This should probably be `false` in synchronous usage.
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
@@ -43,11 +45,15 @@ class TuyaDevice extends EventEmitter {
     key,
     productKey,
     version = 3.1,
-    nullPayloadOnJSONError = false
+    nullPayloadOnJSONError = false,
+    issueGetOnConnect = true
   } = {}) {
     super();
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
+    this.globalOptions = {
+      issueGetOnConnect: issueGetOnConnect
+    }
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
 
@@ -437,7 +443,9 @@ class TuyaDevice extends EventEmitter {
 
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
-          this.get();
+          if (this.globalOptions.issueGetOnConnect) {
+            this.get();
+          }
 
           // Return
           resolve(true);
