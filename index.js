@@ -392,6 +392,10 @@ class TuyaDevice extends EventEmitter {
 
           this.emit('error', new Error('Error from socket'));
 
+          if (!this._connected) {
+            reject(err);
+          }
+
           this.client.destroy();
         });
 
