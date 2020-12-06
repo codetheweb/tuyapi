@@ -385,11 +385,11 @@ class TuyaDevice extends EventEmitter {
           debug('Error event from socket.', this.device.ip, err);
 
           this.emit('error', new Error('Error from socket'));
-          
+
           if (!this._connected) {
             reject(err);
           }
-          
+
           this.client.destroy();
         });
 
