@@ -7,8 +7,8 @@ Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may ne
 This method is fast and easy. If you're having trouble manually linking your device with the below method, we recommend you try this. All devices that you want to use **must** be registered in either the Tuya Smart app or the Smart Life app.
 
 1. Follow steps 1 through 4 from the "Linking a Tuya device with Smart Link" method below.
-2. Go to Cloud -> Project and click the project you created earlier. Then click "Link Device". Click the "Linked Devices by App Account" tab.
-3. Click "Link devices by App Account" and scan the QR code from your smart phone/tablet app by going to the 'Me' tab in the app, and tapping a QR code / Scan button in the upper right. Your account will now be linked.
+2. Go to Cloud -> Project and click the project you created earlier. Then click "Link Device". Click the "Link Devices by App Account" tab.
+3. Click "Add App Account" and scan the QR code from your smart phone/tablet app by going to the 'Me' tab in the app, and tapping a QR code / Scan button in the upper right. Your account will now be linked.
 4. On the command line, run `tuya-cli wizard`. It will prompt you for required information, and will then list out all your device names, IDs, and keys for use with TuyAPI. Copy and save this information to a safe place for later reference.
 
 ## Linking a Tuya device with Smart Link
