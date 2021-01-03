@@ -133,35 +133,32 @@ class TuyaDevice extends EventEmitter {
 
     // Send request and parse response
     return new Promise((resolve, reject) => {
-      try {
-        // Send request
-        this._send(buffer).then(async data => {
-          if (data === 'json obj data unvalid' && options.schema !== true) {
-            // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
-            // back to using SEND with null value. This appears to always work as
-            // long as the DPS key exist on the device.
-            // For schema there's currently no fallback options
-            const setOptions = {
-              dps: options.dps ? options.dps : 1,
-              set: null
-            };
-            data = await this.set(setOptions);
-          }
+      // Send request
+      this._send(buffer).then(async data => {
+        if (data === 'json obj data unvalid' && options.schema !== true) {
+          // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
+          // back to using SEND with null value. This appears to always work as
+          // long as the DPS key exist on the device.
+          // For schema there's currently no fallback options
+          const setOptions = {
+            dps: options.dps ? options.dps : 1,
+            set: null
+          };
+          data = await this.set(setOptions);
+        }
 
-          if (typeof data !== 'object' || options.schema === true) {
-            // Return whole response
-            resolve(data);
-          } else if (options.dps) {
-            // Return specific property
-            resolve(data.dps[options.dps]);
-          } else {
-            // Return first property by default
-            resolve(data.dps['1']);
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
+        if (typeof data !== 'object' || options.schema === true) {
+          // Return whole response
+          resolve(data);
+        } else if (options.dps) {
+          // Return specific property
+          resolve(data.dps[options.dps]);
+        } else {
+          // Return first property by default
+          resolve(data.dps['1']);
+        }
+      })
+        .catch(reject);
     });
   }
 
