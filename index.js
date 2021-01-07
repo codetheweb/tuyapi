@@ -267,23 +267,21 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Any>} returned data for request
    */
   _send(buffer) {
-    // Make sure we're connected
-    if (!this.isConnected()) {
-      throw new Error('No connection has been made to the device.');
-    }
-
     // Retry up to 5 times
     return pRetry(() => {
       return new Promise((resolve, reject) => {
-        try {
-          // Send data
-          this.client.write(buffer);
+        // Send data
+        this.connect().then(() => {
+          try {
+            this.client.write(buffer);
 
-          // Add resolver function
-          this._resolvers[this._currentSequenceN] = data => resolve(data);
-        } catch (error) {
-          reject(error);
-        }
+            // Add resolver function
+            this._resolvers[this._currentSequenceN] = data => resolve(data);
+          } catch (error) {
+            reject(error);
+          }
+        })
+          .catch(error => reject(error));
       });
     }, {retries: 5});
   }
