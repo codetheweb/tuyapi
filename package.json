@@ -8,10 +8,9 @@
     "index.js"
   ],
   "scripts": {
-    "test": "xo --quiet && npm run ava",
-    "ava": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
-    "coverage": "nyc npm test && nyc report --reporter=html",
-    "travis": "npx nyc npm test && npx nyc report --reporter=text-lcov | coveralls",
+    "lint": "xo",
+    "test": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
+    "coverage": "nyc npm test && nyc report --reporter=lcov",
     "document": "documentation build index.js -f html -o docs --config documentation.yml",
     "prepublishOnly": "npm test",
     "preversion": "npm test"
