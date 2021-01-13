@@ -84,6 +84,8 @@ class TuyaDevice extends EventEmitter {
     this._responseTimeout = 2; // Seconds
     this._connectTimeout = 5; // Seconds
     this._pingPongPeriod = 10; // Seconds
+    this._pingPongTimeout = null;
+    this._lastPingAt = new Date();
 
     this._currentSequenceN = 0;
     this._resolvers = {};
@@ -300,8 +302,17 @@ class TuyaDevice extends EventEmitter {
       sequenceN: ++this._currentSequenceN
     });
 
+    // Check for response
+    const now = new Date();
+
+    this._pingPongTimeout = setTimeout(() => {
+      if (this._lastPingAt < now) {
+        this.disconnect();
+      }
+    }, this._responseTimeout * 1000);
+
     // Send ping
-    await this.client.write(buffer);
+    this.client.write(buffer);
   }
 
   /**
@@ -398,23 +409,7 @@ class TuyaDevice extends EventEmitter {
         this.client.on('close', () => {
           debug(`Socket closed: ${this.device.ip}`);
 
-          this._connected = false;
-
-          /**
-           * Emitted when a socket is disconnected
-           * from device. Not an exclusive event:
-           * `error` and `disconnected` may be emitted
-           * at the same time if, for example, the device
-           * goes off the network.
-           * @event TuyaDevice#disconnected
-           */
-          this.emit('disconnected');
-          this.client.destroy();
-
-          if (this.pingpongTimeout) {
-            clearTimeout(this.pingpongTimeout);
-            this.pingpongTimeout = null;
-          }
+          this.disconnect();
         });
 
         this.client.on('connect', async () => {
@@ -436,7 +431,7 @@ class TuyaDevice extends EventEmitter {
           this.emit('connected');
 
           // Periodically send heartbeat ping
-          this.pingpongTimeout = setInterval(async () => {
+          this._pingPongInterval = setInterval(async () => {
             await this._sendPing();
           }, this._pingPongPeriod * 1000);
 
@@ -467,6 +462,9 @@ class TuyaDevice extends EventEmitter {
        * @event TuyaDevice#heartbeat
        */
       this.emit('heartbeat');
+
+      this._lastPingAt = new Date();
+
       return;
     }
 
@@ -511,6 +509,10 @@ class TuyaDevice extends EventEmitter {
    * close the socket and exit gracefully.
    */
   disconnect() {
+    if (!this._connected) {
+      return;
+    }
+
     debug('Disconnect');
 
     this._connected = false;
@@ -519,13 +521,22 @@ class TuyaDevice extends EventEmitter {
     clearTimeout(this._sendTimeout);
     clearTimeout(this._connectTimeout);
     clearTimeout(this._responseTimeout);
-    clearTimeout(this.pingpongTimeout);
+    clearInterval(this._pingPongInterval);
+    clearTimeout(this._pingPongTimeout);
 
-    if (!this.client) {
-      return;
+    if (this.client) {
+      this.client.destroy();
     }
 
-    this.client.destroy();
+    /**
+     * Emitted when a socket is disconnected
+     * from device. Not an exclusive event:
+     * `error` and `disconnected` may be emitted
+     * at the same time if, for example, the device
+     * goes off the network.
+     * @event TuyaDevice#disconnected
+     */
+    this.emit('disconnected');
   }
 
   /**

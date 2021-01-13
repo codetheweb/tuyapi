@@ -120,9 +120,11 @@ test.serial('heartbeat event is fired', async t => {
   const thisStub = clone(stub);
   thisStub.startServer();
 
+  stubDevice._pingPongPeriod = 0.5;
+
   await new Promise((resolve, reject) => {
-    // One heartbeat must be in 20s as each one has 10s between
-    const toleranceTimeout = setTimeout(() => reject(), 20000);
+    // One heartbeat must be in 1s as each one has 0.5s between
+    const toleranceTimeout = setTimeout(() => reject(), 1000);
 
     stubDevice.on('heartbeat', () => {
       clearTimeout(toleranceTimeout);
@@ -132,6 +134,29 @@ test.serial('heartbeat event is fired', async t => {
     stubDevice.on('error', error => reject(error));
 
     stubDevice.connect();
+  });
+
+  stubDevice.disconnect();
+  thisStub.shutdown();
+
+  t.pass();
+});
+
+test.serial('disconnected event is fired when heartbeat times out', async t => {
+  const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
+                                 key: '4226aa407d5c1e2b',
+                                 ip: 'localhost'});
+
+  const thisStub = clone(stub);
+  thisStub.respondToHeartbeat = false;
+  thisStub.startServer();
+
+  stubDevice._pingPongPeriod = 0.5;
+
+  await stubDevice.connect();
+
+  await new Promise(resolve => {
+    stubDevice.on('disconnected', () => resolve());
   });
 
   stubDevice.disconnect();
