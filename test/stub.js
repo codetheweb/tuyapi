@@ -1,6 +1,8 @@
 import test from 'ava';
 import TuyaStub from '@tuyapi/stub';
 import clone from 'clone';
+import pRetry from 'p-retry';
+import delay from 'delay';
 
 const TuyAPI = require('..');
 
@@ -161,6 +163,32 @@ test.serial('disconnected event is fired when heartbeat times out', async t => {
 
   stubDevice.disconnect();
   thisStub.shutdown();
+
+  t.pass();
+});
+
+test('can reconnect if device goes offline', async t => {
+  const stubDevice = new TuyAPI({id: '22325186db4a2217dc8e',
+                                 key: '4226aa407d5c1e2b',
+                                 ip: 'localhost'});
+
+  const thisStub = clone(stub);
+  thisStub.startServer();
+
+  stubDevice.on('error', () => {});
+
+  await stubDevice.connect();
+
+  thisStub.shutdown();
+
+  await delay(500);
+
+  thisStub.startServer();
+
+  // Attempt to reconnect
+  await pRetry(async () => {
+    await stubDevice.connect();
+  }, {retries: 3});
 
   t.pass();
 });
