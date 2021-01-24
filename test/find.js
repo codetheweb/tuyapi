@@ -116,7 +116,7 @@ test.serial('find with option all', async t => {
 
   thisStub.startUDPBroadcast({interval: 1});
 
-  const foundDevices = await stubDevice.find({all: true});
+  const foundDevices = await stubDevice.find({all: true, timeout: 2});
 
   stubDevice.disconnect();
   thisStub.shutdown();
