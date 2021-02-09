@@ -1,6 +1,6 @@
 {
   "name": "tuyapi",
-  "version": "6.1.4",
+  "version": "6.1.5",
   "description": "An easy-to-use API for devices that use Tuya's cloud services",
   "main": "index.js",
   "files": [
