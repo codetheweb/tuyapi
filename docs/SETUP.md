@@ -1,3 +1,5 @@
+IMPORTANT: As of early 2021 Tuya has restricted Cloud development to "Enterprise customers". Meaning none of the below works and you can no longer get your keys. That inturn meaning the CLI won't work, meaning there is no way for locally controlling your devices anymore unless you have the keyes allready.
+
 All methods below require you to install the CLI tool before proceeding.
 
 Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may need to prefix the command with `sudo`. (Tip: using `sudo` to install global packages is not considered best practice. See [this NPM article](https://docs.npmjs.com/getting-started/fixing-npm-permissions) for some help.)
