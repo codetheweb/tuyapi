@@ -32,6 +32,8 @@ const {UDP_KEY} = require('./lib/config');
  * containing a payload of null values for on-device JSON parsing errors
  * @param {Boolean} [options.issueGetOnConnect=true] if true, sends GET request after
  * connection is established. This should probably be `false` in synchronous usage.
+ * @param {Boolean} [options.issueRefreshOnConnect=false] if true, sends DP_REFRESH request after
+ * connection is established. This should probably be `false` in synchronous usage.
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
@@ -61,7 +63,7 @@ class TuyaDevice extends EventEmitter {
 
     // Check arguments
     if (!(isValidString(id) ||
-          isValidString(ip))) {
+        isValidString(ip))) {
       throw new TypeError('ID and IP are missing from device.');
     }
 
@@ -73,7 +75,8 @@ class TuyaDevice extends EventEmitter {
     // Handles encoding/decoding, encrypting/decrypting messages
     this.device.parser = new MessageParser({
       key: this.device.key,
-      version: this.device.version});
+      version: this.device.version
+    });
 
     // Contains array of found devices when calling .find()
     this.foundDevices = [];
@@ -94,6 +97,10 @@ class TuyaDevice extends EventEmitter {
     this._setQueue = new PQueue({
       concurrency: 1
     });
+
+    // List of dps which needed CommandType.DP_REFRESH (command 18) to force refresh their values.
+    // Power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices.
+    this._dpRefreshIds = [4, 5, 6, 18, 19, 20];
   }
 
   /**
@@ -162,27 +169,27 @@ class TuyaDevice extends EventEmitter {
           resolve(data.dps['1']);
         }
       })
-        .catch(reject);
+          .catch(reject);
     });
   }
 
   /**
-   * Gets a device's current status.
+   * Refresh a device's current status.
    * Defaults to returning only the value of the first DPS index.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire list of properties from device
-   * @param {Number} [options.dps=1]
+   * @param {Array.<Number>} [options.dps=[4,5,6,18,19,20]]
    * DPS index to return
    * @example
    * // get first, default property from device
-   * tuya.get().then(status => console.log(status))
+   * tuya.refresh().then(status => console.log(status))
    * @example
    * // get second property from device
-   * tuya.get({dps: 2}).then(status => console.log(status))
+   * tuya.refresh({dps: [4,5,9,18,19,20]}).then(status => console.log(status))
    * @example
    * // get all available data from device
-   * tuya.get({schema: true}).then(data => console.log(data))
+   * tuya.refresh({schema: true}).then(data => console.log(data))
    * @returns {Promise<Boolean|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
@@ -191,7 +198,7 @@ class TuyaDevice extends EventEmitter {
       gwId: this.device.gwID,
       devId: this.device.id,
       t: Math.round(new Date().getTime() / 1000).toString(),
-      dps: {},
+      dpId: this._dpRefreshIds,
       uid: this.device.id
     };
 
@@ -215,7 +222,7 @@ class TuyaDevice extends EventEmitter {
           // long as the DPS key exist on the device.
           // For schema there's currently no fallback options
           const setOptions = {
-            dps: options.dps ? options.dps : [18,19,20],
+            dps: options.dps ? options.dps : this._dpRefreshIds,
             set: null
           };
           data = await this.set(setOptions);
@@ -227,8 +234,8 @@ class TuyaDevice extends EventEmitter {
           // Return specific property
           resolve(data.dps[options.dps]);
         } else {
-          // Return first property by default
-          resolve(data.dps['19']);
+          // Return all dps by default
+          resolve(data.dps);
         }
       })
           .catch(reject);
@@ -325,8 +332,8 @@ class TuyaDevice extends EventEmitter {
       this._setResolver = undefined;
 
       this.emit(
-        'error',
-        'Timeout waiting for status response from device id: ' + this.device.id
+          'error',
+          'Timeout waiting for status response from device id: ' + this.device.id
       );
     }));
   }
@@ -354,7 +361,7 @@ class TuyaDevice extends EventEmitter {
             reject(error);
           }
         })
-          .catch(error => reject(error));
+            .catch(error => reject(error));
       });
     }, {
       onFailedAttempt: error => {
@@ -495,13 +502,13 @@ class TuyaDevice extends EventEmitter {
           this.client.setTimeout(0);
 
           /**
-          * Emitted when socket is connected
-          * to device. This event may be emitted
-          * multiple times within the same script,
-          * so don't use this as a trigger for your
-          * initialization code.
-          * @event TuyaDevice#connected
-          */
+           * Emitted when socket is connected
+           * to device. This event may be emitted
+           * multiple times within the same script,
+           * so don't use this as a trigger for your
+           * initialization code.
+           * @event TuyaDevice#connected
+           */
           this.emit('connected');
 
           // Periodically send heartbeat ping
@@ -512,7 +519,7 @@ class TuyaDevice extends EventEmitter {
           // Automatically ask for dp_refresh so we
           // can emit a `dp_refresh` event as soon as possible
           if (this.globalOptions.issueRefreshOnConnect) {
-            this.refresh([4,5,6,18,19,20]);
+            this.refresh();
           }
 
           // Automatically ask for current state so we
@@ -553,28 +560,37 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
+    // Returned DP refresh response is always empty. Device respond with command 8 without dps 1 instead.
     if (packet.commandByte === CommandType.DP_REFRESH) {
-      debug(`Received DP_RFRESH packet`);
-      /**
-       * Emitted when a dp refresh is returned.
-       * @event TuyaDevice#dp_refresh
-       */
-      this.emit('dp_refresh',packet);
-
+      debug(`Received DP_REFRESH empty response packet`);
       return;
     }
 
-    /**
-     * Emitted when data is returned from device.
-     * @event TuyaDevice#data
-     * @property {Object} data received data
-     * @property {Number} commandByte
-     * commandByte of result
-     * (e.g. 7=requested response, 8=proactive update from device)
-     * @property {Number} sequenceN the packet sequence number
-     */
-    this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
-
+    if (packet.commandByte === CommandType.STATUS && typeof packet.payload.dps[1] === 'undefined') {
+      debug(`Received DP_REFRESH packet`);
+      /**
+       * Emitted when dp_refresh data is proactive returned from device, ommiting dps 1
+       * Only changed dps are returned.
+       * @event TuyaDevice#dp_refresh
+       * @property {Object} data received data
+       * @property {Number} commandByte
+       * commandByte of result( 8=proactive update from device)
+       * @property {Number} sequenceN the packet sequence number
+       */
+      this.emit('dp_refresh', packet.payload, packet.commandByte, packet.sequenceN);
+    } else {
+      debug(`Received DATA packet`);
+      /**
+       * Emitted when data is returned from device.
+       * @event TuyaDevice#data
+       * @property {Object} data received data
+       * @property {Number} commandByte
+       * commandByte of result
+       * (e.g. 7=requested response, 8=proactive update from device)
+       * @property {Number} sequenceN the packet sequence number
+       */
+      this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
+    }
     // Status response to SET command
     if (packet.sequenceN === 0 &&
         packet.commandByte === CommandType.STATUS &&
@@ -696,6 +712,15 @@ class TuyaDevice extends EventEmitter {
 
       const thisID = dataRes.payload.gwId;
       const thisIP = dataRes.payload.ip;
+
+      // Try auto determine power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices
+      const thisDPS = dataRes.payload.dps;
+      if (typeof thisDPS[19] === 'undefined'){
+        this._dpRefreshIds = [4,5,6];
+      } else {
+        this._dpRefreshIds = [18,19,20];
+      }
+
 
       // Add to array if it doesn't exist
       if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
