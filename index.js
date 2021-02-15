@@ -40,17 +40,17 @@ const {UDP_KEY} = require('./lib/config');
  */
 class TuyaDevice extends EventEmitter {
   constructor({
-                ip,
-                port = 6668,
-                id,
-                gwID = id,
-                key,
-                productKey,
-                version = 3.1,
-                nullPayloadOnJSONError = false,
-                issueGetOnConnect = true,
-                issueRefreshOnConnect = false
-              } = {}) {
+    ip,
+    port = 6668,
+    id,
+    gwID = id,
+    key,
+    productKey,
+    version = 3.1,
+    nullPayloadOnJSONError = false,
+    issueGetOnConnect = true,
+    issueRefreshOnConnect = false
+  } = {}) {
     super();
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
@@ -169,7 +169,7 @@ class TuyaDevice extends EventEmitter {
           resolve(data.dps['1']);
         }
       })
-          .catch(reject);
+        .catch(reject);
     });
   }
 
@@ -227,6 +227,7 @@ class TuyaDevice extends EventEmitter {
           };
           data = await this.set(setOptions);
         }
+
         if (typeof data !== 'object' || options.schema === true) {
           // Return whole response
           resolve(data);
@@ -238,7 +239,7 @@ class TuyaDevice extends EventEmitter {
           resolve(data.dps);
         }
       })
-          .catch(reject);
+        .catch(reject);
     });
   }
 
@@ -332,8 +333,8 @@ class TuyaDevice extends EventEmitter {
       this._setResolver = undefined;
 
       this.emit(
-          'error',
-          'Timeout waiting for status response from device id: ' + this.device.id
+        'error',
+        'Timeout waiting for status response from device id: ' + this.device.id
       );
     }));
   }
@@ -361,12 +362,12 @@ class TuyaDevice extends EventEmitter {
             reject(error);
           }
         })
-            .catch(error => reject(error));
+          .catch(error => reject(error));
       });
     }, {
       onFailedAttempt: error => {
         debug(`Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`);
-      },retries: 5});
+      }, retries: 5});
   }
 
   /**
@@ -562,12 +563,12 @@ class TuyaDevice extends EventEmitter {
 
     // Returned DP refresh response is always empty. Device respond with command 8 without dps 1 instead.
     if (packet.commandByte === CommandType.DP_REFRESH) {
-      debug(`Received DP_REFRESH empty response packet`);
+      debug('Received DP_REFRESH empty response packet');
       return;
     }
 
     if (packet.commandByte === CommandType.STATUS && typeof packet.payload.dps[1] === 'undefined') {
-      debug(`Received DP_REFRESH packet`);
+      debug('Received DP_REFRESH packet');
       /**
        * Emitted when dp_refresh data is proactive returned from device, ommiting dps 1
        * Only changed dps are returned.
@@ -579,7 +580,7 @@ class TuyaDevice extends EventEmitter {
        */
       this.emit('dp_refresh', packet.payload, packet.commandByte, packet.sequenceN);
     } else {
-      debug(`Received DATA packet`);
+      debug('Received DATA packet');
       /**
        * Emitted when data is returned from device.
        * @event TuyaDevice#data
@@ -591,6 +592,7 @@ class TuyaDevice extends EventEmitter {
        */
       this.emit('data', packet.payload, packet.commandByte, packet.sequenceN);
     }
+
     // Status response to SET command
     if (packet.sequenceN === 0 &&
         packet.commandByte === CommandType.STATUS &&
@@ -659,7 +661,6 @@ class TuyaDevice extends EventEmitter {
    * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
    */
   resolveId(options) {
-    // eslint-disable-next-line max-len
     console.warn('resolveId() is deprecated since v4.0.0. Will be removed in v5.0.0. Use find() instead.');
     return this.find(options);
   }
@@ -715,12 +716,11 @@ class TuyaDevice extends EventEmitter {
 
       // Try auto determine power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices
       const thisDPS = dataRes.payload.dps;
-      if (typeof thisDPS[19] === 'undefined'){
-        this._dpRefreshIds = [4,5,6];
+      if (typeof thisDPS[19] === 'undefined') {
+        this._dpRefreshIds = [4, 5, 6];
       } else {
-        this._dpRefreshIds = [18,19,20];
+        this._dpRefreshIds = [18, 19, 20];
       }
-
 
       // Add to array if it doesn't exist
       if (!this.foundDevices.some(e => (e.id === thisID && e.ip === thisIP))) {
@@ -787,7 +787,6 @@ class TuyaDevice extends EventEmitter {
       }
 
       // Otherwise throw error
-      // eslint-disable-next-line max-len
       throw new Error('find() timed out. Is the device powered on and the ID or IP correct?');
     });
   }

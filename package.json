@@ -57,12 +57,7 @@
       "docs"
     ],
     "rules": {
-      "max-len": [
-        "error",
-        {
-          "code": 90
-        }
-      ],
+      "max-len": "off",
       "indent": [
         "error",
         2,
