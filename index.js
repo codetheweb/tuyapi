@@ -572,13 +572,13 @@ class TuyaDevice extends EventEmitter {
       /**
        * Emitted when dp_refresh data is proactive returned from device, ommiting dps 1
        * Only changed dps are returned.
-       * @event TuyaDevice#dp_refresh
+       * @event TuyaDevice#dp-refresh
        * @property {Object} data received data
        * @property {Number} commandByte
        * commandByte of result( 8=proactive update from device)
        * @property {Number} sequenceN the packet sequence number
        */
-      this.emit('dp_refresh', packet.payload, packet.commandByte, packet.sequenceN);
+      this.emit('dp-refresh', packet.payload, packet.commandByte, packet.sequenceN);
     } else {
       debug('Received DATA packet');
       /**
