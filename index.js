@@ -38,21 +38,23 @@ const {UDP_KEY} = require('./lib/config');
  */
 class TuyaDevice extends EventEmitter {
   constructor({
-    ip,
-    port = 6668,
-    id,
-    gwID = id,
-    key,
-    productKey,
-    version = 3.1,
-    nullPayloadOnJSONError = false,
-    issueGetOnConnect = true
-  } = {}) {
+                ip,
+                port = 6668,
+                id,
+                gwID = id,
+                key,
+                productKey,
+                version = 3.1,
+                nullPayloadOnJSONError = false,
+                issueGetOnConnect = true,
+                issueRefreshOnConnect = false
+              } = {}) {
     super();
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
-      issueGetOnConnect
+      issueGetOnConnect,
+      issueRefreshOnConnect
     };
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
@@ -161,6 +163,75 @@ class TuyaDevice extends EventEmitter {
         }
       })
         .catch(reject);
+    });
+  }
+
+  /**
+   * Gets a device's current status.
+   * Defaults to returning only the value of the first DPS index.
+   * @param {Object} [options]
+   * @param {Boolean} [options.schema]
+   * true to return entire list of properties from device
+   * @param {Number} [options.dps=1]
+   * DPS index to return
+   * @example
+   * // get first, default property from device
+   * tuya.get().then(status => console.log(status))
+   * @example
+   * // get second property from device
+   * tuya.get({dps: 2}).then(status => console.log(status))
+   * @example
+   * // get all available data from device
+   * tuya.get({schema: true}).then(data => console.log(data))
+   * @returns {Promise<Boolean|Object>}
+   * returns boolean if single property is requested, otherwise returns object of results
+   */
+  refresh(options = {}) {
+    const payload = {
+      gwId: this.device.gwID,
+      devId: this.device.id,
+      t: Math.round(new Date().getTime() / 1000).toString(),
+      dps: {},
+      uid: this.device.id
+    };
+
+    debug('GET Payload:');
+    debug(payload);
+
+    // Create byte buffer
+    const buffer = this.device.parser.encode({
+      data: payload,
+      commandByte: CommandType.DP_REFRESH,
+      sequenceN: ++this._currentSequenceN
+    });
+
+    // Send request and parse response
+    return new Promise((resolve, reject) => {
+      // Send request
+      this._send(buffer).then(async data => {
+        if (data === 'json obj data unvalid' && options.schema !== true) {
+          // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
+          // back to using SEND with null value. This appears to always work as
+          // long as the DPS key exist on the device.
+          // For schema there's currently no fallback options
+          const setOptions = {
+            dps: options.dps ? options.dps : [18,19,20],
+            set: null
+          };
+          data = await this.set(setOptions);
+        }
+        if (typeof data !== 'object' || options.schema === true) {
+          // Return whole response
+          resolve(data);
+        } else if (options.dps) {
+          // Return specific property
+          resolve(data.dps[options.dps]);
+        } else {
+          // Return first property by default
+          resolve(data.dps['19']);
+        }
+      })
+          .catch(reject);
     });
   }
 
@@ -285,7 +356,10 @@ class TuyaDevice extends EventEmitter {
         })
           .catch(error => reject(error));
       });
-    }, {retries: 5});
+    }, {
+      onFailedAttempt: error => {
+        debug(`Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`);
+      },retries: 5});
   }
 
   /**
@@ -435,6 +509,12 @@ class TuyaDevice extends EventEmitter {
             await this._sendPing();
           }, this._pingPongPeriod * 1000);
 
+          // Automatically ask for dp_refresh so we
+          // can emit a `dp_refresh` event as soon as possible
+          if (this.globalOptions.issueRefreshOnConnect) {
+            this.refresh([4,5,6,18,19,20]);
+          }
+
           // Automatically ask for current state so we
           // can emit a `data` event as soon as possible
           if (this.globalOptions.issueGetOnConnect) {
@@ -470,6 +550,17 @@ class TuyaDevice extends EventEmitter {
 
     if (packet.commandByte === CommandType.CONTROL && packet.payload === false) {
       debug('Got SET ack.');
+      return;
+    }
+
+    if (packet.commandByte === CommandType.DP_REFRESH) {
+      debug(`Received DP_RFRESH packet`);
+      /**
+       * Emitted when a dp refresh is returned.
+       * @event TuyaDevice#dp_refresh
+       */
+      this.emit('dp_refresh',packet);
+
       return;
     }
 
