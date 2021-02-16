@@ -175,7 +175,7 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Refresh a device's current status.
-   * Defaults to returning only the value of the first DPS index.
+   * Defaults to returning all values.
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire list of properties from device
@@ -190,15 +190,15 @@ class TuyaDevice extends EventEmitter {
    * @example
    * // get all available data from device
    * tuya.refresh({schema: true}).then(data => console.log(data))
-   * @returns {Promise<Boolean|Object>}
-   * returns boolean if single property is requested, otherwise returns object of results
+   * @returns {Promise<Object>}
+   * returns object of results
    */
   refresh(options = {}) {
     const payload = {
       gwId: this.device.gwID,
       devId: this.device.id,
       t: Math.round(new Date().getTime() / 1000).toString(),
-      dpId: this._dpRefreshIds,
+      dpId: options.dps ? options.dps : this._dpRefreshIds,
       uid: this.device.id
     };
 
@@ -563,14 +563,14 @@ class TuyaDevice extends EventEmitter {
 
     // Returned DP refresh response is always empty. Device respond with command 8 without dps 1 instead.
     if (packet.commandByte === CommandType.DP_REFRESH) {
-      debug('Received DP_REFRESH empty response packet');
+      debug('Received DP_REFRESH empty response packet.');
       return;
     }
 
     if (packet.commandByte === CommandType.STATUS && typeof packet.payload.dps[1] === 'undefined') {
-      debug('Received DP_REFRESH packet');
+      debug('Received DP_REFRESH packet.');
       /**
-       * Emitted when dp_refresh data is proactive returned from device, ommiting dps 1
+       * Emitted when dp_refresh data is proactive returned from device, omitting dps 1
        * Only changed dps are returned.
        * @event TuyaDevice#dp-refresh
        * @property {Object} data received data
