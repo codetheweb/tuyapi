@@ -16,7 +16,7 @@ A library for communicating with devices that use the [Tuya](http://tuya.com) cl
 See the [setup instructions](docs/SETUP.md) for how to find the needed parameters.
 
 These examples should report the current status, set the default property to the opposite of what it currently is, then report the changed status.
-They will need to be adapted if your device does not have a boolean property at index 1 (i.e. it doesn't have an on/off property).
+They will need to be adapted if your device does not have a boolean property at index 1 (i.e. it doesn't have an on/off property). Index 20 seems to be another somewhat common on/off property.
 
 ### Asynchronous (event based, recommended)
 ```javascript
