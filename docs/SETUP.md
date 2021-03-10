@@ -1,3 +1,5 @@
+**YMMV**: Tuya likes to change their website frequently and the below instructions may be slightly out of date. If something looks wrong, please open a new issue.
+
 All methods below require you to install the CLI tool before proceeding.
 
 Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may need to prefix the command with `sudo`. (Tip: using `sudo` to install global packages is not considered best practice. See [this NPM article](https://docs.npmjs.com/getting-started/fixing-npm-permissions) for some help.)
