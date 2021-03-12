@@ -94,6 +94,53 @@ const device = new TuyAPI({
 })();
 ```
 
+### Additional power data not refreshing
+Some new smart plug doesn't send power data if app is not open. 
+Those devices need to be "forced" to send update for power dps [4,5,6] or [18,19,20].
+You can use function `refresh` and you will get updated values in `dp-refresh` event. 
+Also you can paste `issueRefreshOnConnect:true` in constructor to get fresh data on connect.
+```javascript
+const TuyAPI = require('tuyapi');
+
+const device = new TuyAPI({
+    id: 'xxxxxxxxxxxxxxxxxxxx',
+    key: 'xxxxxxxxxxxxxxxx',
+    ip: 'xxx.xxx.xxx.xxx',
+    version: '3.3',
+    issueRefreshOnConnect: true});
+
+// Find device on network
+device.find().then(() => {
+    // Connect to device
+    device.connect();
+});
+
+// Add event listeners
+device.on('connected', () => {
+    console.log('Connected to device!');
+});
+
+device.on('disconnected', () => {
+    console.log('Disconnected from device.');
+});
+
+device.on('error', error => {
+    console.log('Error!', error);
+});
+
+device.on('dp-refresh', data => {
+    console.log('DP_REFRESH data from device: ', data);
+});
+
+device.on('data', data => {
+    console.log('DATA from device: ', data);
+
+});
+
+// Disconnect after 10 seconds
+setTimeout(() => { device.disconnect(); }, 1000);
+```
+
 
 ## 📝 Notes
 - Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
