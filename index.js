@@ -329,7 +329,7 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer);
-        if(options.shouldWaitForResponse) {
+        if (options.shouldWaitForResponse) {
           this._setResolver = resolve;
         } else {
           resolve();
