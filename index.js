@@ -716,7 +716,7 @@ class TuyaDevice extends EventEmitter {
 
       // Try auto determine power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices
       const thisDPS = dataRes.payload.dps;
-      if (typeof thisDPS[19] === 'undefined') {
+      if (thisDPS && typeof thisDPS[19] === 'undefined') {
         this._dpRefreshIds = [4, 5, 6];
       } else {
         this._dpRefreshIds = [18, 19, 20];
