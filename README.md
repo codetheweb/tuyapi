@@ -94,6 +94,54 @@ const device = new TuyAPI({
 })();
 ```
 
+### Data not updating?
+
+Some new devices don't send data updates if the app isn't open.
+
+These devices need to be "forced" to send updates. You can do so by calling `refresh()` (see docs), which will emit a `dp-refresh` event.
+
+```javascript
+const TuyAPI = require('tuyapi');
+
+const device = new TuyAPI({
+    id: 'xxxxxxxxxxxxxxxxxxxx',
+    key: 'xxxxxxxxxxxxxxxx',
+    ip: 'xxx.xxx.xxx.xxx',
+    version: '3.3',
+    issueRefreshOnConnect: true});
+
+// Find device on network
+device.find().then(() => {
+    // Connect to device
+    device.connect();
+});
+
+// Add event listeners
+device.on('connected', () => {
+    console.log('Connected to device!');
+});
+
+device.on('disconnected', () => {
+    console.log('Disconnected from device.');
+});
+
+device.on('error', error => {
+    console.log('Error!', error);
+});
+
+device.on('dp-refresh', data => {
+    console.log('DP_REFRESH data from device: ', data);
+});
+
+device.on('data', data => {
+    console.log('DATA from device: ', data);
+
+});
+
+// Disconnect after 10 seconds
+setTimeout(() => { device.disconnect(); }, 1000);
+```
+
 
 ## 📝 Notes
 - Only one TCP connection can be in use with a device at once. If using this, do not have the app on your phone open.
@@ -127,6 +175,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [neojski](https://github.com/neojski)
 - [unparagoned](https://github.com/unparagoned)
 - [kueblc](https://github.com/kueblc)
+- [stevoh6](https://github.com/stevoh6)
 
 (If you're not on the above list, open a PR.)
 
