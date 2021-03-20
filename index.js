@@ -576,7 +576,7 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
-    if (packet.commandByte === CommandType.STATUS && typeof packet.payload.dps[1] === 'undefined') {
+    if (packet.commandByte === CommandType.STATUS && packet.payload && typeof packet.payload.dps[1] === 'undefined') {
       debug('Received DP_REFRESH packet.');
       /**
        * Emitted when dp_refresh data is proactive returned from device, omitting dps 1
