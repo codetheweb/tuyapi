@@ -251,6 +251,9 @@ class TuyaDevice extends EventEmitter {
    * @param {Boolean} [options.multiple=false]
    * Whether or not multiple properties should be set with options.data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
+   * @param {Boolean} [options.shouldWaitForResponse=true] see
+   * [#420](https://github.com/codetheweb/tuyapi/issues/420) and
+   * [#421](https://github.com/codetheweb/tuyapi/pull/421) for details
    * @example
    * // set default property
    * tuya.set({set: true}).then(() => console.log('device was turned on'))
@@ -295,6 +298,8 @@ class TuyaDevice extends EventEmitter {
       };
     }
 
+    options.shouldWaitForResponse = typeof options.shouldWaitForResponse === 'undefined' ? true : options.shouldWaitForResponse;
+
     // Get time
     const timeStamp = parseInt(new Date() / 1000, 10);
 
@@ -324,7 +329,11 @@ class TuyaDevice extends EventEmitter {
       try {
         // Send request
         this._send(buffer);
-        this._setResolver = resolve;
+        if(options.shouldWaitForResponse) {
+          this._setResolver = resolve;
+        } else {
+          resolve();
+        }
       } catch (error) {
         reject(error);
       }
