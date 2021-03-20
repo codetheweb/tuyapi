@@ -94,11 +94,12 @@ const device = new TuyAPI({
 })();
 ```
 
-### Additional power data not refreshing
-Some new smart plug doesn't send power data if app is not open. 
-Those devices need to be "forced" to send update for power dps [4,5,6] or [18,19,20].
-You can use function `refresh` and you will get updated values in `dp-refresh` event. 
-Also you can paste `issueRefreshOnConnect:true` in constructor to get fresh data on connect.
+### Data not updating?
+
+Some new devices don't send data updates if the app isn't open.
+
+These devices need to be "forced" to send updates. You can do so by calling `refresh()` (see docs), which will emit a `dp-refresh` event.
+
 ```javascript
 const TuyAPI = require('tuyapi');
 
@@ -174,6 +175,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [neojski](https://github.com/neojski)
 - [unparagoned](https://github.com/unparagoned)
 - [kueblc](https://github.com/kueblc)
+- [stevoh6](https://github.com/stevoh6)
 
 (If you're not on the above list, open a PR.)
 
