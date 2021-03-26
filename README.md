@@ -190,6 +190,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
 - [py60800/tuya](https://github.com/py60800/tuya) a Go port by [py60800](https://github.com/py60800)
+- [rust-tuyapi](https://github.com/EmilSodergren/rust-tuyapi) a Rust port by [EmilSodergren](https://github.com/EmilSodergren)
 
 ### Clients for Tuya's Cloud
 - [cloudtuya](https://github.com/unparagoned/cloudtuya) by [unparagoned](https://github.com/unparagoned/)
