@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset='utf-8'>
-  <title>tuyapi 6.2.0 | Documentation</title>
+  <title>tuyapi 7.0.1 | Documentation</title>
   <meta name='description' content='An easy-to-use API for devices that use Tuya&#39;s cloud services'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' rel='stylesheet'>
@@ -15,7 +15,7 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>tuyapi</h3>
-          <div class='mb1'><code>6.2.0</code></div>
+          <div class='mb1'><code>7.0.1</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -484,8 +484,8 @@ connection is established. This should probably be
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> tuya = <span class="hljs-keyword">new</span> TuyaDevice({<span class="hljs-attr">id</span>: <span class="hljs-string">&#x27;xxxxxxxxxxxxxxxxxxxx&#x27;</span>,
-                             <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;xxxxxxxxxxxxxxxx&#x27;</span>})</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> tuya = <span class="hljs-keyword">new</span> TuyaDevice({<span class="hljs-attr">id</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxxxxxx'</span>,
+                             <span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>})</pre>
     
   
 
@@ -678,11 +678,22 @@ Defaults to returning all values.</p>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>></code>
+  <td class='break-word'><span class='code bold'>options.dps</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>
+  
+    (default <code>1</code>)
+  </td>
+  <td class='break-word'><span>DPS index to return
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.requestedDPS</span> <code class='quiet'>Array.Number</code>
   
     (default <code>[4,5,6,18,19,20]</code>)
   </td>
-  <td class='break-word'><span>DPS index to return
+  <td class='break-word'><span>only set this if you know what you're doing
 </span></td>
 </tr>
 
@@ -721,7 +732,7 @@ tuya.refresh().then(<span class="hljs-function"><span class="hljs-params">status
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get second property from device</span>
-tuya.refresh({<span class="hljs-attr">dps</span>: [<span class="hljs-number">4</span>,<span class="hljs-number">5</span>,<span class="hljs-number">9</span>,<span class="hljs-number">18</span>,<span class="hljs-number">19</span>,<span class="hljs-number">20</span>]}).then(<span class="hljs-function"><span class="hljs-params">status</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(status))</pre>
+tuya.refresh({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>}).then(<span class="hljs-function"><span class="hljs-params">status</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(status))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// get all available data from device</span>
@@ -877,28 +888,28 @@ tuya.refresh({<span class="hljs-attr">schema</span>: <span class="hljs-literal">
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set default property</span>
-tuya.set({<span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;device was turned on&#x27;</span>))</pre>
+tuya.set({<span class="hljs-attr">set</span>: <span class="hljs-literal">true</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned on'</span>))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set custom property</span>
-tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">set</span>: <span class="hljs-literal">false</span>}).then(<span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;device was turned off&#x27;</span>))</pre>
+tuya.set({<span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">set</span>: <span class="hljs-literal">false</span>}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned off'</span>))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set multiple properties</span>
 tuya.set({
           <span class="hljs-attr">multiple</span>: <span class="hljs-literal">true</span>,
           <span class="hljs-attr">data</span>: {
-            <span class="hljs-string">&#x27;1&#x27;</span>: <span class="hljs-literal">true</span>,
-            <span class="hljs-string">&#x27;2&#x27;</span>: <span class="hljs-string">&#x27;white&#x27;</span>
-         }}).then(<span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;device was changed&#x27;</span>))</pre>
+            <span class="hljs-string">'1'</span>: <span class="hljs-literal">true</span>,
+            <span class="hljs-string">'2'</span>: <span class="hljs-string">'white'</span>
+         }}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was changed'</span>))</pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// set custom property for a specific (virtual) deviceId</span>
 tuya.set({
           <span class="hljs-attr">dps</span>: <span class="hljs-number">2</span>,
           <span class="hljs-attr">set</span>: <span class="hljs-literal">false</span>,
-          <span class="hljs-attr">devId</span>: <span class="hljs-string">&#x27;04314116cc50e346566e&#x27;</span>
-         }).then(<span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;device was turned off&#x27;</span>))</pre>
+          <span class="hljs-attr">devId</span>: <span class="hljs-string">'04314116cc50e346566e'</span>
+         }).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'device was turned off'</span>))</pre>
     
   
 
@@ -1248,7 +1259,7 @@ to be resolved before timeout error is thrown
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'>tuya.find().then(<span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;ready!&#x27;</span>))</pre>
+      <pre class='p1 overflow-auto round fill-light'>tuya.find().then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'ready!'</span>))</pre>
     
   
 
@@ -1915,7 +1926,7 @@ string if it has been
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> parser = <span class="hljs-keyword">new</span> MessageParser({<span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;xxxxxxxxxxxxxxxx&#x27;</span>, <span class="hljs-attr">version</span>: <span class="hljs-number">3.1</span>})</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> parser = <span class="hljs-keyword">new</span> MessageParser({<span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>, <span class="hljs-attr">version</span>: <span class="hljs-number">3.1</span>})</pre>
     
   
 
@@ -2365,7 +2376,7 @@ Tuya-protocol-complient packet.</p>
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> cipher = <span class="hljs-keyword">new</span> TuyaCipher({<span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;xxxxxxxxxxxxxxxx&#x27;</span>, <span class="hljs-attr">version</span>: <span class="hljs-number">3.1</span>})</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">const</span> cipher = <span class="hljs-keyword">new</span> TuyaCipher({<span class="hljs-attr">key</span>: <span class="hljs-string">'xxxxxxxxxxxxxxxx'</span>, <span class="hljs-attr">version</span>: <span class="hljs-number">3.1</span>})</pre>
     
   
 
@@ -2472,7 +2483,7 @@ Tuya-protocol-complient packet.</p>
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'>TuyaCipher.encrypt({<span class="hljs-attr">data</span>: <span class="hljs-string">&#x27;hello world&#x27;</span>})</pre>
+      <pre class='p1 overflow-auto round fill-light'>TuyaCipher.encrypt({<span class="hljs-attr">data</span>: <span class="hljs-string">'hello world'</span>})</pre>
     
   
 

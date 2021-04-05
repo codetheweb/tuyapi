@@ -179,14 +179,16 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} [options]
    * @param {Boolean} [options.schema]
    * true to return entire list of properties from device
-   * @param {Array.<Number>} [options.dps=[4,5,6,18,19,20]]
+   * @param {Number} [options.dps=1]
    * DPS index to return
+   * @param {Array.Number} [options.requestedDPS=[4,5,6,18,19,20]]
+   * only set this if you know what you're doing
    * @example
    * // get first, default property from device
    * tuya.refresh().then(status => console.log(status))
    * @example
    * // get second property from device
-   * tuya.refresh({dps: [4,5,9,18,19,20]}).then(status => console.log(status))
+   * tuya.refresh({dps: 2}).then(status => console.log(status))
    * @example
    * // get all available data from device
    * tuya.refresh({schema: true}).then(data => console.log(data))
@@ -198,7 +200,7 @@ class TuyaDevice extends EventEmitter {
       gwId: this.device.gwID,
       devId: this.device.id,
       t: Math.round(new Date().getTime() / 1000).toString(),
-      dpId: options.dps ? options.dps : this._dpRefreshIds,
+      dpId: options.requestedDPS ? options.requestedDPS : this._dpRefreshIds,
       uid: this.device.id
     };
 
@@ -222,7 +224,7 @@ class TuyaDevice extends EventEmitter {
           // long as the DPS key exist on the device.
           // For schema there's currently no fallback options
           const setOptions = {
-            dps: options.dps ? options.dps : this._dpRefreshIds,
+            dps: options.requestedDPS ? options.requestedDPS : this._dpRefreshIds,
             set: null
           };
           data = await this.set(setOptions);
