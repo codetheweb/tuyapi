@@ -21,7 +21,7 @@ This method requires you to create a developer account on [iot.tuya.com](https:/
 
 1. Create a new account on [iot.tuya.com](https://iot.tuya.com) and make sure you are logged in. **Select United States as your country when signing up.** This seems to skip a [required verify step](https://github.com/codetheweb/tuyapi/issues/425).
 2. Go to Cloud -> Project in the left nav drawer and click "Create". After you've created a new project, click into it. The access ID and access key are equivalent to the API key and API secret values need in step 6.
-3. Go to App -> App SDK -> Develpment in the nav drawer. Click "Create" and enter whatever you want for the package names and URL Scheme (for the Android package name, you must enter a string beginning with `com.`). Take note of the **URL Scheme** you entered. This is equivalent to the `schema` value needed in step 6. Ignore any app key and app secret values you see in this section as they are not used.
+3. Go to App -> App SDK -> Develpment in the nav drawer. Click "Create" and enter whatever you want for the package names and Channel ID (for the Android package name, you must enter a string beginning with `com.`). Take note of the **Channel ID** you entered. This is equivalent to the `schema` value needed in step 6. Ignore any app key and app secret values you see in this section as they are not used.
 4. Go to Cloud -> Project and click the project you created earlier. Then click "Link Device". Click the "Link devices by Apps" tab, and click "Add Apps". Check the app you just created and click "Ok".
 5. On the same page, click "API Products" on the left side. You will need to complete several steps for the following API Products
     - Smart Home Devices Management
