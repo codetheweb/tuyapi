@@ -6,8 +6,6 @@ Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may ne
 
 ## Listing Tuya devices from the **Tuya Smart** or **Smart Life** apps
 
-**Note**: Tuya no longer supports this for accounts created after March 24, 2021. If you created your cloud account after that date, this method will not work.
-
 This method is fast and easy. If you're having trouble manually linking your device with the below method, we recommend you try this. All devices that you want to use **must** be registered in either the Tuya Smart app or the Smart Life app.
 
 1. Follow steps 1 through 5 from the "Linking a Tuya device with Smart Link" method below.
