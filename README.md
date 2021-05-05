@@ -155,6 +155,16 @@ setTimeout(() => { device.disconnect(); }, 1000);
 
 See the [docs](https://codetheweb.github.io/tuyapi/index.html).
 
+## Current State & the Future of TuyAPI
+
+The goal of this repository specifically is to provide a bit of a middle ground between implementing everything from scratch and having everything handled for you.
+
+I realize this is a bit wishy-washy and most users would prefer one or the other. I started a new library a while ago to address this and incorporate some of the lessons we've learned over the years: [@tuyapi/driver](https://github.com/TuyaAPI/driver). The intention is that this library would be fairly low-level, and then more user-friendly libraries could be built on top of it to provide common functionality for, say, setting RGB light values (probably named `@tuyapi/devices`).
+
+Unfortunately, not much progress has been made in that regard for a few reasons. First, besides the occasional [coffee](https://www.buymeacoffee.com/maxisom) (thank you 😀) I don't get paid for this. And it's hard to be motivated to work on it when I don't actually use it day-to-day. For lack of a beter explanation, it's just not "fun" anymore. Also: trying to play wack-a-mole with a large corporation is kinda exhausting.
+
+**TL;DR**: all that to say that I personally will not be further developing Tuya-related projects for the foreseeable future besides fixing reproducable bugs. I plan to still respond to support requests and bug reports, but please be patient. 😀
+
 ## Contributing
 
 See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING.md).
