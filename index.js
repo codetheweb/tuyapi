@@ -129,6 +129,7 @@ class TuyaDevice extends EventEmitter {
       devId: this.device.id,
       t: Math.round(new Date().getTime() / 1000).toString(),
       dps: {},
+      cid: options.cid,
       uid: this.device.id
     };
 
@@ -146,7 +147,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' && options.schema !== true) {
+        if (data === 'json obj data unvalid' && options.schema === true) {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -158,7 +159,7 @@ class TuyaDevice extends EventEmitter {
           data = await this.set(setOptions);
         }
 
-        if (typeof data !== 'object' || options.schema === true) {
+        if (typeof data !== 'object' || options.schema === true || options.cid) {
           // Return whole response
           resolve(data);
         } else if (options.dps) {
@@ -306,13 +307,21 @@ class TuyaDevice extends EventEmitter {
     const timeStamp = parseInt(new Date() / 1000, 10);
 
     // Construct payload
-    const payload = {
-      devId: options.devId || this.device.id,
-      gwId: this.device.gwID,
-      uid: '',
+    let payload = {
       t: timeStamp,
       dps
     };
+
+    if (options.cid) {
+      payload.cid = options.cid;
+    } else {
+      payload = {
+        devId: options.devId || this.device.id,
+        gwId: this.device.gwID,
+        uid: '',
+        ...payload
+      };
+    }
 
     debug('SET Payload:');
     debug(payload);
@@ -339,7 +348,7 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         reject(error);
       }
-    }), this._responseTimeout * 1000, () => {
+    }), this._responseTimeout * 5000, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
 
