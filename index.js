@@ -359,7 +359,7 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         reject(error);
       }
-    }), this._responseTimeout * 2000, () => {
+    }), this._responseTimeout * 2500, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
 
