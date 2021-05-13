@@ -55,8 +55,8 @@ class TuyaDevice extends EventEmitter {
     issueRefreshOnConnect = false
   } = {}) {
     super();
+
     // Set device to user-passed options
-    if (!cid) cid = undefined
     this.device = {ip, port, id, cid, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
