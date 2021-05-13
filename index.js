@@ -23,6 +23,8 @@ const {UDP_KEY} = require('./lib/config');
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
  * @param {String} [options.id] ID of device (also called `devId`)
+ * @param {String} [options.cid]
+ * if specified, treat this device as a sub device of a zigbee gateway
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
@@ -43,6 +45,7 @@ class TuyaDevice extends EventEmitter {
     ip,
     port = 6668,
     id,
+    cid,
     gwID = id,
     key,
     productKey,
@@ -53,7 +56,8 @@ class TuyaDevice extends EventEmitter {
   } = {}) {
     super();
     // Set device to user-passed options
-    this.device = {ip, port, id, gwID, key, productKey, version};
+    if (!cid) cid = undefined
+    this.device = {ip, port, id, cid, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
       issueRefreshOnConnect
@@ -129,9 +133,12 @@ class TuyaDevice extends EventEmitter {
       devId: this.device.id,
       t: Math.round(new Date().getTime() / 1000).toString(),
       dps: {},
-      cid: options.cid,
       uid: this.device.id
     };
+
+    if (this.device.cid) {
+      payload.cid = this.device.cid;
+    }
 
     debug('GET Payload:');
     debug(payload);
@@ -147,7 +154,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' && options.schema === true) {
+        if (data === 'json obj data unvalid') {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -159,7 +166,7 @@ class TuyaDevice extends EventEmitter {
           data = await this.set(setOptions);
         }
 
-        if (typeof data !== 'object' || options.schema === true || options.cid) {
+        if (typeof data !== 'object' || options.schema === true) {
           // Return whole response
           resolve(data);
         } else if (options.dps) {
@@ -205,6 +212,10 @@ class TuyaDevice extends EventEmitter {
       uid: this.device.id
     };
 
+    if (this.device.cid) {
+      payload.cid = this.device.cid;
+    }
+
     debug('GET Payload:');
     debug(payload);
 
@@ -219,7 +230,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' && options.schema !== true) {
+        if (data === 'json obj data unvalid') {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -312,8 +323,8 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    if (options.cid) {
-      payload.cid = options.cid;
+    if (this.device.cid) {
+      payload.cid = this.device.cid;
     } else {
       payload = {
         devId: options.devId || this.device.id,
@@ -348,7 +359,7 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         reject(error);
       }
-    }), this._responseTimeout * 5000, () => {
+    }), this._responseTimeout * 2000, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
 
