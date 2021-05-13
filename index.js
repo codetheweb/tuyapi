@@ -24,7 +24,7 @@ const {UDP_KEY} = require('./lib/config');
  * @param {Number} [options.port=6668] port of device
  * @param {String} [options.id] ID of device (also called `devId`)
  * @param {String} [options.cid]
- * if specified, treat this device as a sub device of a zigbee gateway
+ * if specified, use id and ip of tuya zigbee gateway to communicate with subdevice using its cid
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
