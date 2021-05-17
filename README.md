@@ -186,6 +186,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [unparagoned](https://github.com/unparagoned)
 - [kueblc](https://github.com/kueblc)
 - [stevoh6](https://github.com/stevoh6)
+- [imbenwolf](https://github.com/imbenwolf)
 
 (If you're not on the above list, open a PR.)
 

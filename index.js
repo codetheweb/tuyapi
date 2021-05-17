@@ -52,6 +52,7 @@ class TuyaDevice extends EventEmitter {
     issueRefreshOnConnect = false
   } = {}) {
     super();
+
     // Set device to user-passed options
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
@@ -111,6 +112,8 @@ class TuyaDevice extends EventEmitter {
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to get its status
    * @example
    * // get first, default property from device
    * tuya.get().then(status => console.log(status))
@@ -132,6 +135,10 @@ class TuyaDevice extends EventEmitter {
       uid: this.device.id
     };
 
+    if (options.cid) {
+      payload.cid = options.cid;
+    }
+
     debug('GET Payload:');
     debug(payload);
 
@@ -146,7 +153,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' && options.schema !== true) {
+        if (data === 'json obj data unvalid') {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -181,6 +188,8 @@ class TuyaDevice extends EventEmitter {
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to refresh its status
    * @param {Array.Number} [options.requestedDPS=[4,5,6,18,19,20]]
    * only set this if you know what you're doing
    * @example
@@ -204,6 +213,10 @@ class TuyaDevice extends EventEmitter {
       uid: this.device.id
     };
 
+    if (options.cid) {
+      payload.cid = options.cid;
+    }
+
     debug('GET Payload:');
     debug(payload);
 
@@ -218,7 +231,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' && options.schema !== true) {
+        if (data === 'json obj data unvalid') {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -250,6 +263,8 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} options
    * @param {Number} [options.dps=1] DPS index to set
    * @param {*} [options.set] value to set
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to set its property
    * @param {Boolean} [options.multiple=false]
    * Whether or not multiple properties should be set with options.data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
@@ -306,13 +321,21 @@ class TuyaDevice extends EventEmitter {
     const timeStamp = parseInt(new Date() / 1000, 10);
 
     // Construct payload
-    const payload = {
-      devId: options.devId || this.device.id,
-      gwId: this.device.gwID,
-      uid: '',
+    let payload = {
       t: timeStamp,
       dps
     };
+
+    if (options.cid) {
+      payload.cid = options.cid;
+    } else {
+      payload = {
+        devId: options.devId || this.device.id,
+        gwId: this.device.gwID,
+        uid: '',
+        ...payload
+      };
+    }
 
     debug('SET Payload:');
     debug(payload);
@@ -339,7 +362,7 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         reject(error);
       }
-    }), this._responseTimeout * 1000, () => {
+    }), this._responseTimeout * 2500, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
 
