@@ -23,8 +23,6 @@ const {UDP_KEY} = require('./lib/config');
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
  * @param {String} [options.id] ID of device (also called `devId`)
- * @param {String} [options.cid]
- * if specified, use id and ip of tuya zigbee gateway to communicate with subdevice using its cid
  * @param {String} [options.gwID=''] gateway ID (not needed for most devices),
  * if omitted assumed to be the same as `options.id`
  * @param {String} options.key encryption key of device (also called `localKey`)
@@ -45,7 +43,6 @@ class TuyaDevice extends EventEmitter {
     ip,
     port = 6668,
     id,
-    cid,
     gwID = id,
     key,
     productKey,
@@ -57,7 +54,7 @@ class TuyaDevice extends EventEmitter {
     super();
 
     // Set device to user-passed options
-    this.device = {ip, port, id, cid, gwID, key, productKey, version};
+    this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
       issueRefreshOnConnect
@@ -115,6 +112,8 @@ class TuyaDevice extends EventEmitter {
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to get its status
    * @example
    * // get first, default property from device
    * tuya.get().then(status => console.log(status))
@@ -136,8 +135,8 @@ class TuyaDevice extends EventEmitter {
       uid: this.device.id
     };
 
-    if (this.device.cid) {
-      payload.cid = this.device.cid;
+    if (options.cid) {
+      payload.cid = options.cid;
     }
 
     debug('GET Payload:');
@@ -189,6 +188,8 @@ class TuyaDevice extends EventEmitter {
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
    * DPS index to return
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to refresh its status
    * @param {Array.Number} [options.requestedDPS=[4,5,6,18,19,20]]
    * only set this if you know what you're doing
    * @example
@@ -212,8 +213,8 @@ class TuyaDevice extends EventEmitter {
       uid: this.device.id
     };
 
-    if (this.device.cid) {
-      payload.cid = this.device.cid;
+    if (options.cid) {
+      payload.cid = options.cid;
     }
 
     debug('GET Payload:');
@@ -262,6 +263,8 @@ class TuyaDevice extends EventEmitter {
    * @param {Object} options
    * @param {Number} [options.dps=1] DPS index to set
    * @param {*} [options.set] value to set
+   * @param {String} [options.cid]
+   * if specified, use device id of zigbee gateway and cid of subdevice to set its property
    * @param {Boolean} [options.multiple=false]
    * Whether or not multiple properties should be set with options.data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
@@ -323,8 +326,8 @@ class TuyaDevice extends EventEmitter {
       dps
     };
 
-    if (this.device.cid) {
-      payload.cid = this.device.cid;
+    if (options.cid) {
+      payload.cid = options.cid;
     } else {
       payload = {
         devId: options.devId || this.device.id,

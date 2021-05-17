@@ -381,15 +381,6 @@ one, try passing both if possible.</p>
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.cid</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
-  </td>
-  <td class='break-word'><span>if specified, use id and ip of tuya zigbee gateway to communicate with subdevice using its cid
-</span></td>
-</tr>
-
-
-              
-                <tr>
   <td class='break-word'><span class='code bold'>options.gwID</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>
   
     (default <code>&#39;&#39;</code>)
@@ -574,6 +565,15 @@ Defaults to returning only the value of the first DPS index.</p>
 
 
               
+                <tr>
+  <td class='break-word'><span class='code bold'>options.cid</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
+  </td>
+  <td class='break-word'><span>if specified, use device id of zigbee gateway and cid of subdevice to get its status
+</span></td>
+</tr>
+
+
+              
             </tbody>
           </table>
           
@@ -692,6 +692,15 @@ Defaults to returning all values.</p>
     (default <code>1</code>)
   </td>
   <td class='break-word'><span>DPS index to return
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.cid</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
+  </td>
+  <td class='break-word'><span>if specified, use device id of zigbee gateway and cid of subdevice to refresh its status
 </span></td>
 </tr>
 
@@ -824,6 +833,15 @@ tuya.refresh({<span class="hljs-attr">schema</span>: <span class="hljs-literal">
   <td class='break-word'><span class='code bold'>options.set</span> <code class='quiet'>any?</code>
   </td>
   <td class='break-word'><span>value to set
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.cid</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>?</code>
+  </td>
+  <td class='break-word'><span>if specified, use device id of zigbee gateway and cid of subdevice to set its property
 </span></td>
 </tr>
 
