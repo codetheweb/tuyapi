@@ -8,7 +8,7 @@ Install it by running `npm i @tuyapi/cli -g`. If it returns an error, you may ne
 
 This method is fast and easy. If you're having trouble manually linking your device with the below method, we recommend you try this. All devices that you want to use **must** be registered in either the Tuya Smart app or the Smart Life app.
 
-1. Follow steps 1 through 5 from the "Linking a Tuya device with Smart Link" method below.
+1. Follow steps 1 through 2 from the "Linking a Tuya device with Smart Link" method below.
 2. Go to Cloud -> Project and click the project you created earlier. Then click "Link Device". Click the "Link Devices by App Account" tab.
 3. Click "Add App Account" and scan the QR code from your smart phone/tablet app by going to the 'Me' tab in the app, and tapping a QR code / Scan button in the upper right. Your account will now be linked.
 4. On the command line, run `tuya-cli wizard`. It will prompt you for required information, and will then list out all your device names, IDs, and keys for use with TuyAPI. Copy and save this information to a safe place for later reference.
@@ -18,29 +18,12 @@ This method is fast and easy. If you're having trouble manually linking your dev
 This method requires you to create a developer account on [iot.tuya.com](https://iot.tuya.com). It doesn't matter if the device(s) are currently registered in the Tuya Smart app or Smart Life app or not.
 
 1. Create a new account on [iot.tuya.com](https://iot.tuya.com) and make sure you are logged in. **Select United States as your country when signing up.** This seems to skip a [required verify step](https://github.com/codetheweb/tuyapi/issues/425).
-2. Go to Cloud -> Project in the left nav drawer and click "Create". After you've created a new project, click into it. The access ID and access key are equivalent to the API key and API secret values need in step 6.
+2. Go to Cloud -> Project in the left nav drawer and click "Create". **Make sure you select "Smart Home" for the "Industry" field.** After you've created a new project, click into it. The access ID and access key are equivalent to the API key and API secret values need in step 6.
 3. Go to App -> App SDK -> Develpment in the nav drawer. Click "Create" and enter whatever you want for the package names and Channel ID (for the Android package name, you must enter a string beginning with `com.`). Take note of the **Channel ID** you entered. This is equivalent to the `schema` value needed in step 6. Ignore any app key and app secret values you see in this section as they are not used.
 4. Go to Cloud -> Project and click the project you created earlier. Then click "Link Device". Click the "Link devices by Apps" tab, and click "Add Apps". Check the app you just created and click "Ok".
-5. On the same page, click "API Products" on the left side. You will need to complete several steps for the following API Products
-    - Smart Home Devices Management
-    - Authorization
-    - Smart Home Family Management
-    - Smart Home Data Service
-    - Smart Home Scene Linkage
-
-    For each one
-    - Click into the Product and click **Subscribe**
-    - Select the free tier and **Buy Now**
-    - Click back to the API Products page and select the API again
-    - Click to the **Projects** tab
-    - Click **New Authorization
-    - Select your Project from the dropdown and click **OK**
-    
-It can take 10-15 minutes for these changes to take effect. 
-
-6. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
-7. On the command line, run `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your schema/Channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us`.  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
-8. Your devices should link in under a minute and the parameters required to control them will be printed out to the console. If you experience problems, first make sure any smart phone/tablet app that you use with your devices is completely closed and not attempting to communicate with any of the devices.
+5. Put your devices into linking mode.  This process is specific to each type of device, find instructions in the Tuya Smart app. Usually this consists of turning it on and off several times or holding down a button.
+6. On the command line, run `tuya-cli link --api-key <your api key> --api-secret <your api secret> --schema <your schema/Channel ID> --ssid <your WiFi name> --password <your WiFi password> --region us`.  For the region parameter, choose the two-letter country code from `us`, `eu`, and `cn` that is geographically closest to you.
+7. Your devices should link in under a minute and the parameters required to control them will be printed out to the console. If you experience problems, first make sure any smart phone/tablet app that you use with your devices is completely closed and not attempting to communicate with any of the devices.
 
 ### Troubleshooting
 
