@@ -443,6 +443,7 @@ class TuyaDevice extends EventEmitter {
   connect() {
     if (!this.isConnected()) {
       return new Promise((resolve, reject) => {
+        let resolvedOrRejected = false;
         this.client = new net.Socket();
 
         // Attempt to connect
@@ -462,7 +463,11 @@ class TuyaDevice extends EventEmitter {
            */
           // this.emit('error', new Error('connection timed out'));
           this.client.destroy();
-          reject(new Error('connection timed out'));
+          this.emit('error', new Error('connection timed out'));
+          if (!resolvedOrRejected) {
+            reject(new Error('connection timed out'));
+            resolvedOrRejected = true;
+          }
         });
 
         // Add event listeners to socket
@@ -514,8 +519,9 @@ class TuyaDevice extends EventEmitter {
 
           this.emit('error', new Error('Error from socket: ' + err.message));
 
-          if (!this._connected) {
+          if (!this._connected && !resolvedOrRejected) {
             reject(err);
+            resolvedOrRejected = true;
           }
 
           this.client.destroy();
@@ -565,6 +571,7 @@ class TuyaDevice extends EventEmitter {
 
           // Return
           resolve(true);
+          resolvedOrRejected = true;
         });
       });
     }
