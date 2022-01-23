@@ -570,8 +570,10 @@ class TuyaDevice extends EventEmitter {
           }
 
           // Return
-          resolve(true);
-          resolvedOrRejected = true;
+          if (!resolvedOrRejected) {
+            resolve(true);
+            resolvedOrRejected = true;
+          }
         });
       });
     }
