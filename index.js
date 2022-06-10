@@ -10,7 +10,7 @@ const debug = require('debug')('TuyAPI');
 // Helpers
 const {isValidString} = require('./lib/utils');
 const {MessageParser, CommandType} = require('./lib/message-parser');
-const {UDP_KEY} = require('./lib/config');:
+const {UDP_KEY} = require('./lib/config');
 
 /**
  * Represents a Tuya device.
