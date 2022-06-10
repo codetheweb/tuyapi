@@ -10,7 +10,7 @@ const debug = require('debug')('TuyAPI');
 // Helpers
 const {isValidString} = require('./lib/utils');
 const {MessageParser, CommandType} = require('./lib/message-parser');
-const {UDP_KEY} = require('./lib/config');
+const {UDP_KEY} = require('./lib/config');:
 
 /**
  * Represents a Tuya device.
@@ -49,7 +49,8 @@ class TuyaDevice extends EventEmitter {
     version = 3.1,
     nullPayloadOnJSONError = false,
     issueGetOnConnect = true,
-    issueRefreshOnConnect = false
+    issueRefreshOnConnect = false,
+    issueRefreshOnPing = false
   } = {}) {
     super();
 
@@ -57,7 +58,8 @@ class TuyaDevice extends EventEmitter {
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
-      issueRefreshOnConnect
+      issueRefreshOnConnect,
+      issueRefreshOnPing
     };
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
@@ -429,6 +431,9 @@ class TuyaDevice extends EventEmitter {
 
     // Send ping
     this.client.write(buffer);
+    if (this.globalOptions.issueRefreshOnPing) {
+      this.refresh();
+    }
   }
 
   /**
