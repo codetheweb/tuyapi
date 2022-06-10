@@ -433,6 +433,7 @@ class TuyaDevice extends EventEmitter {
     this.client.write(buffer);
     if (this.globalOptions.issueRefreshOnPing) {
       this.refresh();
+      this.get();
     }
   }
 
