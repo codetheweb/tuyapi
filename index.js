@@ -34,6 +34,8 @@ const {UDP_KEY} = require('./lib/config');
  * connection is established. This should probably be `false` in synchronous usage.
  * @param {Boolean} [options.issueRefreshOnConnect=false] if true, sends DP_REFRESH request after
  * connection is established. This should probably be `false` in synchronous usage.
+ * @param {Boolean} [options.issueRefreshOnPing=false] if true, sends DP_REFRESH and GET request after
+ * every ping. This should probably be `false` in synchronous usage.
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
