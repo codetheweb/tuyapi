@@ -39,7 +39,7 @@
   "dependencies": {
     "debug": "4.1.1",
     "p-retry": "4.2.0",
-    "p-timeout": "3.2.0"
+    "p-timeout": "5.1.0"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.1.4",
