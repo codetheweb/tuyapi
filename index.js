@@ -34,6 +34,8 @@ const {UDP_KEY} = require('./lib/config');
  * connection is established. This should probably be `false` in synchronous usage.
  * @param {Boolean} [options.issueRefreshOnConnect=false] if true, sends DP_REFRESH request after
  * connection is established. This should probably be `false` in synchronous usage.
+ * @param {Boolean} [options.issueRefreshOnPing=false] if true, sends DP_REFRESH and GET request after
+ * every ping. This should probably be `false` in synchronous usage.
  * @example
  * const tuya = new TuyaDevice({id: 'xxxxxxxxxxxxxxxxxxxx',
  *                              key: 'xxxxxxxxxxxxxxxx'})
@@ -49,7 +51,8 @@ class TuyaDevice extends EventEmitter {
     version = 3.1,
     nullPayloadOnJSONError = false,
     issueGetOnConnect = true,
-    issueRefreshOnConnect = false
+    issueRefreshOnConnect = false,
+    issueRefreshOnPing = false
   } = {}) {
     super();
 
@@ -57,7 +60,8 @@ class TuyaDevice extends EventEmitter {
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
-      issueRefreshOnConnect
+      issueRefreshOnConnect,
+      issueRefreshOnPing
     };
 
     this.nullPayloadOnJSONError = nullPayloadOnJSONError;
@@ -429,6 +433,10 @@ class TuyaDevice extends EventEmitter {
 
     // Send ping
     this.client.write(buffer);
+    if (this.globalOptions.issueRefreshOnPing) {
+      this.refresh();
+      this.get();
+    }
   }
 
   /**
