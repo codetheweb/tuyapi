@@ -19,7 +19,7 @@ const {UDP_KEY} = require('./lib/config');
  * you're experiencing problems when only passing
  * one, try passing both if possible.
  * @class
- * @param {Object} options
+ * @param {Object} options Options object
  * @param {String} [options.ip] IP of device
  * @param {Number} [options.port=6668] port of device
  * @param {String} [options.id] ID of device (also called `devId`)
@@ -108,13 +108,13 @@ class TuyaDevice extends EventEmitter {
     this._dpRefreshIds = [4, 5, 6, 18, 19, 20];
     this._tmpLocalKey = null;
     this._tmpRemoteKey = null;
-    this.session_key = null;
+    this.sessionKey = null;
   }
 
   /**
    * Gets a device's current status.
    * Defaults to returning only the value of the first DPS index.
-   * @param {Object} [options]
+   * @param {Object} [options] Options object
    * @param {Boolean} [options.schema]
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
@@ -162,8 +162,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        //console.log("DATA:" + data)
-        if (data === 'json obj data unvalid' /*|| data === 'data format error' || data === 'devid not found'*/) {
+        if (data === 'json obj data unvalid' /* || data === 'data format error' || data === 'devid not found' */) {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -193,7 +192,7 @@ class TuyaDevice extends EventEmitter {
   /**
    * Refresh a device's current status.
    * Defaults to returning all values.
-   * @param {Object} [options]
+   * @param {Object} [options] Options object
    * @param {Boolean} [options.schema]
    * true to return entire list of properties from device
    * @param {Number} [options.dps=1]
@@ -270,7 +269,7 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * Sets a property on a device.
-   * @param {Object} options
+   * @param {Object} options Options object
    * @param {Number} [options.dps=1] DPS index to set
    * @param {*} [options.set] value to set
    * @param {String} [options.cid]
@@ -346,6 +345,7 @@ class TuyaDevice extends EventEmitter {
         ...payload
       };
     }
+
     if (this.device.version === '3.4') {
       /*
       {
@@ -471,12 +471,7 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
-   * Create a deferred promise that resolves as soon as the user successfully logged in into Daikin Cloud
-   *
-   * Note: This promise could be resolved as soon as the final redirect is received from server but before
-   * the browser shows it, so add a delay after this method before you close the proxy server.
-   *
-   * @returns {Promise<any>} Instance of openid-client.TokenSet with the Tokens for further communication
+   * Create a deferred promise that resolves as soon as the connection is established.
    */
   createDeferredConnectPromise() {
     let res;
@@ -545,6 +540,7 @@ class TuyaDevice extends EventEmitter {
       // Return if already connected
       return Promise.resolve(true);
     }
+
     if (this.connectPromise) {
       // If a connect approach still in progress simply return same Promise
       return this.connectPromise;
@@ -645,7 +641,7 @@ class TuyaDevice extends EventEmitter {
       this.client.setTimeout(0);
 
       if (this.device.version === '3.4') {
-        // negotiate session key then emit 'connected'
+        // Negotiate session key then emit 'connected'
         // 16 bytes random + 32 bytes hmac
         try {
           this._tmpLocalKey = this.device.parser.cipher.random();
@@ -656,11 +652,12 @@ class TuyaDevice extends EventEmitter {
             sequenceN: ++this._currentSequenceN
           });
 
-          debug('Protocol 3.4: Negotiate Session Key - Send Msg 0x03')
+          debug('Protocol 3.4: Negotiate Session Key - Send Msg 0x03');
           this.client.write(buffer);
-        } catch(error) {
-          debug("Error binding key for protocol 3.4: " + error);
+        } catch (error) {
+          debug('Error binding key for protocol 3.4: ' + error);
         }
+
         return;
       }
 
@@ -680,7 +677,7 @@ class TuyaDevice extends EventEmitter {
     // Protocol 3.4 - Response to Msg 0x03
     if (packet.commandByte === CommandType.RENAME_GW) {
       if (!this.connectPromise) {
-        debug(`Protocol 3.4: Ignore Key exchange message because no connection in progress.`);
+        debug('Protocol 3.4: Ignore Key exchange message because no connection in progress.');
         return;
       }
 
@@ -689,7 +686,7 @@ class TuyaDevice extends EventEmitter {
       debug('Protocol 3.4: Local Random Key: ' + this._tmpLocalKey.toString('hex'));
       debug('Protocol 3.4: Remote Random Key: ' + this._tmpRemoteKey.toString('hex'));
 
-      const calcLocalHmac =  this.device.parser.cipher.hmac(this._tmpLocalKey).toString('hex');
+      const calcLocalHmac = this.device.parser.cipher.hmac(this._tmpLocalKey).toString('hex');
       const expLocalHmac = packet.payload.slice(16, 16 + 32).toString('hex');
       if (expLocalHmac !== calcLocalHmac) {
         const err = new Error(`HMAC mismatch(keys): expected ${expLocalHmac}, was ${calcLocalHmac}. ${packet.payload.toString('hex')}`);
@@ -697,11 +694,12 @@ class TuyaDevice extends EventEmitter {
           this.connectPromise.reject(err);
           delete this.connectPromise;
         }
+
         this.emit('error', err);
         return;
       }
 
-      // send response 0x05
+      // Send response 0x05
       const buffer = this.device.parser.encode({
         data: this.device.parser.cipher.hmac(this._tmpRemoteKey),
         encrypted: true,
@@ -711,18 +709,18 @@ class TuyaDevice extends EventEmitter {
 
       this.client.write(buffer);
 
-      // calculate session key
-      this.session_key = Buffer.from(this._tmpLocalKey);
+      // Calculate session key
+      this.sessionKey = Buffer.from(this._tmpLocalKey);
       for (let i = 0; i < this._tmpLocalKey.length; i++) {
-        this.session_key[i] = this._tmpLocalKey[i] ^ this._tmpRemoteKey[i];
+        this.sessionKey[i] = this._tmpLocalKey[i] ^ this._tmpRemoteKey[i];
       }
 
-      this.session_key = this.device.parser.cipher.encrypt34({data:this.session_key});
-      debug('Protocol 3.4: Session Key: ' + this.session_key.toString('hex'))
+      this.sessionKey = this.device.parser.cipher._encrypt34({data: this.sessionKey});
+      debug('Protocol 3.4: Session Key: ' + this.sessionKey.toString('hex'));
       debug('Protocol 3.4: Initialization done');
 
-      this.device.parser.cipher.setSessionKey(this.session_key);
-      this.device.key = this.session_key;
+      this.device.parser.cipher.setSessionKey(this.sessionKey);
+      this.device.key = this.sessionKey;
 
       return this._finishConnect();
     }
@@ -740,11 +738,11 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
-    if ((
-          packet.commandByte === CommandType.CONTROL ||
-          packet.commandByte === CommandType.CONTROL_NEW
-        ) && packet.payload === false
-    ) {
+    if (
+      (
+        packet.commandByte === CommandType.CONTROL ||
+        packet.commandByte === CommandType.CONTROL_NEW
+      ) && packet.payload === false) {
       debug('Got SET ack.');
       return;
     }
@@ -769,7 +767,7 @@ class TuyaDevice extends EventEmitter {
       this.emit('dp-refresh', packet.payload, packet.commandByte, packet.sequenceN);
     } else {
       debug('Received DATA packet');
-      debug('data: ' + packet.commandByte + ' : ' + packet.payload.toString('hex'))
+      debug('data: ' + packet.commandByte + ' : ' + packet.payload.toString('hex'));
       /**
        * Emitted when data is returned from device.
        * @event TuyaDevice#data
@@ -785,9 +783,10 @@ class TuyaDevice extends EventEmitter {
     // Status response to SET command
 
     // 3.4 response sequenceN is not '0' just next TODO verify
-    if (/*packet.sequenceN === 0 &&*/
-        packet.commandByte === CommandType.STATUS &&
-        typeof this._setResolver === 'function') {
+    if (/* Former code: packet.sequenceN === 0 && */
+      packet.commandByte === CommandType.STATUS &&
+      typeof this._setResolver === 'function'
+    ) {
       this._setResolver(packet.payload);
 
       // Remove resolver
@@ -816,7 +815,7 @@ class TuyaDevice extends EventEmitter {
     debug('Disconnect');
 
     this._connected = false;
-    this.device.parser.cipher.setSessionKey(null)
+    this.device.parser.cipher.setSessionKey(null);
 
     // Clear timeouts
     clearTimeout(this._sendTimeout);
@@ -851,6 +850,8 @@ class TuyaDevice extends EventEmitter {
 
   /**
    * @deprecated since v3.0.0. Will be removed in v4.0.0. Use find() instead.
+   * @param {Object} options Options object
+   * @returns {Promise<Boolean|Array>} Promise that resolves to `true` if device is found, `false` otherwise.
    */
   resolveId(options) {
     console.warn('resolveId() is deprecated since v4.0.0. Will be removed in v5.0.0. Use find() instead.');
@@ -861,7 +862,7 @@ class TuyaDevice extends EventEmitter {
    * Finds an ID or IP, depending on what's missing.
    * If you didn't pass an ID or IP to the constructor,
    * you must call this before anything else.
-   * @param {Object} [options]
+   * @param {Object} [options] Options object
    * @param {Boolean} [options.all]
    * true to return array of all found devices
    * @param {Number} [options.timeout=10]
