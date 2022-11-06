@@ -30,7 +30,7 @@ const {UDP_KEY} = require('./lib/config');
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.nullPayloadOnJSONError=false] if true, emits a data event
  * containing a payload of null values for on-device JSON parsing errors
- * @param {Boolean} [options.issueGetOnConnect=false] if true, sends GET request after
+ * @param {Boolean} [options.issueGetOnConnect=true] if true, sends GET request after
  * connection is established. This should probably be `false` in synchronous usage.
  * @param {Boolean} [options.issueRefreshOnConnect=false] if true, sends DP_REFRESH request after
  * connection is established. This should probably be `false` in synchronous usage.
@@ -784,7 +784,7 @@ class TuyaDevice extends EventEmitter {
 
     // Status response to SET command
 
-    // 3.4 response sequenceN is not '0' just next
+    // 3.4 response sequenceN is not '0' just next TODO verify
     if (/*packet.sequenceN === 0 &&*/
         packet.commandByte === CommandType.STATUS &&
         typeof this._setResolver === 'function') {
