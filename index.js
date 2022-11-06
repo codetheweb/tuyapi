@@ -30,7 +30,7 @@ const {UDP_KEY} = require('./lib/config');
  * @param {Number} [options.version=3.1] protocol version
  * @param {Boolean} [options.nullPayloadOnJSONError=false] if true, emits a data event
  * containing a payload of null values for on-device JSON parsing errors
- * @param {Boolean} [options.issueGetOnConnect=true] if true, sends GET request after
+ * @param {Boolean} [options.issueGetOnConnect=false] if true, sends GET request after
  * connection is established. This should probably be `false` in synchronous usage.
  * @param {Boolean} [options.issueRefreshOnConnect=false] if true, sends DP_REFRESH request after
  * connection is established. This should probably be `false` in synchronous usage.
@@ -106,6 +106,9 @@ class TuyaDevice extends EventEmitter {
     // List of dps which needed CommandType.DP_REFRESH (command 18) to force refresh their values.
     // Power data - DP 19 on some 3.1/3.3 devices, DP 5 for some 3.1 devices.
     this._dpRefreshIds = [4, 5, 6, 18, 19, 20];
+    this._tmpLocalKey = null;
+    this._tmpRemoteKey = null;
+    this.session_key = null;
   }
 
   /**
@@ -146,10 +149,12 @@ class TuyaDevice extends EventEmitter {
     debug('GET Payload:');
     debug(payload);
 
+    const commandByte = this.device.version === '3.4' ? CommandType.DP_QUERY_NEW : CommandType.DP_QUERY;
+
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: payload,
-      commandByte: CommandType.DP_QUERY,
+      commandByte,
       sequenceN: ++this._currentSequenceN
     });
 
@@ -157,7 +162,8 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid') {
+        //console.log("DATA:" + data)
+        if (data === 'json obj data unvalid' /*|| data === 'data format error' || data === 'devid not found'*/) {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
@@ -305,7 +311,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Defaults
-    let dps = {};
+    let dps;
 
     if (options.multiple === true) {
       dps = options.data;
@@ -322,7 +328,7 @@ class TuyaDevice extends EventEmitter {
     options.shouldWaitForResponse = typeof options.shouldWaitForResponse === 'undefined' ? true : options.shouldWaitForResponse;
 
     // Get time
-    const timeStamp = parseInt(new Date() / 1000, 10);
+    const timeStamp = parseInt(Date.now() / 1000, 10);
 
     // Construct payload
     let payload = {
@@ -340,15 +346,40 @@ class TuyaDevice extends EventEmitter {
         ...payload
       };
     }
+    if (this.device.version === '3.4') {
+      /*
+      {
+        "data": {
+          "cid": "xxxxxxxxxxxxxxxx",
+          "ctype": 0,
+          "dps": {
+            "1": "manual"
+          }
+        },
+        "protocol": 5,
+        "t": 1633243332
+      }
+      */
+      payload = {
+        data: {
+          ctype: 0,
+          ...payload
+        },
+        protocol: 5,
+        t: timeStamp
+      };
+      delete payload.data.t;
+    }
 
     debug('SET Payload:');
     debug(payload);
 
+    const commandByte = this.device.version === '3.4' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
     // Encode into packet
     const buffer = this.device.parser.encode({
       data: payload,
       encrypted: true, // Set commands must be encrypted
-      commandByte: CommandType.CONTROL,
+      commandByte,
       sequenceN: ++this._currentSequenceN
     });
 
@@ -440,6 +471,67 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
+   * Create a deferred promise that resolves as soon as the user successfully logged in into Daikin Cloud
+   *
+   * Note: This promise could be resolved as soon as the final redirect is received from server but before
+   * the browser shows it, so add a delay after this method before you close the proxy server.
+   *
+   * @returns {Promise<any>} Instance of openid-client.TokenSet with the Tokens for further communication
+   */
+  createDeferredConnectPromise() {
+    let res;
+    let rej;
+
+    this.connectPromise = new Promise((resolve, reject) => {
+      res = resolve;
+      rej = reject;
+    });
+
+    this.connectPromise.resolve = res;
+    this.connectPromise.reject = rej;
+  }
+
+  /**
+   * Finish connecting and resolve
+   */
+  _finishConnect() {
+    this._connected = true;
+
+    /**
+     * Emitted when socket is connected
+     * to device. This event may be emitted
+     * multiple times within the same script,
+     * so don't use this as a trigger for your
+     * initialization code.
+     * @event TuyaDevice#connected
+     */
+    this.emit('connected');
+
+    // Periodically send heartbeat ping
+    this._pingPongInterval = setInterval(async () => {
+      await this._sendPing();
+    }, this._pingPongPeriod * 1000);
+
+    // Automatically ask for dp_refresh so we
+    // can emit a `dp_refresh` event as soon as possible
+    if (this.globalOptions.issueRefreshOnConnect) {
+      this.refresh();
+    }
+
+    // Automatically ask for current state so we
+    // can emit a `data` event as soon as possible
+    if (this.globalOptions.issueGetOnConnect) {
+      this.get();
+    }
+
+    // Resolve
+    if (this.connectPromise) {
+      this.connectPromise.resolve(true);
+      delete this.connectPromise;
+    }
+  }
+
+  /**
    * Connects to the device. Can be called even
    * if device is already connected.
    * @returns {Promise<Boolean>} `true` if connect succeeds
@@ -449,150 +541,191 @@ class TuyaDevice extends EventEmitter {
    * @emits TuyaDevice#error
    */
   connect() {
-    if (!this.isConnected()) {
-      return new Promise((resolve, reject) => {
-        let resolvedOrRejected = false;
-        this.client = new net.Socket();
-
-        // Attempt to connect
-        debug(`Connecting to ${this.device.ip}...`);
-        this.client.connect(this.device.port, this.device.ip);
-
-        // Default connect timeout is ~1 minute,
-        // 5 seconds is a more reasonable default
-        // since `retry` is used.
-        this.client.setTimeout(this._connectTimeout * 1000, () => {
-          /**
-           * Emitted on socket error, usually a
-           * result of a connection timeout.
-           * Also emitted on parsing errors.
-           * @event TuyaDevice#error
-           * @property {Error} error error event
-           */
-          // this.emit('error', new Error('connection timed out'));
-          this.client.destroy();
-          this.emit('error', new Error('connection timed out'));
-          if (!resolvedOrRejected) {
-            reject(new Error('connection timed out'));
-            resolvedOrRejected = true;
-          }
-        });
-
-        // Add event listeners to socket
-
-        // Parse response data
-        this.client.on('data', data => {
-          debug(`Received data: ${data.toString('hex')}`);
-
-          let packets;
-
-          try {
-            packets = this.device.parser.parse(data);
-
-            if (this.nullPayloadOnJSONError) {
-              for (const packet of packets) {
-                if (packet.payload && packet.payload === 'json obj data unvalid') {
-                  this.emit('error', packet.payload);
-
-                  packet.payload = {
-                    dps: {
-                      1: null,
-                      2: null,
-                      3: null,
-                      101: null,
-                      102: null,
-                      103: null
-                    }
-                  };
-                }
-              }
-            }
-          } catch (error) {
-            debug(error);
-            this.emit('error', error);
-            return;
-          }
-
-          packets.forEach(packet => {
-            debug('Parsed:');
-            debug(packet);
-
-            this._packetHandler.bind(this)(packet);
-          });
-        });
-
-        // Handle errors
-        this.client.on('error', err => {
-          debug('Error event from socket.', this.device.ip, err);
-
-          this.emit('error', new Error('Error from socket: ' + err.message));
-
-          if (!this._connected && !resolvedOrRejected) {
-            reject(err);
-            resolvedOrRejected = true;
-          }
-
-          this.client.destroy();
-        });
-
-        // Handle socket closure
-        this.client.on('close', () => {
-          debug(`Socket closed: ${this.device.ip}`);
-
-          this.disconnect();
-        });
-
-        this.client.on('connect', async () => {
-          debug('Socket connected.');
-
-          this._connected = true;
-
-          // Remove connect timeout
-          this.client.setTimeout(0);
-
-          /**
-           * Emitted when socket is connected
-           * to device. This event may be emitted
-           * multiple times within the same script,
-           * so don't use this as a trigger for your
-           * initialization code.
-           * @event TuyaDevice#connected
-           */
-          this.emit('connected');
-
-          // Periodically send heartbeat ping
-          this._pingPongInterval = setInterval(async () => {
-            await this._sendPing();
-          }, this._pingPongPeriod * 1000);
-
-          // Automatically ask for dp_refresh so we
-          // can emit a `dp_refresh` event as soon as possible
-          if (this.globalOptions.issueRefreshOnConnect) {
-            this.refresh();
-          }
-
-          // Automatically ask for current state so we
-          // can emit a `data` event as soon as possible
-          if (this.globalOptions.issueGetOnConnect) {
-            this.get();
-          }
-
-          // Return
-          if (!resolvedOrRejected) {
-            resolve(true);
-            resolvedOrRejected = true;
-          }
-        });
-      });
+    if (this.isConnected()) {
+      // Return if already connected
+      return Promise.resolve(true);
+    }
+    if (this.connectPromise) {
+      // If a connect approach still in progress simply return same Promise
+      return this.connectPromise;
     }
 
-    // Return if already connected
-    return Promise.resolve(true);
+    this.createDeferredConnectPromise();
+
+    this.client = new net.Socket();
+
+    // Default connect timeout is ~1 minute,
+    // 5 seconds is a more reasonable default
+    // since `retry` is used.
+    this.client.setTimeout(this._connectTimeout * 1000, () => {
+      /**
+       * Emitted on socket error, usually a
+       * result of a connection timeout.
+       * Also emitted on parsing errors.
+       * @event TuyaDevice#error
+       * @property {Error} error error event
+       */
+      // this.emit('error', new Error('connection timed out'));
+      this.client.destroy();
+      this.emit('error', new Error('connection timed out'));
+      if (this.connectPromise) {
+        this.connectPromise.reject(new Error('connection timed out'));
+        delete this.connectPromise;
+      }
+    });
+
+    // Add event listeners to socket
+
+    // Parse response data
+    this.client.on('data', data => {
+      debug(`Received data: ${data.toString('hex')}`);
+
+      let packets;
+
+      try {
+        packets = this.device.parser.parse(data);
+
+        if (this.nullPayloadOnJSONError) {
+          for (const packet of packets) {
+            if (packet.payload && packet.payload === 'json obj data unvalid') {
+              this.emit('error', packet.payload);
+
+              packet.payload = {
+                dps: {
+                  1: null,
+                  2: null,
+                  3: null,
+                  101: null,
+                  102: null,
+                  103: null
+                }
+              };
+            }
+          }
+        }
+      } catch (error) {
+        debug(error);
+        this.emit('error', error);
+        return;
+      }
+
+      packets.forEach(packet => {
+        debug('Parsed:');
+        debug(packet);
+
+        this._packetHandler.bind(this)(packet);
+      });
+    });
+
+    // Handle errors
+    this.client.on('error', err => {
+      debug('Error event from socket.', this.device.ip, err);
+
+      this.emit('error', new Error('Error from socket: ' + err.message));
+
+      if (!this._connected && this.connectPromise) {
+        this.connectPromise.reject(err);
+        delete this.connectPromise;
+      }
+
+      this.client.destroy();
+    });
+
+    // Handle socket closure
+    this.client.on('close', () => {
+      debug(`Socket closed: ${this.device.ip}`);
+
+      this.disconnect();
+    });
+
+    this.client.on('connect', async () => {
+      debug('Socket connected.');
+
+      // Remove connect timeout
+      this.client.setTimeout(0);
+
+      if (this.device.version === '3.4') {
+        // negotiate session key then emit 'connected'
+        // 16 bytes random + 32 bytes hmac
+        try {
+          this._tmpLocalKey = this.device.parser.cipher.random();
+          const buffer = this.device.parser.encode({
+            data: this._tmpLocalKey,
+            encrypted: true,
+            commandByte: CommandType.BIND,
+            sequenceN: ++this._currentSequenceN
+          });
+
+          debug('Protocol 3.4: Negotiate Session Key - Send Msg 0x03')
+          this.client.write(buffer);
+        } catch(error) {
+          debug("Error binding key for protocol 3.4: " + error);
+        }
+        return;
+      }
+
+      this._finishConnect();
+    });
+
+    debug(`Connecting to ${this.device.ip}...`);
+    this.client.connect(this.device.port, this.device.ip);
+
+    return this.connectPromise;
   }
 
   _packetHandler(packet) {
     // Response was received, so stop waiting
     clearTimeout(this._sendTimeout);
+
+    // Protocol 3.4 - Response to Msg 0x03
+    if (packet.commandByte === CommandType.RENAME_GW) {
+      if (!this.connectPromise) {
+        debug(`Protocol 3.4: Ignore Key exchange message because no connection in progress.`);
+        return;
+      }
+
+      // 16 bytes _tmpRemoteKey and hmac on _tmpLocalKey
+      this._tmpRemoteKey = packet.payload.subarray(0, 16);
+      debug('Protocol 3.4: Local Random Key: ' + this._tmpLocalKey.toString('hex'));
+      debug('Protocol 3.4: Remote Random Key: ' + this._tmpRemoteKey.toString('hex'));
+
+      const calcLocalHmac =  this.device.parser.cipher.hmac(this._tmpLocalKey).toString('hex');
+      const expLocalHmac = packet.payload.slice(16, 16 + 32).toString('hex');
+      if (expLocalHmac !== calcLocalHmac) {
+        const err = new Error(`HMAC mismatch(keys): expected ${expLocalHmac}, was ${calcLocalHmac}. ${packet.payload.toString('hex')}`);
+        if (this.connectPromise) {
+          this.connectPromise.reject(err);
+          delete this.connectPromise;
+        }
+        this.emit('error', err);
+        return;
+      }
+
+      // send response 0x05
+      const buffer = this.device.parser.encode({
+        data: this.device.parser.cipher.hmac(this._tmpRemoteKey),
+        encrypted: true,
+        commandByte: CommandType.RENAME_DEVICE,
+        sequenceN: ++this._currentSequenceN
+      });
+
+      this.client.write(buffer);
+
+      // calculate session key
+      this.session_key = Buffer.from(this._tmpLocalKey);
+      for (let i = 0; i < this._tmpLocalKey.length; i++) {
+        this.session_key[i] = this._tmpLocalKey[i] ^ this._tmpRemoteKey[i];
+      }
+
+      this.session_key = this.device.parser.cipher.encrypt34({data:this.session_key});
+      debug('Protocol 3.4: Session Key: ' + this.session_key.toString('hex'))
+      debug('Protocol 3.4: Initialization done');
+
+      this.device.parser.cipher.setSessionKey(this.session_key);
+      this.device.key = this.session_key;
+
+      return this._finishConnect();
+    }
 
     if (packet.commandByte === CommandType.HEART_BEAT) {
       debug(`Pong from ${this.device.ip}`);
@@ -607,7 +740,11 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
-    if (packet.commandByte === CommandType.CONTROL && packet.payload === false) {
+    if ((
+          packet.commandByte === CommandType.CONTROL ||
+          packet.commandByte === CommandType.CONTROL_NEW
+        ) && packet.payload === false
+    ) {
       debug('Got SET ack.');
       return;
     }
@@ -632,6 +769,7 @@ class TuyaDevice extends EventEmitter {
       this.emit('dp-refresh', packet.payload, packet.commandByte, packet.sequenceN);
     } else {
       debug('Received DATA packet');
+      debug('data: ' + packet.commandByte + ' : ' + packet.payload.toString('hex'))
       /**
        * Emitted when data is returned from device.
        * @event TuyaDevice#data
@@ -645,7 +783,9 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Status response to SET command
-    if (packet.sequenceN === 0 &&
+
+    // 3.4 response sequenceN is not '0' just next
+    if (/*packet.sequenceN === 0 &&*/
         packet.commandByte === CommandType.STATUS &&
         typeof this._setResolver === 'function') {
       this._setResolver(packet.payload);
@@ -676,6 +816,7 @@ class TuyaDevice extends EventEmitter {
     debug('Disconnect');
 
     this._connected = false;
+    this.device.parser.cipher.setSessionKey(null)
 
     // Clear timeouts
     clearTimeout(this._sendTimeout);
@@ -798,7 +939,8 @@ class TuyaDevice extends EventEmitter {
           // Update the parser
           this.device.parser = new MessageParser({
             key: this.device.key,
-            version: this.device.version});
+            version: this.device.version
+          });
         }
 
         // Cleanup
