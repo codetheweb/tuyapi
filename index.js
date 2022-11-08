@@ -163,7 +163,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Send request
       this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' /* || data === 'data format error' || data === 'devid not found' */) {
+        if (data === 'json obj data unvalid' || data === 'data format error'  /* || data === 'devid not found' */) {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
           // long as the DPS key exist on the device.
