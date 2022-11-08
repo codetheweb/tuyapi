@@ -147,9 +147,6 @@ class TuyaDevice extends EventEmitter {
       payload.cid = options.cid;
     }
 
-    debug('GET Payload:');
-    debug(payload);
-
     const commandByte = this.device.version === '3.4' ? CommandType.DP_QUERY_NEW : CommandType.DP_QUERY;
 
     // Create byte buffer
@@ -162,6 +159,9 @@ class TuyaDevice extends EventEmitter {
     let data;
     // Send request to read data - should work in most cases beside Protocol 3.2
     if (this.device.version !== '3.2') {
+      debug('GET Payload:');
+      debug(payload);
+
       data = await this._send(buffer);
     }
     // If data read failed with defined error messages or device uses Protocol 3.2 we need to read differently
@@ -173,6 +173,7 @@ class TuyaDevice extends EventEmitter {
       // back to using SEND with null value. This appears to always work as
       // long as the DPS key exist on the device.
       // For schema there's currently no fallback options
+      debug('GET needs to use SEND instead of DP_QUERY to get data');
       const setOptions = {
         dps: options.dps ? options.dps : 1,
         set: null
