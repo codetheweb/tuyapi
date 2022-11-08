@@ -134,7 +134,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Boolean|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
-  get(options = {}) {
+  async get(options = {}) {
     const payload = {
       gwId: this.device.gwID,
       devId: this.device.id,
@@ -159,35 +159,37 @@ class TuyaDevice extends EventEmitter {
       sequenceN: ++this._currentSequenceN
     });
 
-    // Send request and parse response
-    return new Promise((resolve, reject) => {
-      // Send request
-      this._send(buffer).then(async data => {
-        if (data === 'json obj data unvalid' || data === 'data format error'  /* || data === 'devid not found' */) {
-          // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
-          // back to using SEND with null value. This appears to always work as
-          // long as the DPS key exist on the device.
-          // For schema there's currently no fallback options
-          const setOptions = {
-            dps: options.dps ? options.dps : 1,
-            set: null
-          };
-          data = await this.set(setOptions);
-        }
+    let data;
+    // Send request to read data - should work in most cases beside Protocol 3.2
+    if (this.device.version !== '3.2') {
+      data = await this._send(buffer);
+    }
+    // If data read failed with defined error messages or device uses Protocol 3.2 we need to read differently
+    if (
+      this.device.version === '3.2' ||
+      data === 'json obj data unvalid' || data === 'data format error' /* || data === 'devid not found' */
+    ) {
+      // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
+      // back to using SEND with null value. This appears to always work as
+      // long as the DPS key exist on the device.
+      // For schema there's currently no fallback options
+      const setOptions = {
+        dps: options.dps ? options.dps : 1,
+        set: null
+      };
+      data = await this.set(setOptions);
+    }
 
-        if (typeof data !== 'object' || options.schema === true) {
-          // Return whole response
-          resolve(data);
-        } else if (options.dps) {
-          // Return specific property
-          resolve(data.dps[options.dps]);
-        } else {
-          // Return first property by default
-          resolve(data.dps['1']);
-        }
-      })
-        .catch(reject);
-    });
+    if (typeof data !== 'object' || options.schema === true) {
+      // Return whole response
+      return data;
+    } else if (options.dps) {
+      // Return specific property
+      return data.dps[options.dps];
+    } else {
+      // Return first property by default
+      return data.dps['1'];
+    }
   }
 
   /**
