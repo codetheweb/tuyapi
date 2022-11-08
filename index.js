@@ -57,6 +57,7 @@ class TuyaDevice extends EventEmitter {
     super();
 
     // Set device to user-passed options
+    version = version.toString();
     this.device = {ip, port, id, gwID, key, productKey, version};
     this.globalOptions = {
       issueGetOnConnect,
@@ -648,7 +649,7 @@ class TuyaDevice extends EventEmitter {
           const buffer = this.device.parser.encode({
             data: this._tmpLocalKey,
             encrypted: true,
-            commandByte: CommandType.BIND,
+            commandByte: CommandType.SESS_KEY_NEG_START,
             sequenceN: ++this._currentSequenceN
           });
 
@@ -675,7 +676,7 @@ class TuyaDevice extends EventEmitter {
     clearTimeout(this._sendTimeout);
 
     // Protocol 3.4 - Response to Msg 0x03
-    if (packet.commandByte === CommandType.RENAME_GW) {
+    if (packet.commandByte === CommandType.SESS_KEY_NEG_RES) {
       if (!this.connectPromise) {
         debug('Protocol 3.4: Ignore Key exchange message because no connection in progress.');
         return;
@@ -703,7 +704,7 @@ class TuyaDevice extends EventEmitter {
       const buffer = this.device.parser.encode({
         data: this.device.parser.cipher.hmac(this._tmpRemoteKey),
         encrypted: true,
-        commandByte: CommandType.RENAME_DEVICE,
+        commandByte: CommandType.SESS_KEY_NEG_FINISH,
         sequenceN: ++this._currentSequenceN
       });
 
