@@ -771,7 +771,7 @@ class TuyaDevice extends EventEmitter {
       this.emit('dp-refresh', packet.payload, packet.commandByte, packet.sequenceN);
     } else {
       debug('Received DATA packet');
-      debug('data: ' + packet.commandByte + ' : ' + packet.payload.toString('hex'));
+      debug('data: ' + packet.commandByte + ' : ' + (Buffer.isBuffer(packet.payload) ? packet.payload.toString('hex') : JSON.stringify(packet.payload)));
       /**
        * Emitted when data is returned from device.
        * @event TuyaDevice#data
