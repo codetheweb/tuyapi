@@ -177,7 +177,8 @@ class TuyaDevice extends EventEmitter {
       debug('GET needs to use SEND instead of DP_QUERY to get data');
       const setOptions = {
         dps: options.dps ? options.dps : 1,
-        set: null
+        set: null,
+        isSetCallToGetData: true
       };
       data = await this.set(setOptions);
     }
@@ -254,7 +255,8 @@ class TuyaDevice extends EventEmitter {
           // For schema there's currently no fallback options
           const setOptions = {
             dps: options.requestedDPS ? options.requestedDPS : this._dpRefreshIds,
-            set: null
+            set: null,
+            isSetCallToGetData: true
           };
           data = await this.set(setOptions);
         }
