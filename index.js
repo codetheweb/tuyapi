@@ -820,9 +820,9 @@ class TuyaDevice extends EventEmitter {
 
     // Status response to SET command which was used to GET data and returns DP_QUERY response
     if (
-        packet.commandByte === CommandType.DP_QUERY &&
-        typeof this._setResolver === 'function' &&
-        this._setResolveAllowGet === true
+      packet.commandByte === CommandType.DP_QUERY &&
+      typeof this._setResolver === 'function' &&
+      this._setResolveAllowGet === true
     ) {
       this._setResolver(packet.payload);
 
