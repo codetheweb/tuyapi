@@ -280,6 +280,8 @@ class TuyaDevice extends EventEmitter {
    * if specified, use device id of zigbee gateway and cid of subdevice to set its property
    * @param {Boolean} [options.multiple=false]
    * Whether or not multiple properties should be set with options.data
+   * @param {Boolean} [options.isSetCallToGetData=false]
+   * Wether or not the set command is used to get data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @param {Boolean} [options.shouldWaitForResponse=true] see
    * [#420](https://github.com/codetheweb/tuyapi/issues/420) and
@@ -330,6 +332,14 @@ class TuyaDevice extends EventEmitter {
 
     options.shouldWaitForResponse = typeof options.shouldWaitForResponse === 'undefined' ? true : options.shouldWaitForResponse;
 
+    // When set has only null values then it is used to get data
+    if (!options.isSetCallToGetData) {
+      options.isSetCallToGetData = true;
+      Object.keys(dps).forEach(key => {
+        options.isSetCallToGetData = options.isSetCallToGetData && dps[key] === null;
+      });
+    }
+
     // Get time
     const timeStamp = parseInt(Date.now() / 1000, 10);
 
@@ -375,6 +385,10 @@ class TuyaDevice extends EventEmitter {
       delete payload.data.t;
     }
 
+    if (options.shouldWaitForResponse && this._setResolver) {
+      throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
+    }
+
     debug('SET Payload:');
     debug(payload);
 
@@ -395,6 +409,7 @@ class TuyaDevice extends EventEmitter {
         this._send(buffer);
         if (options.shouldWaitForResponse) {
           this._setResolver = resolve;
+          this._setResolveAllowGet = options.isSetCallToGetData;
         } else {
           resolve();
         }
@@ -404,6 +419,7 @@ class TuyaDevice extends EventEmitter {
     }), this._responseTimeout * 2500, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
 
       this.emit(
         'error',
@@ -785,9 +801,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Status response to SET command
-
-    // 3.4 response sequenceN is not '0' just next TODO verify
-    if (/* Former code: packet.sequenceN === 0 && */
+    if (
       packet.commandByte === CommandType.STATUS &&
       typeof this._setResolver === 'function'
     ) {
@@ -795,6 +809,21 @@ class TuyaDevice extends EventEmitter {
 
       // Remove resolver
       this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
+      return;
+    }
+
+    // Status response to SET command which was used to GET data and returns DP_QUERY response
+    if (
+        packet.commandByte === CommandType.DP_QUERY &&
+        typeof this._setResolver === 'function' &&
+        this._setResolveAllowGet === true
+    ) {
+      this._setResolver(packet.payload);
+
+      // Remove resolver
+      this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
       return;
     }
 
