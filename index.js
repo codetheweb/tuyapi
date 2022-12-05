@@ -164,6 +164,7 @@ class TuyaDevice extends EventEmitter {
 
       data = await this._send(buffer);
     }
+
     // If data read failed with defined error messages or device uses Protocol 3.2 we need to read differently
     if (
       this.device.version === '3.2' ||
@@ -184,13 +185,15 @@ class TuyaDevice extends EventEmitter {
     if (typeof data !== 'object' || options.schema === true) {
       // Return whole response
       return data;
-    } else if (options.dps) {
+    }
+
+    if (options.dps) {
       // Return specific property
       return data.dps[options.dps];
-    } else {
-      // Return first property by default
-      return data.dps['1'];
     }
+
+    // Return first property by default
+    return data.dps['1'];
   }
 
   /**
