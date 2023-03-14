@@ -774,7 +774,17 @@ class TuyaDevice extends EventEmitter {
 
     // Returned DP refresh response is always empty. Device respond with command 8 without dps 1 instead.
     if (packet.commandByte === CommandType.DP_REFRESH) {
-      debug('Received DP_REFRESH empty response packet.');
+      // If we did not got any STATUS packet, we need to resolve the promise.
+      if (typeof this._setResolver === 'function') {
+        debug('Received DP_REFRESH empty response packet without STATUS packet');
+        this._setResolver(packet.payload);
+
+        // Remove resolver
+        this._setResolver = undefined;
+        this._setResolveAllowGet = undefined;
+      } else {
+        debug('Received DP_REFRESH response packet.');
+      }
       return;
     }
 
