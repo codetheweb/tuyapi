@@ -234,7 +234,7 @@ class TuyaDevice extends EventEmitter {
       payload.cid = options.cid;
     }
 
-    debug('GET Payload:');
+    debug('GET Payload (refresh):');
     debug(payload);
 
     // Create byte buffer
@@ -784,6 +784,13 @@ class TuyaDevice extends EventEmitter {
         this._setResolveAllowGet = undefined;
       } else {
         debug('Received DP_REFRESH response packet.');
+        // Call data resolver for sequence number
+        if (packet.sequenceN in this._resolvers) {
+          this._resolvers[packet.sequenceN](packet.payload);
+
+          // Remove resolver
+          delete this._resolvers[packet.sequenceN];
+        }
       }
       return;
     }
