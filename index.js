@@ -783,13 +783,15 @@ class TuyaDevice extends EventEmitter {
         this._setResolver = undefined;
         this._setResolveAllowGet = undefined;
       } else {
-        debug('Received DP_REFRESH response packet.');
         // Call data resolver for sequence number
         if (packet.sequenceN in this._resolvers) {
+          debug('Received DP_REFRESH response packet - resolve');
           this._resolvers[packet.sequenceN](packet.payload);
 
           // Remove resolver
           delete this._resolvers[packet.sequenceN];
+        } else {
+          debug('Received DP_REFRESH response packet.');
         }
       }
       return;
