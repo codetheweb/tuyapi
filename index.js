@@ -398,12 +398,13 @@ class TuyaDevice extends EventEmitter {
     debug(payload);
 
     const commandByte = this.device.version === '3.4' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
+    const sequenceN = ++this._currentSequenceN;
     // Encode into packet
     const buffer = this.device.parser.encode({
       data: payload,
       encrypted: true, // Set commands must be encrypted
       commandByte,
-      sequenceN: ++this._currentSequenceN
+      sequenceN
     });
 
     // Queue this request and limit concurrent set requests to one
@@ -425,6 +426,7 @@ class TuyaDevice extends EventEmitter {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
       this._setResolveAllowGet = undefined;
+      delete this._resolvers[sequenceN];
 
       this.emit(
         'error',
@@ -442,6 +444,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Any>} returned data for request
    */
   _send(buffer) {
+    const sequenceNo = this._currentSequenceN;
     // Retry up to 5 times
     return pRetry(() => {
       return new Promise((resolve, reject) => {
@@ -451,7 +454,7 @@ class TuyaDevice extends EventEmitter {
             this.client.write(buffer);
 
             // Add resolver function
-            this._resolvers[this._currentSequenceN] = data => resolve(data);
+            this._resolvers[sequenceNo] = data => resolve(data);
           } catch (error) {
             reject(error);
           }
@@ -782,6 +785,7 @@ class TuyaDevice extends EventEmitter {
         // Remove resolver
         this._setResolver = undefined;
         this._setResolveAllowGet = undefined;
+        delete this._resolvers[packet.sequenceN];
       } else {
         // Call data resolver for sequence number
         if (packet.sequenceN in this._resolvers) {
@@ -834,6 +838,7 @@ class TuyaDevice extends EventEmitter {
       // Remove resolver
       this._setResolver = undefined;
       this._setResolveAllowGet = undefined;
+      delete this._resolvers[packet.sequenceN];
       return;
     }
 
@@ -848,6 +853,7 @@ class TuyaDevice extends EventEmitter {
       // Remove resolver
       this._setResolver = undefined;
       this._setResolveAllowGet = undefined;
+      delete this._resolvers[packet.sequenceN];
       return;
     }
 
