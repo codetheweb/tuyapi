@@ -454,6 +454,7 @@ class TuyaDevice extends EventEmitter {
             this.client.write(buffer);
 
             // Add resolver function
+            debug('Adding resolver for sequence number: ' + sequenceNo);
             this._resolvers[sequenceNo] = data => resolve(data);
           } catch (error) {
             reject(error);
@@ -795,7 +796,7 @@ class TuyaDevice extends EventEmitter {
           // Remove resolver
           delete this._resolvers[packet.sequenceN];
         } else {
-          debug('Received DP_REFRESH response packet.');
+          debug('Received DP_REFRESH response packet - no resolver found for sequence number' + packet.sequenceN);
         }
       }
       return;
