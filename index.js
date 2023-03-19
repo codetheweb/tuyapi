@@ -457,7 +457,6 @@ class TuyaDevice extends EventEmitter {
             this.client.write(buffer);
 
             // Add resolver function
-            debug('Adding resolver for sequence number: ' + sequenceNo);
             this._resolvers[sequenceNo] = data => resolve(data);
           } catch (error) {
             reject(error);
@@ -783,7 +782,7 @@ class TuyaDevice extends EventEmitter {
     if (packet.commandByte === CommandType.DP_REFRESH) {
       // If we did not get any STATUS packet, we need to resolve the promise.
       if (typeof this._setResolver === 'function') {
-        debug('Received DP_REFRESH empty response packet without STATUS packet');
+        debug('Received DP_REFRESH empty response packet without STATUS packet from set command - resolve');
         this._setResolver(packet.payload);
 
         // Remove resolver
@@ -801,7 +800,7 @@ class TuyaDevice extends EventEmitter {
           delete this._resolvers[packet.sequenceN];
           this._expectRefreshResponseForSequenceN = undefined;
         } else if (this._expectRefreshResponseForSequenceN && this._expectRefreshResponseForSequenceN in this._resolvers) {
-          debug('Received DP_REFRESH response packet without data - resolve expected sequence number' + this._expectRefreshResponseForSequenceN);
+          debug('Received DP_REFRESH response packet without data - resolve');
           this._resolvers[this._expectRefreshResponseForSequenceN](packet.payload);
 
           // Remove resolver
