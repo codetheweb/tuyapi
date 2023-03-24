@@ -177,7 +177,8 @@ class TuyaDevice extends EventEmitter {
       debug('GET needs to use SEND instead of DP_QUERY to get data');
       const setOptions = {
         dps: options.dps ? options.dps : 1,
-        set: null
+        set: null,
+        isSetCallToGetData: true
       };
       data = await this.set(setOptions);
     }
@@ -233,18 +234,20 @@ class TuyaDevice extends EventEmitter {
       payload.cid = options.cid;
     }
 
-    debug('GET Payload:');
+    debug('GET Payload (refresh):');
     debug(payload);
 
+    const sequenceN = ++this._currentSequenceN;
     // Create byte buffer
     const buffer = this.device.parser.encode({
       data: payload,
       commandByte: CommandType.DP_REFRESH,
-      sequenceN: ++this._currentSequenceN
+      sequenceN
     });
 
     // Send request and parse response
     return new Promise((resolve, reject) => {
+      this._expectRefreshResponseForSequenceN = sequenceN;
       // Send request
       this._send(buffer).then(async data => {
         if (data === 'json obj data unvalid') {
@@ -254,7 +257,8 @@ class TuyaDevice extends EventEmitter {
           // For schema there's currently no fallback options
           const setOptions = {
             dps: options.requestedDPS ? options.requestedDPS : this._dpRefreshIds,
-            set: null
+            set: null,
+            isSetCallToGetData: true
           };
           data = await this.set(setOptions);
         }
@@ -283,6 +287,8 @@ class TuyaDevice extends EventEmitter {
    * if specified, use device id of zigbee gateway and cid of subdevice to set its property
    * @param {Boolean} [options.multiple=false]
    * Whether or not multiple properties should be set with options.data
+   * @param {Boolean} [options.isSetCallToGetData=false]
+   * Wether or not the set command is used to get data
    * @param {Object} [options.data={}] Multiple properties to set at once. See above.
    * @param {Boolean} [options.shouldWaitForResponse=true] see
    * [#420](https://github.com/codetheweb/tuyapi/issues/420) and
@@ -333,6 +339,14 @@ class TuyaDevice extends EventEmitter {
 
     options.shouldWaitForResponse = typeof options.shouldWaitForResponse === 'undefined' ? true : options.shouldWaitForResponse;
 
+    // When set has only null values then it is used to get data
+    if (!options.isSetCallToGetData) {
+      options.isSetCallToGetData = true;
+      Object.keys(dps).forEach(key => {
+        options.isSetCallToGetData = options.isSetCallToGetData && dps[key] === null;
+      });
+    }
+
     // Get time
     const timeStamp = parseInt(Date.now() / 1000, 10);
 
@@ -378,16 +392,21 @@ class TuyaDevice extends EventEmitter {
       delete payload.data.t;
     }
 
+    if (options.shouldWaitForResponse && this._setResolver) {
+      throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
+    }
+
     debug('SET Payload:');
     debug(payload);
 
     const commandByte = this.device.version === '3.4' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
+    const sequenceN = ++this._currentSequenceN;
     // Encode into packet
     const buffer = this.device.parser.encode({
       data: payload,
       encrypted: true, // Set commands must be encrypted
       commandByte,
-      sequenceN: ++this._currentSequenceN
+      sequenceN
     });
 
     // Queue this request and limit concurrent set requests to one
@@ -398,6 +417,7 @@ class TuyaDevice extends EventEmitter {
         this._send(buffer);
         if (options.shouldWaitForResponse) {
           this._setResolver = resolve;
+          this._setResolveAllowGet = options.isSetCallToGetData;
         } else {
           resolve();
         }
@@ -407,6 +427,9 @@ class TuyaDevice extends EventEmitter {
     }), this._responseTimeout * 2500, () => {
       // Only gets here on timeout so clear resolver function and emit error
       this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
+      delete this._resolvers[sequenceN];
+      this._expectRefreshResponseForSequenceN = undefined;
 
       this.emit(
         'error',
@@ -424,6 +447,7 @@ class TuyaDevice extends EventEmitter {
    * @returns {Promise<Any>} returned data for request
    */
   _send(buffer) {
+    const sequenceNo = this._currentSequenceN;
     // Retry up to 5 times
     return pRetry(() => {
       return new Promise((resolve, reject) => {
@@ -433,7 +457,7 @@ class TuyaDevice extends EventEmitter {
             this.client.write(buffer);
 
             // Add resolver function
-            this._resolvers[this._currentSequenceN] = data => resolve(data);
+            this._resolvers[sequenceNo] = data => resolve(data);
           } catch (error) {
             reject(error);
           }
@@ -756,7 +780,36 @@ class TuyaDevice extends EventEmitter {
 
     // Returned DP refresh response is always empty. Device respond with command 8 without dps 1 instead.
     if (packet.commandByte === CommandType.DP_REFRESH) {
-      debug('Received DP_REFRESH empty response packet.');
+      // If we did not get any STATUS packet, we need to resolve the promise.
+      if (typeof this._setResolver === 'function') {
+        debug('Received DP_REFRESH empty response packet without STATUS packet from set command - resolve');
+        this._setResolver(packet.payload);
+
+        // Remove resolver
+        this._setResolver = undefined;
+        this._setResolveAllowGet = undefined;
+        delete this._resolvers[packet.sequenceN];
+        this._expectRefreshResponseForSequenceN = undefined;
+      } else {
+        // Call data resolver for sequence number
+        if (packet.sequenceN in this._resolvers) {
+          debug('Received DP_REFRESH response packet - resolve');
+          this._resolvers[packet.sequenceN](packet.payload);
+
+          // Remove resolver
+          delete this._resolvers[packet.sequenceN];
+          this._expectRefreshResponseForSequenceN = undefined;
+        } else if (this._expectRefreshResponseForSequenceN && this._expectRefreshResponseForSequenceN in this._resolvers) {
+          debug('Received DP_REFRESH response packet without data - resolve');
+          this._resolvers[this._expectRefreshResponseForSequenceN](packet.payload);
+
+          // Remove resolver
+          delete this._resolvers[this._expectRefreshResponseForSequenceN];
+          this._expectRefreshResponseForSequenceN = undefined;
+        } else {
+          debug('Received DP_REFRESH response packet - no resolver found for sequence number' + packet.sequenceN);
+        }
+      }
       return;
     }
 
@@ -788,9 +841,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Status response to SET command
-
-    // 3.4 response sequenceN is not '0' just next TODO verify
-    if (/* Former code: packet.sequenceN === 0 && */
+    if (
       packet.commandByte === CommandType.STATUS &&
       typeof this._setResolver === 'function'
     ) {
@@ -798,6 +849,25 @@ class TuyaDevice extends EventEmitter {
 
       // Remove resolver
       this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
+      delete this._resolvers[packet.sequenceN];
+      this._expectRefreshResponseForSequenceN = undefined;
+      return;
+    }
+
+    // Status response to SET command which was used to GET data and returns DP_QUERY response
+    if (
+      packet.commandByte === CommandType.DP_QUERY &&
+      typeof this._setResolver === 'function' &&
+      this._setResolveAllowGet === true
+    ) {
+      this._setResolver(packet.payload);
+
+      // Remove resolver
+      this._setResolver = undefined;
+      this._setResolveAllowGet = undefined;
+      delete this._resolvers[packet.sequenceN];
+      this._expectRefreshResponseForSequenceN = undefined;
       return;
     }
 
@@ -807,6 +877,7 @@ class TuyaDevice extends EventEmitter {
 
       // Remove resolver
       delete this._resolvers[packet.sequenceN];
+      this._expectRefreshResponseForSequenceN = undefined;
     }
   }
 
