@@ -37,7 +37,8 @@ declare module 'tuyapi' {
 
     interface SingleSetOptions {
         dps: number;
-        set: string|number|boolean
+        set: string|number|boolean;
+        cid?: string;
         multiple?: boolean;
         shouldWaitForResponse?: boolean;
     }
