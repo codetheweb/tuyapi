@@ -196,7 +196,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [tuya-convert](https://github.com/ct-Open-Source/tuya-convert) a project that allows you to flash custom firmware OTA on devices
 
 ### Ports
-- [python-tuya](https://github.com/clach04/python-tuya) a Python port by [clach04](https://github.com/clach04)
+- [TinyTuya](https://github.com/jasonacox/tinytuya) a Python port by [jasonacox](https://github.com/jasonacox) and [uzlonewolf](https://github.com/uzlonewolf)
 - [aiotuya](https://github.com/frawau/aiotuya) a Python port by [frawau](https://github.com/frawau)
 - [m4rcus.TuyaCore](https://github.com/Marcus-L/m4rcus.TuyaCore) a .NET port by [Marcus-L](https://github.com/Marcus-L)
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
