@@ -202,6 +202,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [TuyaKit](https://github.com/eppz/.NET.Library.TuyaKit) a .NET port by [eppz](https://github.com/eppz)
 - [py60800/tuya](https://github.com/py60800/tuya) a Go port by [py60800](https://github.com/py60800)
 - [rust-tuyapi](https://github.com/EmilSodergren/rust-tuyapi) a Rust port by [EmilSodergren](https://github.com/EmilSodergren)
+- [GoTuya](https://github.com/Binozo/GoTuya) a Go port by [Binozo](https://github.com/Binozo)
 
 ### Clients for Tuya's Cloud
 - [cloudtuya](https://github.com/unparagoned/cloudtuya) by [unparagoned](https://github.com/unparagoned/)
@@ -218,6 +219,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [tuyadump](https://github.com/py60800/tuyadump) a Go project to decode device traffic in real time
 - [tuya-mqtt](https://github.com/TheAgentK/tuya-mqtt) a simple MQTT interface for TuyAPI
 - [smart-home-panel](https://github.com/MadeleineSmith/smart-home-panel-fe) A website for controlling a smart light bulb
+- [GoTuya](https://github.com/Binozo/GoTuya) An easy-to-use api to control Tuya devices on the local network
 
 
 To add your project to either of the above lists, please open a pull request.
