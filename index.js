@@ -147,7 +147,7 @@ class TuyaDevice extends EventEmitter {
       payload.cid = options.cid;
     }
 
-    const commandByte = this.device.version === '3.4' ? CommandType.DP_QUERY_NEW : CommandType.DP_QUERY;
+    const commandByte = this.device.version === '3.4' || this.device.version === '3.5' ? CommandType.DP_QUERY_NEW : CommandType.DP_QUERY;
 
     // Create byte buffer
     const buffer = this.device.parser.encode({
@@ -367,7 +367,7 @@ class TuyaDevice extends EventEmitter {
       };
     }
 
-    if (this.device.version === '3.4') {
+    if (this.device.version === '3.4' || this.device.version === '3.5') {
       /*
       {
         "data": {
@@ -399,7 +399,7 @@ class TuyaDevice extends EventEmitter {
     debug('SET Payload:');
     debug(payload);
 
-    const commandByte = this.device.version === '3.4' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
+    const commandByte = this.device.version === '3.4' || this.device.version === '3.5' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
     const sequenceN = ++this._currentSequenceN;
     // Encode into packet
     const buffer = this.device.parser.encode({
@@ -671,7 +671,7 @@ class TuyaDevice extends EventEmitter {
       // Remove connect timeout
       this.client.setTimeout(0);
 
-      if (this.device.version === '3.4') {
+      if (this.device.version === '3.4' || this.device.version === '3.5') {
         // Negotiate session key then emit 'connected'
         // 16 bytes random + 32 bytes hmac
         try {
@@ -683,10 +683,10 @@ class TuyaDevice extends EventEmitter {
             sequenceN: ++this._currentSequenceN
           });
 
-          debug('Protocol 3.4: Negotiate Session Key - Send Msg 0x03');
+          debug('Protocol 3.4, 3.5: Negotiate Session Key - Send Msg 0x03');
           this.client.write(buffer);
         } catch (error) {
-          debug('Error binding key for protocol 3.4: ' + error);
+          debug('Error binding key for protocol 3.4, 3.5: ' + error);
         }
 
         return;
@@ -705,17 +705,20 @@ class TuyaDevice extends EventEmitter {
     // Response was received, so stop waiting
     clearTimeout(this._sendTimeout);
 
-    // Protocol 3.4 - Response to Msg 0x03
+    // Protocol 3.4, 3.5 - Response to Msg 0x03
     if (packet.commandByte === CommandType.SESS_KEY_NEG_RES) {
       if (!this.connectPromise) {
-        debug('Protocol 3.4: Ignore Key exchange message because no connection in progress.');
+        debug('Protocol 3.4, 3.5: Ignore Key exchange message because no connection in progress.');
         return;
       }
 
       // 16 bytes _tmpRemoteKey and hmac on _tmpLocalKey
       this._tmpRemoteKey = packet.payload.subarray(0, 16);
-      debug('Protocol 3.4: Local Random Key: ' + this._tmpLocalKey.toString('hex'));
-      debug('Protocol 3.4: Remote Random Key: ' + this._tmpRemoteKey.toString('hex'));
+      debug('Protocol 3.4, 3.5: Local Random Key: ' + this._tmpLocalKey.toString('hex'));
+      debug('Protocol 3.4, 3.5: Remote Random Key: ' + this._tmpRemoteKey.toString('hex'));
+
+      if(this.device.version === '3.4' || this.device.version === '3.5')
+        this._currentSequenceN = packet.sequenceN - 1;
 
       const calcLocalHmac = this.device.parser.cipher.hmac(this._tmpLocalKey).toString('hex');
       const expLocalHmac = packet.payload.slice(16, 16 + 32).toString('hex');
@@ -746,9 +749,12 @@ class TuyaDevice extends EventEmitter {
         this.sessionKey[i] = this._tmpLocalKey[i] ^ this._tmpRemoteKey[i];
       }
 
-      this.sessionKey = this.device.parser.cipher._encrypt34({data: this.sessionKey});
-      debug('Protocol 3.4: Session Key: ' + this.sessionKey.toString('hex'));
-      debug('Protocol 3.4: Initialization done');
+      if(this.device.version === '3.4')
+        this.sessionKey = this.device.parser.cipher._encrypt34({data: this.sessionKey});
+      else if(this.device.version === '3.5')
+        this.sessionKey = this.device.parser.cipher._encrypt35({data: this.sessionKey, iv: this._tmpLocalKey});
+      debug('Protocol 3.4, 3.5: Session Key: ' + this.sessionKey.toString('hex'));
+      debug('Protocol 3.4, 3.5: Initialization done');
 
       this.device.parser.cipher.setSessionKey(this.sessionKey);
       this.device.key = this.sessionKey;
@@ -774,6 +780,14 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL ||
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
+
+      if(this.device.version === '3.5')
+      {
+        // Move resolver to next sequence for incoming response after ack
+        this._resolvers[(parseInt(packet.sequenceN) + 1).toString()] = this._resolvers[packet.sequenceN.toString()];
+        delete this._resolvers[packet.sequenceN.toString()];
+      }
+
       debug('Got SET ack.');
       return;
     }
