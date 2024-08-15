@@ -717,8 +717,9 @@ class TuyaDevice extends EventEmitter {
       debug('Protocol 3.4, 3.5: Local Random Key: ' + this._tmpLocalKey.toString('hex'));
       debug('Protocol 3.4, 3.5: Remote Random Key: ' + this._tmpRemoteKey.toString('hex'));
 
-      if(this.device.version === '3.4' || this.device.version === '3.5')
+      if (this.device.version === '3.4' || this.device.version === '3.5') {
         this._currentSequenceN = packet.sequenceN - 1;
+      }
 
       const calcLocalHmac = this.device.parser.cipher.hmac(this._tmpLocalKey).toString('hex');
       const expLocalHmac = packet.payload.slice(16, 16 + 32).toString('hex');
@@ -749,10 +750,12 @@ class TuyaDevice extends EventEmitter {
         this.sessionKey[i] = this._tmpLocalKey[i] ^ this._tmpRemoteKey[i];
       }
 
-      if(this.device.version === '3.4')
+      if (this.device.version === '3.4') {
         this.sessionKey = this.device.parser.cipher._encrypt34({data: this.sessionKey});
-      else if(this.device.version === '3.5')
+      } else if (this.device.version === '3.5') {
         this.sessionKey = this.device.parser.cipher._encrypt35({data: this.sessionKey, iv: this._tmpLocalKey});
+      }
+
       debug('Protocol 3.4, 3.5: Session Key: ' + this.sessionKey.toString('hex'));
       debug('Protocol 3.4, 3.5: Initialization done');
 
@@ -780,11 +783,9 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL ||
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
-
-      if(this.device.version === '3.5')
-      {
+      if (this.device.version === '3.5') {
         // Move resolver to next sequence for incoming response after ack
-        this._resolvers[(parseInt(packet.sequenceN) + 1).toString()] = this._resolvers[packet.sequenceN.toString()];
+        this._resolvers[(parseInt(packet.sequenceN, 10) + 1).toString()] = this._resolvers[packet.sequenceN.toString()];
         delete this._resolvers[packet.sequenceN.toString()];
       }
 
@@ -804,26 +805,26 @@ class TuyaDevice extends EventEmitter {
         this._setResolveAllowGet = undefined;
         delete this._resolvers[packet.sequenceN];
         this._expectRefreshResponseForSequenceN = undefined;
-      } else {
+      } else if (packet.sequenceN in this._resolvers) {
         // Call data resolver for sequence number
-        if (packet.sequenceN in this._resolvers) {
-          debug('Received DP_REFRESH response packet - resolve');
-          this._resolvers[packet.sequenceN](packet.payload);
 
-          // Remove resolver
-          delete this._resolvers[packet.sequenceN];
-          this._expectRefreshResponseForSequenceN = undefined;
-        } else if (this._expectRefreshResponseForSequenceN && this._expectRefreshResponseForSequenceN in this._resolvers) {
-          debug('Received DP_REFRESH response packet without data - resolve');
-          this._resolvers[this._expectRefreshResponseForSequenceN](packet.payload);
+        debug('Received DP_REFRESH response packet - resolve');
+        this._resolvers[packet.sequenceN](packet.payload);
 
-          // Remove resolver
-          delete this._resolvers[this._expectRefreshResponseForSequenceN];
-          this._expectRefreshResponseForSequenceN = undefined;
-        } else {
-          debug('Received DP_REFRESH response packet - no resolver found for sequence number' + packet.sequenceN);
-        }
+        // Remove resolver
+        delete this._resolvers[packet.sequenceN];
+        this._expectRefreshResponseForSequenceN = undefined;
+      } else if (this._expectRefreshResponseForSequenceN && this._expectRefreshResponseForSequenceN in this._resolvers) {
+        debug('Received DP_REFRESH response packet without data - resolve');
+        this._resolvers[this._expectRefreshResponseForSequenceN](packet.payload);
+
+        // Remove resolver
+        delete this._resolvers[this._expectRefreshResponseForSequenceN];
+        this._expectRefreshResponseForSequenceN = undefined;
+      } else {
+        debug('Received DP_REFRESH response packet - no resolver found for sequence number' + packet.sequenceN);
       }
+
       return;
     }
 
