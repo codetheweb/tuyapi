@@ -401,6 +401,7 @@ class TuyaDevice extends EventEmitter {
 
     const commandByte = this.device.version === '3.4' || this.device.version === '3.5' ? CommandType.CONTROL_NEW : CommandType.CONTROL;
     const sequenceN = ++this._currentSequenceN;
+    if(this.device.version === '3.5') sequenceN += sequenceN;
     // Encode into packet
     const buffer = this.device.parser.encode({
       data: payload,
@@ -780,13 +781,6 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL ||
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
-
-      if(this.device.version === '3.5')
-      {
-        // Move resolver to next sequence for incoming response after ack
-        this._resolvers[(parseInt(packet.sequenceN) + 1).toString()] = this._resolvers[packet.sequenceN.toString()];
-        delete this._resolvers[packet.sequenceN.toString()];
-      }
 
       debug('Got SET ack.');
       return;
