@@ -411,17 +411,35 @@ class TuyaDevice extends EventEmitter {
 
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
+
+      // Make sure we only resolve or reject once
+      let resolvedOrRejected = false;
+
       // Send request and wait for response
       try {
+        if(this.device.version === '3.5') {
+          this._currentSequenceN++;
+        }
+
         // Send request
-        this._send(buffer);
+        this._send(buffer).catch(error => {
+          if (options.shouldWaitForResponse && !resolvedOrRejected) {
+            reject(error);
+          }
+        });
         if (options.shouldWaitForResponse) {
-          this._setResolver = resolve;
+          this._setResolver = () => {
+            if (!resolvedOrRejected) {
+              resolve();
+            }
+          }
           this._setResolveAllowGet = options.isSetCallToGetData;
         } else {
+          resolvedOrRejected = true;
           resolve();
         }
       } catch (error) {
+        resolvedOrRejected = true;
         reject(error);
       }
     }), this._responseTimeout * 2500, () => {
@@ -432,8 +450,8 @@ class TuyaDevice extends EventEmitter {
       this._expectRefreshResponseForSequenceN = undefined;
 
       this.emit(
-        'error',
-        'Timeout waiting for status response from device id: ' + this.device.id
+          'error',
+          'Timeout waiting for status response from device id: ' + this.device.id
       );
     }));
   }
@@ -783,17 +801,6 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL ||
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
-      if (this.device.version === '3.5') {
-        // Call data resolver for sequence number
-        if (packet.sequenceN - 2 in this._resolvers) {
-          this._resolvers[packet.sequenceN - 2](packet.payload);
-
-          // Remove resolver
-          delete this._resolvers[packet.sequenceN - 2];
-          this._expectRefreshResponseForSequenceN = undefined;
-        }
-      }
-
       debug('Got SET ack.');
       return;
     }
