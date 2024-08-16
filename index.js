@@ -411,13 +411,12 @@ class TuyaDevice extends EventEmitter {
 
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
-
       // Make sure we only resolve or reject once
       let resolvedOrRejected = false;
 
       // Send request and wait for response
       try {
-        if(this.device.version === '3.5') {
+        if (this.device.version === '3.5') {
           this._currentSequenceN++;
         }
 
@@ -432,7 +431,8 @@ class TuyaDevice extends EventEmitter {
             if (!resolvedOrRejected) {
               resolve();
             }
-          }
+          };
+
           this._setResolveAllowGet = options.isSetCallToGetData;
         } else {
           resolvedOrRejected = true;
@@ -450,8 +450,8 @@ class TuyaDevice extends EventEmitter {
       this._expectRefreshResponseForSequenceN = undefined;
 
       this.emit(
-          'error',
-          'Timeout waiting for status response from device id: ' + this.device.id
+        'error',
+        'Timeout waiting for status response from device id: ' + this.device.id
       );
     }));
   }
