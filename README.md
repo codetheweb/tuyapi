@@ -220,6 +220,7 @@ See [CONTRIBUTING](https://github.com/codetheweb/tuyapi/blob/master/CONTRIBUTING
 - [tuya-mqtt](https://github.com/TheAgentK/tuya-mqtt) a simple MQTT interface for TuyAPI
 - [smart-home-panel](https://github.com/MadeleineSmith/smart-home-panel-fe) A website for controlling a smart light bulb
 - [GoTuya](https://github.com/Binozo/GoTuya) An easy-to-use api to control Tuya devices on the local network
+- [luminea2mqtt](https://github.com/dennis9819/luminea2mqtt/tree/master) An expandable luminea2mqtt bridge with HA Autodiscover
 
 
 To add your project to either of the above lists, please open a pull request.
