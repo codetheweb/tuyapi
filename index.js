@@ -505,12 +505,16 @@ class TuyaDevice extends EventEmitter {
     // Check for response
     const now = new Date();
 
-    clearTimeout(this._pingPongTimeout);
-    this._pingPongTimeout = setTimeout(() => {
-      if (this._lastPingAt < now) {
-        this.disconnect();
-      }
-    }, this._responseTimeout * 1000);
+    if (this._pingPongTimeout === null) {
+      // If we do not expect a pong from a former ping, we need to set a timeout
+      this._pingPongTimeout = setTimeout(() => {
+        if (this._lastPingAt < now) {
+          this.disconnect();
+        }
+      }, this._responseTimeout * 1000);
+    } else {
+      debug('There was no response to the last ping.');
+    }
 
     // Send ping
     this.client.write(buffer);
@@ -789,6 +793,8 @@ class TuyaDevice extends EventEmitter {
        */
       this.emit('heartbeat');
 
+      clearTimeout(this._pingPongTimeout);
+      this._pingPongTimeout = null;
       this._lastPingAt = new Date();
 
       return;
