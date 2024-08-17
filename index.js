@@ -505,6 +505,7 @@ class TuyaDevice extends EventEmitter {
     // Check for response
     const now = new Date();
 
+    clearTimeout(this._pingPongTimeout);
     this._pingPongTimeout = setTimeout(() => {
       if (this._lastPingAt < now) {
         this.disconnect();
@@ -720,9 +721,6 @@ class TuyaDevice extends EventEmitter {
   }
 
   _packetHandler(packet) {
-    // Response was received, so stop waiting
-    clearTimeout(this._sendTimeout);
-
     // Protocol 3.4, 3.5 - Response to Msg 0x03
     if (packet.commandByte === CommandType.SESS_KEY_NEG_RES) {
       if (!this.connectPromise) {
@@ -923,9 +921,6 @@ class TuyaDevice extends EventEmitter {
     this.device.parser.cipher.setSessionKey(null);
 
     // Clear timeouts
-    clearTimeout(this._sendTimeout);
-    clearTimeout(this._connectTimeout);
-    clearTimeout(this._responseTimeout);
     clearInterval(this._pingPongInterval);
     clearTimeout(this._pingPongTimeout);
 
