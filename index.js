@@ -414,6 +414,8 @@ class TuyaDevice extends EventEmitter {
       // Send request and wait for response
       try {
         // Send request
+        if(this.device.version === '3.5')
+<         this._currentSequenceN++;
         this._send(buffer);
         if (options.shouldWaitForResponse) {
           this._setResolver = resolve;
@@ -780,14 +782,6 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL ||
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
-
-      if(this.device.version === '3.5')
-      {
-        // Move resolver to next sequence for incoming response after ack
-        this._resolvers[(parseInt(packet.sequenceN) + 1).toString()] = this._resolvers[packet.sequenceN.toString()];
-        delete this._resolvers[packet.sequenceN.toString()];
-      }
-
       debug('Got SET ack.');
       return;
     }
