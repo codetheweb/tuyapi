@@ -427,9 +427,9 @@ class TuyaDevice extends EventEmitter {
           }
         });
         if (options.shouldWaitForResponse) {
-          this._setResolver = () => {
+          this._setResolver = (data) => {
             if (!resolvedOrRejected) {
-              resolve();
+              resolve(data);
             }
           };
 
