@@ -392,10 +392,6 @@ class TuyaDevice extends EventEmitter {
       delete payload.data.t;
     }
 
-    if (options.shouldWaitForResponse && this._setResolver) {
-      throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
-    }
-
     debug('SET Payload:');
     debug(payload);
 
@@ -411,8 +407,10 @@ class TuyaDevice extends EventEmitter {
 
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
-      // Make sure we only resolve or reject once
-      let resolvedOrRejected = false;
+
+      if (options.shouldWaitForResponse && this._setResolver) {
+        throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
+      }
 
       // Send request and wait for response
       try {
