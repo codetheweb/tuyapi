@@ -457,6 +457,7 @@ class TuyaDevice extends EventEmitter {
         'Timeout waiting for status response from device id: ' + this.device.id
       );
       // This case returns an undefined when set-for-get is used!
+      // Alternative would be to throw but this would be breaking.
     }));
   }
 
@@ -568,13 +569,19 @@ class TuyaDevice extends EventEmitter {
     // Automatically ask for dp_refresh so we
     // can emit a `dp_refresh` event as soon as possible
     if (this.globalOptions.issueRefreshOnConnect) {
-      this.refresh();
+      this.refresh().catch(error => {
+        debug('Error refreshing on connect: ' + error);
+        this.emit('error', error);
+      });
     }
 
     // Automatically ask for current state so we
     // can emit a `data` event as soon as possible
     if (this.globalOptions.issueGetOnConnect) {
-      this.get();
+      this.get().catch(error => {
+        debug('Error getting on connect: ' + error)
+        this.emit('error', error);
+      });
     }
 
     // Resolve
