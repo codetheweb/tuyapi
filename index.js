@@ -456,8 +456,10 @@ class TuyaDevice extends EventEmitter {
         'error',
         'Timeout waiting for status response from device id: ' + this.device.id
       );
-      // This case returns an undefined when set-for-get is used!
-      // Alternative would be to throw but this would be breaking.
+      if (!resolvedOrRejected) {
+        resolvedOrRejected = true;
+        throw new Error('Timeout waiting for status response from device id: ' + this.device.id);
+      }
     }));
   }
 
