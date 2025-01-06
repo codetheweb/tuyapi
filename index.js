@@ -131,7 +131,7 @@ class TuyaDevice extends EventEmitter {
    * @example
    * // get all available data from device
    * tuya.get({schema: true}).then(data => console.log(data))
-   * @returns {Promise<Boolean|Object>}
+   * @returns {Promise<Boolean|Object|undefined>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
   async get(options = {}) {
@@ -183,7 +183,7 @@ class TuyaDevice extends EventEmitter {
       data = await this.set(setOptions);
     }
 
-    if (typeof data !== 'object' || options.schema === true) {
+    if (data === undefined || typeof data !== 'object' || options.schema === true) {
       // Return whole response
       return data;
     }

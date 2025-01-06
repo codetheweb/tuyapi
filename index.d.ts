@@ -75,7 +75,7 @@ declare module 'tuyapi' {
         disconnect(): void;
         isConnected(): boolean;
 
-        get(options: GetOptions): Promise<DPSObject|number|boolean|string>;
+        get(options: GetOptions): Promise<DPSObject|number|boolean|string|undefined>;
         refresh(options: RefreshOptions): Promise<DPSObject>;
         set(options: SingleSetOptions|MultipleSetOptions): Promise<DPSObject>;
         toggle(property: number): Promise<boolean>;
