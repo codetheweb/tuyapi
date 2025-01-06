@@ -456,6 +456,7 @@ class TuyaDevice extends EventEmitter {
         'error',
         'Timeout waiting for status response from device id: ' + this.device.id
       );
+      // This case returns an undefined when set-for-get is used!
     }));
   }
 
@@ -465,7 +466,7 @@ class TuyaDevice extends EventEmitter {
    * wraps the entire operation in a retry.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @returns {Promise<Any>} returned data for request
+   * @returns {Promise<any>} returned data for request
    */
   _send(buffer) {
     const sequenceNo = this._currentSequenceN;
