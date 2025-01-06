@@ -392,10 +392,6 @@ class TuyaDevice extends EventEmitter {
       delete payload.data.t;
     }
 
-    if (options.shouldWaitForResponse && this._setResolver) {
-      throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
-    }
-
     debug('SET Payload:');
     debug(payload);
 
@@ -409,10 +405,14 @@ class TuyaDevice extends EventEmitter {
       sequenceN
     });
 
+    // Make sure we only resolve or reject once
+    let resolvedOrRejected = false;
+
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
-      // Make sure we only resolve or reject once
-      let resolvedOrRejected = false;
+      if (options.shouldWaitForResponse && this._setResolver) {
+        throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
+      }
 
       // Send request and wait for response
       try {
@@ -423,12 +423,14 @@ class TuyaDevice extends EventEmitter {
         // Send request
         this._send(buffer).catch(error => {
           if (options.shouldWaitForResponse && !resolvedOrRejected) {
+            resolvedOrRejected = true;
             reject(error);
           }
         });
         if (options.shouldWaitForResponse) {
           this._setResolver = data => {
             if (!resolvedOrRejected) {
+              resolvedOrRejected = true;
               resolve(data);
             }
           };
@@ -453,6 +455,10 @@ class TuyaDevice extends EventEmitter {
         'error',
         'Timeout waiting for status response from device id: ' + this.device.id
       );
+      if (!resolvedOrRejected) {
+        resolvedOrRejected = true;
+        throw new Error('Timeout waiting for status response from device id: ' + this.device.id);
+      }
     }));
   }
 
@@ -462,7 +468,7 @@ class TuyaDevice extends EventEmitter {
    * wraps the entire operation in a retry.
    * @private
    * @param {Buffer} buffer buffer of data
-   * @returns {Promise<Any>} returned data for request
+   * @returns {Promise<any>} returned data for request
    */
   _send(buffer) {
     const sequenceNo = this._currentSequenceN;
@@ -564,13 +570,19 @@ class TuyaDevice extends EventEmitter {
     // Automatically ask for dp_refresh so we
     // can emit a `dp_refresh` event as soon as possible
     if (this.globalOptions.issueRefreshOnConnect) {
-      this.refresh();
+      this.refresh().catch(error => {
+        debug('Error refreshing on connect: ' + error);
+        this.emit('error', error);
+      });
     }
 
     // Automatically ask for current state so we
     // can emit a `data` event as soon as possible
     if (this.globalOptions.issueGetOnConnect) {
-      this.get();
+      this.get().catch(error => {
+        debug('Error getting on connect: ' + error);
+        this.emit('error', error);
+      });
     }
 
     // Resolve
