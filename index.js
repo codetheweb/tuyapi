@@ -410,7 +410,6 @@ class TuyaDevice extends EventEmitter {
 
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
-
       if (options.shouldWaitForResponse && this._setResolver) {
         throw new Error('A set command is already in progress. Can not issue a second one that also should return a response.');
       }
@@ -581,7 +580,7 @@ class TuyaDevice extends EventEmitter {
     // can emit a `data` event as soon as possible
     if (this.globalOptions.issueGetOnConnect) {
       this.get().catch(error => {
-        debug('Error getting on connect: ' + error)
+        debug('Error getting on connect: ' + error);
         this.emit('error', error);
       });
     }
