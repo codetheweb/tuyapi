@@ -405,6 +405,9 @@ class TuyaDevice extends EventEmitter {
       sequenceN
     });
 
+    // Make sure we only resolve or reject once
+    let resolvedOrRejected = false;
+
     // Queue this request and limit concurrent set requests to one
     return this._setQueue.add(() => pTimeout(new Promise((resolve, reject) => {
 
@@ -421,12 +424,14 @@ class TuyaDevice extends EventEmitter {
         // Send request
         this._send(buffer).catch(error => {
           if (options.shouldWaitForResponse && !resolvedOrRejected) {
+            resolvedOrRejected = true;
             reject(error);
           }
         });
         if (options.shouldWaitForResponse) {
           this._setResolver = data => {
             if (!resolvedOrRejected) {
+              resolvedOrRejected = true;
               resolve(data);
             }
           };
