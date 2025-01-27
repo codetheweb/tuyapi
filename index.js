@@ -1019,6 +1019,7 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         debug(error);
         reject(error);
+        return;
       }
 
       debug('UDP data:');
