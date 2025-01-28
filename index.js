@@ -1025,6 +1025,11 @@ class TuyaDevice extends EventEmitter {
       debug('UDP data:');
       debug(dataRes);
 
+      if (typeof dataRes.payload === 'string') {
+        debug('Received string payload. Ignoring.');
+        return;
+      }
+
       const thisID = dataRes.payload.gwId;
       const thisIP = dataRes.payload.ip;
 
