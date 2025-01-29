@@ -131,7 +131,7 @@ class TuyaDevice extends EventEmitter {
    * @example
    * // get all available data from device
    * tuya.get({schema: true}).then(data => console.log(data))
-   * @returns {Promise<Boolean|Object>}
+   * @returns {Promise<Boolean|undefined|Object>}
    * returns boolean if single property is requested, otherwise returns object of results
    */
   async get(options = {}) {
@@ -194,7 +194,7 @@ class TuyaDevice extends EventEmitter {
     }
 
     // Return first property by default
-    return data.dps['1'];
+    return data.dps ? data.dps['1'] : undefined;
   }
 
   /**
@@ -525,8 +525,10 @@ class TuyaDevice extends EventEmitter {
     // Send ping
     this.client.write(buffer);
     if (this.globalOptions.issueRefreshOnPing) {
-      this.refresh();
-      this.get();
+      this.refresh().then(() => this.get()).catch(error => {
+        debug('Error refreshing/getting on ping: ' + error);
+        this.emit('error', error);
+      });
     }
   }
 
@@ -1017,10 +1019,16 @@ class TuyaDevice extends EventEmitter {
       } catch (error) {
         debug(error);
         reject(error);
+        return;
       }
 
       debug('UDP data:');
       debug(dataRes);
+
+      if (typeof dataRes.payload === 'string') {
+        debug('Received string payload. Ignoring.');
+        return;
+      }
 
       const thisID = dataRes.payload.gwId;
       const thisIP = dataRes.payload.ip;
