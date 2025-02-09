@@ -1,6 +1,6 @@
 /* Reverse engineered by kueblc */
 
-/* eslint-disable array-element-newline */
+// biome-ignore format: structured array
 const crc32Table = [
   0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
   0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
@@ -69,18 +69,16 @@ const crc32Table = [
 ];
 
 /**
-* Computes a Tuya flavored CRC32
-* @param {Iterable} bytes The bytes to compute the CRC32 for
-* @returns {Number} Tuya CRC32
-*/
-function crc32(bytes) {
-  let crc = 0xFFFFFFFF;
+ * Computes a Tuya flavored CRC32
+ * @param bytes The bytes to compute the CRC32 for
+ * @returns Tuya CRC32
+ */
+export function crc32(bytes: Iterable<number>): number {
+	let crc = 0xffffffff
 
-  for (const b of bytes) {
-    crc = (crc >>> 8) ^ crc32Table[(crc ^ b) & 255];
-  }
+	for (const b of bytes) {
+		crc = (crc >>> 8) ^ crc32Table[(crc ^ b) & 255]
+	}
 
-  return crc ^ 0xFFFFFFFF;
+	return crc ^ 0xffffffff
 }
-
-module.exports = crc32;

@@ -1,73 +1,56 @@
 {
-  "name": "tuyapi",
-  "version": "7.7.0",
-  "description": "An easy-to-use API for devices that use Tuya's cloud services",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "files": [
-    "lib/**/*",
-    "index.js",
-    "index.d.ts"
-  ],
-  "scripts": {
-    "lint": "xo",
-    "test": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
-    "coverage": "nyc npm test && nyc report --reporter=lcov",
-    "document": "documentation build index.js -f html -o docs --config documentation.yml",
-    "prepublishOnly": "npm test",
-    "preversion": "npm test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/codetheweb/tuyapi.git"
-  },
-  "keywords": [
-    "tuya",
-    "iot",
-    "plug",
-    "jinvoo",
-    "switch",
-    "api",
-    "socket",
-    "protocol"
-  ],
-  "author": "Max Isom <codetheweb@icloud.com> (https://maxisom.me)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/codetheweb/tuyapi/issues"
-  },
-  "homepage": "https://github.com/codetheweb/tuyapi#readme",
-  "dependencies": {
-    "debug": "^4.3.7",
-    "p-queue": "6.6.2",
-    "p-retry": "4.6.2",
-    "p-timeout": "3.2.0"
-  },
-  "devDependencies": {
-    "@tuyapi/stub": "0.3.0",
-    "ava": "2.4.0",
-    "clone": "2.1.2",
-    "coveralls": "3.1.1",
-    "delay": "4.4.1",
-    "documentation": "^14.0.0",
-    "nyc": "15.1.0",
-    "xo": "0.25.4"
-  },
-  "xo": {
-    "space": true,
-    "ignores": [
-      "docs"
-    ],
-    "rules": {
-      "max-len": "off",
-      "indent": [
-        "error",
-        2,
-        {
-          "ObjectExpression": "first",
-          "ArrayExpression": "first"
-        }
-      ]
-    }
-  }
+	"name": "tuyapi",
+	"version": "7.7.0",
+	"description": "An easy-to-use API for devices that use Tuya's cloud services",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": ["dist/**/*"],
+	"scripts": {
+		"build": "tsc src/index.ts --outDir ./dist",
+		"lint": "biome lint",
+		"test": "npx ava --concurrency 1 # Unfortunately have to do this so we don't try to bind to the same port multiple times",
+		"coverage": "nyc npm test && nyc report --reporter=lcov",
+		"document": "documentation build index.ts --parse-extension ts -f html -o docs --config documentation.yml",
+		"prepublishOnly": "npm test",
+		"preversion": "npm test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/codetheweb/tuyapi.git"
+	},
+	"keywords": [
+		"tuya",
+		"iot",
+		"plug",
+		"jinvoo",
+		"switch",
+		"api",
+		"socket",
+		"protocol"
+	],
+	"author": "Max Isom <codetheweb@icloud.com> (https://maxisom.me)",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/codetheweb/tuyapi/issues"
+	},
+	"homepage": "https://github.com/codetheweb/tuyapi#readme",
+	"dependencies": {
+		"debug": "^4.3.7",
+		"p-queue": "6.6.2",
+		"p-retry": "4.6.2",
+		"p-timeout": "3.2.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@tuyapi/stub": "0.3.0",
+		"@types/node": "^22.13.1",
+		"ava": "2.4.0",
+		"clone": "2.1.2",
+		"coveralls": "3.1.1",
+		"delay": "4.4.1",
+		"documentation": "^14.0.0",
+		"nyc": "15.1.0",
+		"typescript": "^5.7.3"
+	}
 }

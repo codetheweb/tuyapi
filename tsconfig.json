@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noPropertyAccessFromIndexSignature": true,
+
+		"downlevelIteration": true,
+		"target": "ES2015",
+
+		// "erasableSyntaxOnly": true,
+
+		"declaration": true
+	}
+}
