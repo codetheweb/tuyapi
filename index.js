@@ -1018,8 +1018,15 @@ class TuyaDevice extends EventEmitter {
         dataRes = parser.parse(message)[0];
       } catch (error) {
         debug(error);
-        reject(error);
-        return;
+
+        const devParser = new MessageParser({key: this.device.key, version: this.device.version});
+        try {
+          dataRes = devParser.parse(message)[0];
+        } catch (devError) {
+          debug(devError);
+          reject(error);
+          return;
+        }
       }
 
       debug('UDP data:');
@@ -1056,7 +1063,7 @@ class TuyaDevice extends EventEmitter {
         this.device.id = dataRes.payload.gwId;
         this.device.gwID = dataRes.payload.gwId;
 
-        // Change product key if neccessary
+        // Change product key if necessary
         this.device.productKey = dataRes.payload.productKey;
 
         // Change protocol version if necessary
