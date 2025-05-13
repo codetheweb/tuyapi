@@ -39,7 +39,7 @@
   "homepage": "https://github.com/codetheweb/tuyapi#readme",
   "dependencies": {
     "debug": "^4.4.0",
-    "p-queue": "6.6.2",
+    "p-queue": "8.1.0",
     "p-retry": "4.6.2",
     "p-timeout": "3.2.0"
   },
