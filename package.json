@@ -40,7 +40,7 @@
   "dependencies": {
     "debug": "^4.4.0",
     "p-queue": "6.6.2",
-    "p-retry": "4.6.2",
+    "p-retry": "6.2.1",
     "p-timeout": "3.2.0"
   },
   "devDependencies": {
