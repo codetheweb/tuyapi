@@ -41,7 +41,7 @@
     "debug": "^4.4.0",
     "p-queue": "6.6.2",
     "p-retry": "4.6.2",
-    "p-timeout": "3.2.0"
+    "p-timeout": "6.1.4"
   },
   "devDependencies": {
     "@tuyapi/stub": "0.3.0",
