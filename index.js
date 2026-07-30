@@ -474,7 +474,7 @@ class TuyaDevice extends EventEmitter {
     const sequenceNo = this._currentSequenceN;
     // Retry up to 5 times
     return pRetry(() => {
-      return new Promise((resolve, reject) => {
+      return pTimeout(new Promise((resolve, reject) => {
         // Send data
         this.connect().then(() => {
           try {
@@ -487,6 +487,12 @@ class TuyaDevice extends EventEmitter {
           }
         })
           .catch(error => reject(error));
+      }), this._responseTimeout * 2500, () => {
+        // On timeout, drop the pending resolver so it can't leak,
+        // then reject so pRetry can retry (and, once retries are
+        // exhausted, the caller's .catch() finally fires).
+        delete this._resolvers[sequenceNo];
+        throw new Error('Timeout waiting for response from device id: ' + this.device.id);
       });
     }, {
       onFailedAttempt: error => {
