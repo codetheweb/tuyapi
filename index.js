@@ -94,6 +94,7 @@ class TuyaDevice extends EventEmitter {
 
     this._responseTimeout = 2; // Seconds
     this._connectTimeout = 5; // Seconds
+    this._connectTimeoutTimer = null;
     this._pingPongPeriod = 10; // Seconds
     this._pingPongTimeout = null;
     this._lastPingAt = new Date();
@@ -549,9 +550,22 @@ class TuyaDevice extends EventEmitter {
   }
 
   /**
+   * Reject and release a pending connection before notifying event listeners.
+   */
+  _rejectConnect(error) {
+    if (this.connectPromise) {
+      const promise = this.connectPromise;
+      delete this.connectPromise;
+      promise.reject(error);
+    }
+  }
+
+  /**
    * Finish connecting and resolve
    */
   _finishConnect() {
+    clearTimeout(this._connectTimeoutTimer);
+    this._connectTimeoutTimer = null;
     this._connected = true;
 
     /**
@@ -615,13 +629,15 @@ class TuyaDevice extends EventEmitter {
     }
 
     this.createDeferredConnectPromise();
+    const {connectPromise} = this;
 
-    this.client = new net.Socket();
+    const client = new net.Socket();
+    this.client = client;
 
-    // Default connect timeout is ~1 minute,
-    // 5 seconds is a more reasonable default
-    // since `retry` is used.
-    this.client.setTimeout(this._connectTimeout * 1000, () => {
+    // Bound the entire connection attempt, including session-key negotiation.
+    // A socket inactivity timeout can be disabled by TCP connect or postponed
+    // indefinitely by incoming data before the handshake completes.
+    this._connectTimeoutTimer = setTimeout(() => {
       /**
        * Emitted on socket error, usually a
        * result of a connection timeout.
@@ -629,19 +645,24 @@ class TuyaDevice extends EventEmitter {
        * @event TuyaDevice#error
        * @property {Error} error error event
        */
-      // this.emit('error', new Error('connection timed out'));
-      this.client.destroy();
-      this.emit('error', new Error('connection timed out'));
-      if (this.connectPromise) {
-        this.connectPromise.reject(new Error('connection timed out'));
-        delete this.connectPromise;
+      if (this.client !== client) {
+        return;
       }
-    });
+
+      const error = new Error('connection timed out');
+      this._rejectConnect(error);
+      this.disconnect();
+      this.emit('error', error);
+    }, this._connectTimeout * 1000);
 
     // Add event listeners to socket
 
     // Parse response data
-    this.client.on('data', data => {
+    client.on('data', data => {
+      if (this.client !== client) {
+        return;
+      }
+
       debug(`Received data: ${data.toString('hex')}`);
 
       let packets;
@@ -682,31 +703,36 @@ class TuyaDevice extends EventEmitter {
     });
 
     // Handle errors
-    this.client.on('error', err => {
-      debug('Error event from socket.', this.device.ip, err);
-
-      this.emit('error', new Error('Error from socket: ' + err.message));
-
-      if (!this._connected && this.connectPromise) {
-        this.connectPromise.reject(err);
-        delete this.connectPromise;
+    client.on('error', err => {
+      if (this.client !== client) {
+        return;
       }
 
-      this.client.destroy();
+      debug('Error event from socket.', this.device.ip, err);
+
+      this._rejectConnect(err);
+      this.disconnect();
+      this.emit('error', new Error('Error from socket: ' + err.message));
     });
 
     // Handle socket closure
-    this.client.on('close', () => {
+    client.on('close', () => {
+      // An error/disconnected listener may already have started a new attempt.
+      if (this.client !== client) {
+        return;
+      }
+
       debug(`Socket closed: ${this.device.ip}`);
 
       this.disconnect();
     });
 
-    this.client.on('connect', async () => {
-      debug('Socket connected.');
+    client.on('connect', () => {
+      if (this.client !== client || client.destroyed) {
+        return;
+      }
 
-      // Remove connect timeout
-      this.client.setTimeout(0);
+      debug('Socket connected.');
 
       if (this.device.version === '3.4' || this.device.version === '3.5') {
         // Negotiate session key then emit 'connected'
@@ -721,9 +747,12 @@ class TuyaDevice extends EventEmitter {
           });
 
           debug('Protocol 3.4, 3.5: Negotiate Session Key - Send Msg 0x03');
-          this.client.write(buffer);
+          client.write(buffer);
         } catch (error) {
           debug('Error binding key for protocol 3.4, 3.5: ' + error);
+          this._rejectConnect(error);
+          this.disconnect();
+          this.emit('error', error);
         }
 
         return;
@@ -733,9 +762,14 @@ class TuyaDevice extends EventEmitter {
     });
 
     debug(`Connecting to ${this.device.ip}...`);
-    this.client.connect(this.device.port, this.device.ip);
+    try {
+      client.connect(this.device.port, this.device.ip);
+    } catch (error) {
+      this._rejectConnect(error);
+      this.disconnect();
+    }
 
-    return this.connectPromise;
+    return connectPromise;
   }
 
   _packetHandler(packet) {
@@ -759,11 +793,8 @@ class TuyaDevice extends EventEmitter {
       const expLocalHmac = packet.payload.slice(16, 16 + 32).toString('hex');
       if (expLocalHmac !== calcLocalHmac) {
         const err = new Error(`HMAC mismatch(keys): expected ${expLocalHmac}, was ${calcLocalHmac}. ${packet.payload.toString('hex')}`);
-        if (this.connectPromise) {
-          this.connectPromise.reject(err);
-          delete this.connectPromise;
-        }
-
+        this._rejectConnect(err);
+        this.disconnect();
         this.emit('error', err);
         return;
       }
@@ -931,18 +962,19 @@ class TuyaDevice extends EventEmitter {
    * close the socket and exit gracefully.
    */
   disconnect() {
-    if (!this._connected) {
-      return;
-    }
-
     debug('Disconnect');
 
+    const wasConnected = this._connected;
     this._connected = false;
     this.device.parser.cipher.setSessionKey(null);
 
     // Clear timeouts
+    clearTimeout(this._connectTimeoutTimer);
+    this._connectTimeoutTimer = null;
     clearInterval(this._pingPongInterval);
     clearTimeout(this._pingPongTimeout);
+
+    this._rejectConnect(new Error('Connection closed before it was established'));
 
     if (this.client) {
       this.client.destroy();
@@ -956,7 +988,9 @@ class TuyaDevice extends EventEmitter {
      * goes off the network.
      * @event TuyaDevice#disconnected
      */
-    this.emit('disconnected');
+    if (wasConnected) {
+      this.emit('disconnected');
+    }
   }
 
   /**
