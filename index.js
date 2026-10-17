@@ -162,7 +162,7 @@ class TuyaDevice extends EventEmitter {
       debug('GET Payload:');
       debug(payload);
 
-      data = await this._send(buffer);
+      data = await this._send(buffer, commandByte);
     }
 
     // If data read failed with defined error messages or device uses Protocol 3.2 we need to read differently
@@ -249,7 +249,7 @@ class TuyaDevice extends EventEmitter {
     return new Promise((resolve, reject) => {
       this._expectRefreshResponseForSequenceN = sequenceN;
       // Send request
-      this._send(buffer).then(async data => {
+      this._send(buffer, CommandType.DP_REFRESH).then(async data => {
         if (data === 'json obj data unvalid') {
           // Some devices don't respond to DP_QUERY so, for DPS get commands, fall
           // back to using SEND with null value. This appears to always work as
@@ -421,7 +421,7 @@ class TuyaDevice extends EventEmitter {
         }
 
         // Send request
-        this._send(buffer).catch(error => {
+        this._send(buffer, commandByte).catch(error => {
           if (options.shouldWaitForResponse && !resolvedOrRejected) {
             resolvedOrRejected = true;
             reject(error);
@@ -470,7 +470,7 @@ class TuyaDevice extends EventEmitter {
    * @param {Buffer} buffer buffer of data
    * @returns {Promise<any>} returned data for request
    */
-  _send(buffer) {
+  _send(buffer, commandByte) {
     const sequenceNo = this._currentSequenceN;
     // Retry up to 5 times
     return pRetry(() => {
@@ -480,8 +480,12 @@ class TuyaDevice extends EventEmitter {
           try {
             this.client.write(buffer);
 
-            // Add resolver function
-            this._resolvers[sequenceNo] = data => resolve(data);
+            // Add resolver function. Remember the command byte so that a
+            // response arriving on a different sequence number can still be
+            // matched (see the fallback at the end of _packetHandler).
+            const resolver = data => resolve(data);
+            resolver.commandByte = commandByte;
+            this._resolvers[sequenceNo] = resolver;
           } catch (error) {
             reject(error);
           }
@@ -739,6 +743,18 @@ class TuyaDevice extends EventEmitter {
   }
 
   _packetHandler(packet) {
+    // Keep our outgoing sequence counter in sync with the device's.
+    // The device advances its own sequence number for every packet it sends,
+    // including unsolicited ones (e.g. the STATUS/DP_REFRESH push it emits right
+    // after a SET). If we don't account for those, our next request reuses a
+    // sequence number the device has already consumed, so its reply no longer
+    // matches the resolver we registered and the pending get()/set() hangs until
+    // the socket is recycled. Re-syncing here makes request/resolver matching
+    // survive device-initiated packets.
+    if (packet.sequenceN > this._currentSequenceN) {
+      this._currentSequenceN = packet.sequenceN;
+    }
+
     // Protocol 3.4, 3.5 - Response to Msg 0x03
     if (packet.commandByte === CommandType.SESS_KEY_NEG_RES) {
       if (!this.connectPromise) {
@@ -820,6 +836,16 @@ class TuyaDevice extends EventEmitter {
         packet.commandByte === CommandType.CONTROL_NEW
       ) && packet.payload === false) {
       debug('Got SET ack.');
+      // This request is finished, so settle and drop its resolver — located by
+      // command byte, because the ack's sequence number can be offset from the
+      // one we sent (the device numbers its replies with its own counter).
+      // Left in place, control resolvers accumulate one per set for the life of
+      // the session and are never matched again.
+      const controlMatch = this._newestResolverFor(packet.commandByte);
+      if (controlMatch !== undefined) {
+        this._resolvers[controlMatch](packet.payload);
+        delete this._resolvers[controlMatch];
+      }
       return;
     }
 
@@ -916,14 +942,69 @@ class TuyaDevice extends EventEmitter {
       return;
     }
 
+    // Query responses are matched by command byte, not by sequence number. The
+    // device numbers its replies with its OWN counter, which drifts away from
+    // ours the moment it sends an unsolicited packet (the STATUS push after a
+    // set) — so a reply can arrive on a different number than the one we
+    // registered, and a number that collides with a different pending request.
+    // Matching the newest outstanding query of the same command byte keeps a
+    // read from hanging, and stops an unrelated packet that merely collides on
+    // the sequence number from resolving it with the wrong payload.
+    if (
+      (packet.commandByte === CommandType.DP_QUERY ||
+        packet.commandByte === CommandType.DP_QUERY_NEW) &&
+      typeof this._setResolver !== 'function'
+    ) {
+      const match = this._newestResolverFor(packet.commandByte);
+      const colliding = this._resolvers[packet.sequenceN];
+
+      if (
+        match !== undefined &&
+        (colliding === undefined || colliding.commandByte !== packet.commandByte)
+      ) {
+        debug('Matched query response to sequence number ' + match + ' by command byte');
+        this._resolvers[match](packet.payload);
+        delete this._resolvers[match];
+        this._expectRefreshResponseForSequenceN = undefined;
+        return;
+      }
+    }
+
     // Call data resolver for sequence number
     if (packet.sequenceN in this._resolvers) {
-      this._resolvers[packet.sequenceN](packet.payload);
+      const resolver = this._resolvers[packet.sequenceN];
+      const resolverIsQuery =
+        resolver.commandByte === CommandType.DP_QUERY ||
+        resolver.commandByte === CommandType.DP_QUERY_NEW;
 
-      // Remove resolver
-      delete this._resolvers[packet.sequenceN];
-      this._expectRefreshResponseForSequenceN = undefined;
+      // A query is answered by a packet carrying the same command byte, so a
+      // packet that only collides on the sequence number must not resolve it.
+      if (!resolverIsQuery || packet.commandByte === resolver.commandByte) {
+        resolver(packet.payload);
+
+        // Remove resolver
+        delete this._resolvers[packet.sequenceN];
+        this._expectRefreshResponseForSequenceN = undefined;
+      }
     }
+  }
+
+  /**
+   * Sequence number of the newest outstanding request registered for
+   * `commandByte`, or `undefined` if there is none. Used to match device
+   * responses that do not come back on the sequence number we sent.
+   * @private
+   */
+  _newestResolverFor(commandByte) {
+    let match;
+    for (const key of Object.keys(this._resolvers)) {
+      const resolver = this._resolvers[key];
+      if (resolver && resolver.commandByte === commandByte) {
+        const seq = Number(key);
+        if (match === undefined || seq > match) match = seq;
+      }
+    }
+    return match;
   }
 
   /**
