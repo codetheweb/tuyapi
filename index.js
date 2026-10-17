@@ -739,6 +739,18 @@ class TuyaDevice extends EventEmitter {
   }
 
   _packetHandler(packet) {
+    // Keep our outgoing sequence counter in sync with the device's.
+    // The device advances its own sequence number for every packet it sends,
+    // including unsolicited ones (e.g. the STATUS/DP_REFRESH push it emits right
+    // after a SET). If we don't account for those, our next request reuses a
+    // sequence number the device has already consumed, so its reply no longer
+    // matches the resolver we registered and the pending get()/set() hangs until
+    // the socket is recycled. Re-syncing here makes request/resolver matching
+    // survive device-initiated packets.
+    if (packet.sequenceN > this._currentSequenceN) {
+      this._currentSequenceN = packet.sequenceN;
+    }
+
     // Protocol 3.4, 3.5 - Response to Msg 0x03
     if (packet.commandByte === CommandType.SESS_KEY_NEG_RES) {
       if (!this.connectPromise) {
