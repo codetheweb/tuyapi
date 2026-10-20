@@ -209,3 +209,24 @@ test('decode message with two packets 2', t => {
   t.deepEqual(parsed.payload, payload);
   t.is(parsed.commandByte, 10);
 });
+
+for (const version of ['3.1', '3.3', '3.4', '3.5']) {
+  for (const sequenceN of [0x0000AA55, 0x00009966]) {
+    test(`decode two packets with protocol ${version} and sequence number holding suffix bytes 0x${sequenceN.toString(16)}`, t => {
+      const payload = {devId: '002004265ccf7fb1b659', dps: {1: true, 2: 0}};
+
+      const parser = new MessageParser({key: 'bbe88b3f4106d354', version});
+      const baseline = parser.parse(parser.encode({data: payload, commandByte: CommandType.DP_QUERY, sequenceN: 1}))[0];
+      const encoded = parser.encode({data: payload, commandByte: CommandType.DP_QUERY, sequenceN});
+
+      const parsed = parser.parse(Buffer.concat([encoded, encoded]));
+
+      t.is(parsed.length, 2);
+      for (const packet of parsed) {
+        t.is(packet.sequenceN, sequenceN);
+        t.is(packet.commandByte, CommandType.DP_QUERY);
+        t.deepEqual(packet.payload, baseline.payload);
+      }
+    });
+  }
+}
