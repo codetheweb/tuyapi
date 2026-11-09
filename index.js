@@ -491,7 +491,7 @@ class TuyaDevice extends EventEmitter {
         // On timeout, drop the pending resolver so it can't leak,
         // then reject so pRetry can retry (and, once retries are
         // exhausted, the caller's .catch() finally fires).
-delete this._resolvers[sequenceNo];
+        delete this._resolvers[sequenceNo];
         if (this._expectRefreshResponseForSequenceN === sequenceNo) {
           this._expectRefreshResponseForSequenceN = undefined;
         }
