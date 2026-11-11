@@ -469,6 +469,7 @@ class TuyaDevice extends EventEmitter {
    * @private
    * @param {Buffer} buffer buffer of data
    * @returns {Promise<any>} returned data for request
+   * (`undefined` if no matching response arrived in time)
    */
   _send(buffer) {
     const sequenceNo = this._currentSequenceN;
@@ -480,8 +481,26 @@ class TuyaDevice extends EventEmitter {
           try {
             this.client.write(buffer);
 
+            // Some devices (e.g. protocol 3.5) answer with a different
+            // sequence number, so the resolver would never be called or
+            // deleted and pending requests would pile up in memory.
+            // Remove it after a while; the data is still emitted as `data` event.
+            const timeout = setTimeout(() => {
+              if (this._resolvers[sequenceNo] === resolver) {
+                debug(`No response for sequence number ${sequenceNo}, removing resolver`);
+                delete this._resolvers[sequenceNo];
+                resolve();
+              }
+            }, this._responseTimeout * 5000);
+            timeout.unref();
+
             // Add resolver function
-            this._resolvers[sequenceNo] = data => resolve(data);
+            const resolver = data => {
+              clearTimeout(timeout);
+              resolve(data);
+            };
+
+            this._resolvers[sequenceNo] = resolver;
           } catch (error) {
             reject(error);
           }

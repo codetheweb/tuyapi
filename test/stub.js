@@ -192,3 +192,41 @@ test('can reconnect if device goes offline', async t => {
 
   t.pass();
 });
+
+test.serial('pending request is cleaned up if no matching response arrives', async t => {
+  const device = new TuyAPI({id: '22325186db4a2217dc8e',
+                             key: '4226aa407d5c1e2b',
+                             ip: 'localhost'});
+
+  // Simulate a device that answers with a different sequence number
+  device._responseTimeout = 0.01;
+  device.connect = () => Promise.resolve(true);
+  device.client = {write: () => {}};
+
+  // The cleanup timer is unref'd, keep the event loop busy meanwhile
+  const keepAlive = setTimeout(() => {}, 1000);
+  const result = await device._send(Buffer.from('test'));
+  clearTimeout(keepAlive);
+
+  t.is(result, undefined);
+  t.deepEqual(device._resolvers, {});
+});
+
+test.serial('pending request still resolves with matching response', async t => {
+  const device = new TuyAPI({id: '22325186db4a2217dc8e',
+                             key: '4226aa407d5c1e2b',
+                             ip: 'localhost'});
+
+  device._responseTimeout = 0.05;
+  device.connect = () => Promise.resolve(true);
+  device.client = {write: () => {}};
+
+  const request = device._send(Buffer.from('test'));
+  await delay(10);
+
+  const payload = {dps: {1: true}};
+  device._resolvers[device._currentSequenceN](payload);
+
+  t.is(await request, payload);
+  await delay(100);
+});
